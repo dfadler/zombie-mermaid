@@ -1818,7 +1818,17 @@ function placeFace(
     if (ranked && diamond) {
       if (Math.abs(p - centre) > 1) continue
     }
-    if (attachesAt(run, p, geo, ranked)) cells.push(p)
+    // Its entry face's vertex is a cell too (#2913): three ends take it and
+    // both slants. The flow face is `spreadDiamondFaces`'s.
+    if (
+      attachesAt(run, p, geo, ranked) ||
+      (ranked &&
+        diamond &&
+        run.side === 'left' &&
+        p === centre &&
+        list.length === 3)
+    )
+      cells.push(p)
   }
   for (const gap of share ? [0] : [STROKE_SPACING, 1]) {
     // A cell `r` may take: off other edges' cells (one of its role, if

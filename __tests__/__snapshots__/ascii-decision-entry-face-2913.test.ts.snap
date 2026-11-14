@@ -1,0 +1,677 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"       ╱╲                                           ╱─╲      
+     ╱    ╲                                       ╱     ╲    
+  ╱          ╲                                  ╱         ╲  
+<  PR Review   >◄────┬───────────┐            <    Tests?   >
+  ╲          ╱       │           │              ╲         ╱  
+     ╲    ╱          │           │                ╲     ╱    
+       ╲╱            │           │                  ╲─╱      
+        ▲        approved        │                  │ ▲      
+        │            │           │                  │ │      
+        │            ├───────────┼pass──────────────┤ │      
+        │            │           │                fail│      
+        │            │           │                  ▼ │      
+┌───────┴──────┐     │    ┌──────┴─────┐      ┌───────┴─────┐
+│              │     │    │            │      │             │
+│ feature/auth │     │    │ feature/ui │      │ release/1.0 │
+│              │     │    │            │      │             │
+└──────────────┘     │    └────────────┘      └─────────────┘
+        ▲            │           ▲                   ▲       
+        │            │           │                   │       
+        ├────────────┼───────────┴───────────────────┘       
+        │            │                                       
+        │            │                                       
+┌───────┴──────┐     │                                       
+│              │     │                                       
+│   develop    │◄────┤                                       
+│              │     │                                       
+└──────────────┘     │                                       
+        ▲            │                                       
+        │            │                                       
+        │            │                                       
+        │            │                                       
+        │            │                                       
+┌───────┴──────┐     │                                       
+│              │     │                                       
+│     main     │◄────┘                                       
+│              │                                             
+└──────────────┘                                             "
+`;
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"                                                         ╱─╲                    
+                                                      ╱       ╲                 
+                                                   <    Tests?   >              
+                                                      ╲       ╱                 
+                                                         ╲─╱                    
+                                                         │▲│                    
+                                                         │││                    
+                                                         ││└───────────────────┐
+                                                 ┌─pass──┘│                    │
+                                                 │        └─────────────┐      │
+                                                 │                      │      │
+                                                 │                      │      │
+                           ╱╲                    │                      │      │
+                         ╱    ╲                  │                      │      │
+                       ╱        ╲                │                      │      │
+                     < PR Review  >              │                      │      │
+                       ╲        ╱                │                      │      │
+                         ╲    ╱                  │                      │      │
+                           ╲╱                    │                      │      │
+                           │▲                    │                      │      │
+                           ││                    │                      │      │
+                           ││                    │       ┌──────────────┘      │
+        ┌──────────────────┼┤                    │       │                     │
+        │                  ││                    │       │ ┌───────fail────────┘
+        │                  └┼approved┐           │       │ │                    
+        │                   │        │           │       │ ▼                    
+┌───────┴──────┐     ┌──────┴─────┐  │           │ ┌─────┴───────┐              
+│              │     │            │  │           │ │             │              
+│ feature/auth │     │ feature/ui │  │           │ │ release/1.0 │              
+│              │     │            │  │           │ │             │              
+└──────────────┘     └────────────┘  │           │ └─────────────┘              
+        ▲                   ▲        │           │        ▲                     
+        │                   │        │           │        │                     
+        └───────────────────┴────────┼─┬─────────┼────────┘                     
+                                     │ │         │                              
+                                     ▼ │         │                              
+                                  ┌────┴────┐    │                              
+                                  │         │    │                              
+                                  │ develop │    │                              
+                                  │         │    │                              
+                                  └─────────┘    │                              
+                                       ▲         │                              
+                                       │         │                              
+                                       └───────┐ │                              
+                                               │ │                              
+                                               │ ▼                              
+                                            ┌──┴───┐                            
+                                            │      │                            
+                                            │ main │                            
+                                            │      │                            
+                                            └──────┘                            "
+`;
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 832.45 752" width="832.45" height="752" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmi1y4j4-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmi1y4j4-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 502.7 664 L 502.7 651.07 Q 502.7 644, 495.63 644 L 388.07 644 Q 381 644, 381 636.93 L 381 624" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmi1y4j4-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 335.4 576 L 335.4 563.07 Q 335.4 556, 328.33 556 L 123.07 556 Q 116 556, 116 548.93 L 116 516" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmi1y4j4-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 365.8 576 L 365.8 543.07 Q 365.8 536, 358.73 536 L 315.07 536 Q 308 536, 308 528.93 L 308 516" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmi1y4j4-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 468 L 116 455.07 Q 116 448, 123.07 448 L 257.43 448 Q 264.5 448, 264.5 440.93 L 264.5 384.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmi1y4j4-arrowhead)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 468 L 308 428" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmi1y4j4-arrowhead)" />
+<path class="edge" data-from="E" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="approved" d="M 351.5 384.5 L 351.5 440.93 Q 351.5 448, 358.57 448 L 446.93 448 Q 454 448, 454 455.07 L 454 528.93 Q 454 536, 446.93 536 L 403.27 536 Q 396.2 536, 396.2 543.07 L 396.2 576" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmi1y4j4-arrowhead)" />
+<path class="edge" data-from="B" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 426.6 576 L 426.6 563.07 Q 426.6 556, 433.67 556 L 592.3 556 Q 599.37 556, 599.37 548.93 L 599.37 516" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmi1y4j4-arrowhead)" />
+<path class="edge" data-from="F" data-to="G" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 574.03 468 L 574.03 452.17 Q 574.03 448, 578.2 448 L 578.2 448 Q 582.37 448, 582.37 443.83 L 582.37 240.12 Q 582.37 234, 588.49 234 L 588.49 234 Q 594.62 234, 594.62 227.88 L 594.62 170.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmi1y4j4-arrowhead)" />
+<path class="edge" data-from="G" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="pass" d="M 681.62 170.5 L 681.62 226.93 Q 681.62 234, 688.69 234 L 725.8 234 Q 732.87 234, 732.87 241.07 L 732.87 636.93 Q 732.87 644, 725.8 644 L 560.44 644 Q 553.37 644, 553.37 651.07 L 553.37 664" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmi1y4j4-arrowhead)" />
+<path class="edge" data-from="G" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="fail" d="M 638.12 214 L 638.12 226.93 Q 638.12 234, 631.04 234 L 628.19 234 Q 621.12 234, 621.12 241.07 L 621.12 446.21 Q 621.12 448, 622.91 448 L 622.91 448 Q 624.7 448, 624.7 449.79 L 624.7 468" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmi1y4j4-arrowhead)" />
+<g class="edge-label" data-from="E" data-to="B" data-label="approved">
+  <rect x="428" y="484.85" width="51.37" height="14.3" fill="var(--bg)" />
+  <text x="453.68" y="492" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">approved</text>
+</g>
+<g class="edge-label" data-from="G" data-to="A" data-label="pass">
+  <rect x="719.37" y="484.85" width="26.17" height="14.3" fill="var(--bg)" />
+  <text x="732.45" y="492" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">pass</text>
+</g>
+<g class="edge-label" data-from="G" data-to="F" data-label="fail">
+  <rect x="612.12" y="333.85" width="17.22" height="14.3" fill="var(--bg)" />
+  <text x="620.73" y="341" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">fail</text>
+</g>
+<g class="node" data-id="A" data-label="main" data-shape="rectangle">
+  <rect x="452.03" y="664" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="528.03" y="688" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">main</text>
+</g>
+<g class="node" data-id="B" data-label="develop" data-shape="rectangle">
+  <rect x="305" y="576" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="381" y="600" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">develop</text>
+</g>
+<g class="node" data-id="C" data-label="feature/auth" data-shape="rectangle">
+  <rect x="40" y="468" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="492" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">feature/auth</text>
+</g>
+<g class="node" data-id="D" data-label="feature/ui" data-shape="rectangle">
+  <rect x="232" y="468" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="492" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">feature/ui</text>
+</g>
+<g class="node" data-id="E" data-label="PR Review" data-shape="diamond">
+  <polygon points="308,254 395,341 308,428 221,341" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="341" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">PR Review</text>
+</g>
+<g class="node" data-id="F" data-label="release/1.0" data-shape="rectangle">
+  <rect x="523.37" y="468" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="599.37" y="492" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">release/1.0</text>
+</g>
+<g class="node" data-id="G" data-label="Tests?" data-shape="diamond">
+  <polygon points="638.12,40 725.12,127 638.12,214 551.12,127" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="638.12" y="127" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Tests?</text>
+</g>
+</svg>"
+`;
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > LR: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌──────┐      ┌─────────┐     ┌──────────────┐                ╱╲      
+│      │      │         │     │              │              ╱    ╲    
+│      │      │         │     │              │            ╱        ╲  
+│ main ├─────►│ develop ├────►│ feature/auth ├─────────►< PR Review  >
+│      │      │         │     │              │            ╲        ╱  
+│      │      │         ├─┐   │              │              ╲    ╱    
+└──────┘      └─────────┘ │   └──────────────┘                ╲╱      
+    ▲              ▲      │                                   ▲│      
+    │              │      │                                   ││      
+    │              └──────┼──────────approved─────────────────┼┘      
+    │                     │                                   │       
+    │                     │   ┌──────────────┐                │       
+    │                     │   │              │                │       
+    │                     ├──►│  feature/ui  ├────────────────┘       
+    │                     │   │              │                        
+    └────────pass─────────┼┐  └──────────────┘                        
+                          ││                                          
+                          ││                                          
+                          │└───────────────────────┐                  
+                          │                        │                  
+                          │   ┌──────────────┐     │          ╱╲      
+                          │   │              │     │       ╱      ╲   
+                          └──►│ release/1.0  ├─────┴───►<   Tests?   >
+                              │              │             ╲      ╱   
+                              └──────────────┘                ╲╱      
+                                      ▲                        │      
+                                      └─────────fail───────────┘      "
+`;
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > LR: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"                             ┌──────────────┐                                         
+                             │              │                                         
+                         ┌──►│ feature/auth ├─────┐                                   
+                         │   │              │     │                                   
+                         │   └──────────────┘     │                                   
+                         │                        │                                   
+                         │                        │                                   
+                         │                        │                                   
+                         │                        │                                   
+             ┌─────────┐ │   ┌──────────────┐     │          ╱╲                       
+             │         │ │   │              │     │        ╱    ╲                     
+             │         ├─┘   │              │     └─────►╱        ╲                   
+          ┌─►│ develop ├────►│  feature/ui  ├─────────►< PR Review  >                 
+          │  │         │◄─┐  │              │     ┌──────╲        ╱                   
+          │  │         ├─┐│  │              │     │        ╲    ╱                     
+          │  └─────────┘ ││  └──────────────┘     │          ╲╱                       
+          │              ││                       │                                   
+          │              ││                       │                                   
+          │              │└───────approved────────┘                                   
+          │              │                                                            
+┌──────┐  │              │                                                            
+│      ├──┘              │                                                            
+│ main │                 │                                                            
+│      │◄────────────────┼──────────────────────────────────────────────┐             
+└──────┘                 │   ┌──────────────┐                      pass │       ╱╲    
+                         │   │              │                           │      ╱  ╲   
+                         │   │              ├──────┐                    └────╱      ╲ 
+                         └──►│ release/1.0  │      │                   ┌───►< Tests? >
+                             │              │◄───┐ │                   │ ┌───╲      ╱ 
+                             │              │    │ │                   │ │     ╲  ╱   
+                             └──────────────┘    │ │                   │ │      ╲╱    
+                                                 │ │                   │ │            
+                                                 │ └───────────────────┘ │            
+                                                 │                       │            
+                                                 └─────────fail──────────┘            "
+`;
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > LR: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1064 444.3" width="1064" height="444.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmfha5xw-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmfha5xw-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 256.55 L 204.93 256.55 Q 212 256.55, 212 249.48 L 212 187.97 Q 212 180.9, 219.07 180.9 L 232 180.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmfha5xw-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 384 166.5 L 396.93 166.5 Q 404 166.5, 404 159.43 L 404 71.07 Q 404 64, 411.07 64 L 444 64" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmfha5xw-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 384 176.1 L 416.93 176.1 Q 424 176.1, 424 169.03 L 424 159.07 Q 424 152, 431.07 152 L 444 152" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmfha5xw-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 596 64 L 608.93 64 Q 616 64, 616 71.07 L 616 98.83 Q 616 105.9, 623.07 105.9 L 679.5 105.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmfha5xw-arrowhead)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 596 152 L 614.7 152 Q 616 152, 616 150.7 L 616 150.7 Q 616 149.4, 617.3 149.4 L 636 149.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmfha5xw-arrowhead)" />
+<path class="edge" data-from="E" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="approved" d="M 679.5 192.9 L 623.07 192.9 Q 616 192.9, 616 199.97 L 616 219.93 Q 616 227, 608.93 227 L 431.07 227 Q 424 227, 424 219.93 L 424 192.77 Q 424 185.7, 416.93 185.7 L 384 185.7" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmfha5xw-arrowhead)" />
+<path class="edge" data-from="B" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 384 195.3 L 396.93 195.3 Q 404 195.3, 404 202.37 L 404 294.23 Q 404 301.3, 411.07 301.3 L 444 301.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmfha5xw-arrowhead)" />
+<path class="edge" data-from="F" data-to="G" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 596 293.3 L 612 293.3 Q 616 293.3, 616 289.3 L 616 289.3 Q 616 285.3, 620 285.3 L 824.25 285.3 Q 830 285.3, 830 279.55 L 830 279.55 Q 830 273.8, 835.75 273.8 L 893.5 273.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmfha5xw-arrowhead)" />
+<path class="edge" data-from="G" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="pass" d="M 893.5 360.8 L 837.07 360.8 Q 830 360.8, 830 367.87 L 830 369.23 Q 830 376.3, 822.93 376.3 L 219.07 376.3 Q 212 376.3, 212 369.23 L 212 279.62 Q 212 272.55, 204.93 272.55 L 192 272.55" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmfha5xw-arrowhead)" />
+<path class="edge" data-from="G" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="fail" d="M 850 317.3 L 620 317.3 Q 616 317.3, 616 313.3 L 616 313.3 Q 616 309.3, 612 309.3 L 596 309.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmfha5xw-arrowhead)" />
+<g class="edge-label" data-from="E" data-to="B" data-label="approved">
+  <rect x="494.32" y="219" width="51.37" height="14.3" fill="var(--bg)" />
+  <text x="520" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">approved</text>
+</g>
+<g class="edge-label" data-from="G" data-to="A" data-label="pass">
+  <rect x="506.91" y="368.3" width="26.17" height="14.3" fill="var(--bg)" />
+  <text x="520" y="375.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">pass</text>
+</g>
+<g class="edge-label" data-from="G" data-to="F" data-label="fail">
+  <rect x="714.39" y="309.3" width="17.22" height="14.3" fill="var(--bg)" />
+  <text x="723" y="316.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">fail</text>
+</g>
+<g class="node" data-id="A" data-label="main" data-shape="rectangle">
+  <rect x="40" y="240.55" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="264.55" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">main</text>
+</g>
+<g class="node" data-id="B" data-label="develop" data-shape="rectangle">
+  <rect x="232" y="156.9" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="180.9" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">develop</text>
+</g>
+<g class="node" data-id="C" data-label="feature/auth" data-shape="rectangle">
+  <rect x="444" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="520" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">feature/auth</text>
+</g>
+<g class="node" data-id="D" data-label="feature/ui" data-shape="rectangle">
+  <rect x="444" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="520" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">feature/ui</text>
+</g>
+<g class="node" data-id="E" data-label="PR Review" data-shape="diamond">
+  <polygon points="723,62.4 810,149.4 723,236.4 636,149.4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="723" y="149.4" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">PR Review</text>
+</g>
+<g class="node" data-id="F" data-label="release/1.0" data-shape="rectangle">
+  <rect x="444" y="277.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="520" y="301.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">release/1.0</text>
+</g>
+<g class="node" data-id="G" data-label="Tests?" data-shape="diamond">
+  <polygon points="937,230.3 1024,317.3 937,404.3 850,317.3" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="937" y="317.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Tests?</text>
+</g>
+</svg>"
+`;
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > RL: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"      ╱╲                ┌──────────────┐     ┌─────────┐      ┌──────┐
+    ╱    ╲              │              │     │         │      │      │
+  ╱        ╲            │              │     │         │      │      │
+< PR Review  >◄─────────┤ feature/auth │◄────┤ develop │◄─────┤ main │
+  ╲        ╱            │              │     │         │      │      │
+    ╲    ╱              │              │   ┌─┤         │      │      │
+      ╲╱                └──────────────┘   │ └─────────┘      └──────┘
+      │▲                                   │      ▲              ▲    
+      ││                                   │      │              │    
+      └┼─────────────────approved──────────┼──────┘              │    
+       │                                   │                     │    
+       │                ┌──────────────┐   │                     │    
+       │                │              │   │                     │    
+       └────────────────┤  feature/ui  │◄──┤                     │    
+                        │              │   │                     │    
+                        └──────────────┘  ┌┼─────────pass────────┘    
+                                          ││                          
+                                          ││                          
+                  ┌───────────────────────┘│                          
+                  │                        │                          
+      ╱╲          │     ┌──────────────┐   │                          
+   ╱      ╲       │     │              │   │                          
+<   Tests?   >◄───┴─────┤ release/1.0  │◄──┘                          
+   ╲      ╱             │              │                              
+      ╲╱                └──────────────┘                              
+      │                        ▲                                      
+      └───────────fail─────────┘                                      "
+`;
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > RL: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"                                         ┌──────────────┐                             
+                                         │              │                             
+                                   ┌─────┤ feature/auth │◄──┐                         
+                                   │     │              │   │                         
+                                   │     └──────────────┘   │                         
+                                   │                        │                         
+                                   │                        │                         
+                                   │                        │                         
+                                   │                        │                         
+                       ╱╲          │     ┌──────────────┐   │ ┌─────────┐             
+                     ╱    ╲        │     │              │   │ │         │             
+                   ╱        ╲◄─────┘     │              │   └─┤         │             
+                 < PR Review  >◄─────────┤  feature/ui  │◄────┤ develop │◄─┐          
+                   ╲        ╱──────┐     │              │  ┌─►│         │  │          
+                     ╲    ╱        │     │              │  │┌─┤         │  │          
+                       ╲╱          │     └──────────────┘  ││ └─────────┘  │          
+                                   │                       ││              │          
+                                   │                       ││              │          
+                                   └────────approved───────┘│              │          
+                                                            │              │          
+                                                            │              │  ┌──────┐
+                                                            │              └──┤      │
+                                                            │                 │ main │
+             ┌──────────────────────────────────────────────┼────────────────►│      │
+    ╱╲       │ pass                      ┌──────────────┐   │                 └──────┘
+   ╱  ╲      │                           │              │   │                         
+ ╱      ╲────┘                    ┌──────┤              │   │                         
+< Tests? >◄───┐                   │      │ release/1.0  │◄──┘                         
+ ╲      ╱───┐ │                   │ ┌───►│              │                             
+   ╲  ╱     │ │                   │ │    │              │                             
+    ╲╱      │ │                   │ │    └──────────────┘                             
+            │ │                   │ │                                                 
+            │ └───────────────────┘ │                                                 
+            │                       │                                                 
+            └──────────fail─────────┘                                                 "
+`;
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > RL: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1064 444.3" width="1064" height="444.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmoiee47-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmoiee47-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 872 256.55 L 859.07 256.55 Q 852 256.55, 852 249.48 L 852 187.97 Q 852 180.9, 844.93 180.9 L 832 180.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmoiee47-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 680 166.5 L 667.07 166.5 Q 660 166.5, 660 159.43 L 660 71.07 Q 660 64, 652.93 64 L 620 64" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmoiee47-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 680 176.1 L 647.07 176.1 Q 640 176.1, 640 169.03 L 640 159.07 Q 640 152, 632.93 152 L 620 152" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmoiee47-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 468 64 L 455.07 64 Q 448 64, 448 71.07 L 448 98.83 Q 448 105.9, 440.93 105.9 L 384.5 105.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmoiee47-arrowhead)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 468 152 L 449.3 152 Q 448 152, 448 150.7 L 448 150.7 Q 448 149.4, 446.7 149.4 L 428 149.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmoiee47-arrowhead)" />
+<path class="edge" data-from="E" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="approved" d="M 384.5 192.9 L 440.93 192.9 Q 448 192.9, 448 199.97 L 448 219.93 Q 448 227, 455.07 227 L 632.93 227 Q 640 227, 640 219.93 L 640 192.77 Q 640 185.7, 647.07 185.7 L 680 185.7" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmoiee47-arrowhead)" />
+<path class="edge" data-from="B" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 680 195.3 L 667.07 195.3 Q 660 195.3, 660 202.37 L 660 294.23 Q 660 301.3, 652.93 301.3 L 620 301.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmoiee47-arrowhead)" />
+<path class="edge" data-from="F" data-to="G" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 468 293.3 L 452 293.3 Q 448 293.3, 448 289.3 L 448 289.3 Q 448 285.3, 444 285.3 L 239.75 285.3 Q 234 285.3, 234 279.55 L 234 279.55 Q 234 273.8, 228.25 273.8 L 170.5 273.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmoiee47-arrowhead)" />
+<path class="edge" data-from="G" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="pass" d="M 170.5 360.8 L 226.93 360.8 Q 234 360.8, 234 367.87 L 234 369.23 Q 234 376.3, 241.07 376.3 L 844.93 376.3 Q 852 376.3, 852 369.23 L 852 279.62 Q 852 272.55, 859.07 272.55 L 872 272.55" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmoiee47-arrowhead)" />
+<path class="edge" data-from="G" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="fail" d="M 214 317.3 L 444 317.3 Q 448 317.3, 448 313.3 L 448 313.3 Q 448 309.3, 452 309.3 L 468 309.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmoiee47-arrowhead)" />
+<g class="edge-label" data-from="E" data-to="B" data-label="approved">
+  <rect x="518.32" y="219" width="51.37" height="14.3" fill="var(--bg)" />
+  <text x="544" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">approved</text>
+</g>
+<g class="edge-label" data-from="G" data-to="A" data-label="pass">
+  <rect x="530.91" y="368.3" width="26.17" height="14.3" fill="var(--bg)" />
+  <text x="544" y="375.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">pass</text>
+</g>
+<g class="edge-label" data-from="G" data-to="F" data-label="fail">
+  <rect x="332.39" y="309.3" width="17.22" height="14.3" fill="var(--bg)" />
+  <text x="341" y="316.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">fail</text>
+</g>
+<g class="node" data-id="A" data-label="main" data-shape="rectangle">
+  <rect x="872" y="240.55" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="948" y="264.55" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">main</text>
+</g>
+<g class="node" data-id="B" data-label="develop" data-shape="rectangle">
+  <rect x="680" y="156.9" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="756" y="180.9" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">develop</text>
+</g>
+<g class="node" data-id="C" data-label="feature/auth" data-shape="rectangle">
+  <rect x="468" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="544" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">feature/auth</text>
+</g>
+<g class="node" data-id="D" data-label="feature/ui" data-shape="rectangle">
+  <rect x="468" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="544" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">feature/ui</text>
+</g>
+<g class="node" data-id="E" data-label="PR Review" data-shape="diamond">
+  <polygon points="341,62.4 428,149.4 341,236.4 254,149.4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="341" y="149.4" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">PR Review</text>
+</g>
+<g class="node" data-id="F" data-label="release/1.0" data-shape="rectangle">
+  <rect x="468" y="277.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="544" y="301.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">release/1.0</text>
+</g>
+<g class="node" data-id="G" data-label="Tests?" data-shape="diamond">
+  <polygon points="127,230.3 214,317.3 127,404.3 40,317.3" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="127" y="317.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Tests?</text>
+</g>
+</svg>"
+`;
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌──────────────┐                                             
+│              │                                             
+│     main     │◄────┐                                       
+│              │     │                                       
+└───────┬──────┘     │                                       
+        │            │                                       
+        │            │                                       
+        │            │                                       
+        │            │                                       
+        ▼            │                                       
+┌──────────────┐     │                                       
+│              │     │                                       
+│   develop    │◄────┤                                       
+│              │     │                                       
+└───────┬──────┘     │                                       
+        │            │                                       
+        │            │                                       
+        ├────────────┼───────────┬───────────────────┐       
+        │            │           │                   │       
+        ▼            │           ▼                   ▼       
+┌──────────────┐     │    ┌────────────┐      ┌─────────────┐
+│              │     │    │            │      │             │
+│ feature/auth │     │    │ feature/ui │      │ release/1.0 │
+│              │     │    │            │      │             │
+└───────┬──────┘     │    └──────┬─────┘      └───────┬─────┘
+        │            │           │                  ▲ │      
+        │            │           │                fail│      
+        │            ├───────────┼pass──────────────┤ │      
+        │            │           │                  │ │      
+        ▼        approved        │                  │ ▼      
+       ╱╲            │           │                  ╱─╲      
+     ╱    ╲          │           │                ╱     ╲    
+  ╱          ╲       │           │              ╱         ╲  
+<  PR Review   >◄────┴───────────┘            <    Tests?   >
+  ╲          ╱                                  ╲         ╱  
+     ╲    ╱                                       ╲     ╱    
+       ╲╱                                           ╲─╱      "
+`;
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"                                            ┌──────┐                            
+                                            │      │                            
+                                            │ main │                            
+                                            │      │                            
+                                            └──┬───┘                            
+                                               │ ▲                              
+                                               │ │                              
+                                       ┌───────┘ │                              
+                                       │         │                              
+                                       ▼         │                              
+                                  ┌─────────┐    │                              
+                                  │         │    │                              
+                                  │ develop │    │                              
+                                  │         │    │                              
+                                  └────┬────┘    │                              
+                                     ▲ │         │                              
+                                     │ │         │                              
+        ┌───────────────────┬────────┼─┴─────────┼────────┐                     
+        │                   │        │           │        │                     
+        ▼                   ▼        │           │        ▼                     
+┌──────────────┐     ┌────────────┐  │           │ ┌─────────────┐              
+│              │     │            │  │           │ │             │              
+│ feature/auth │     │ feature/ui │  │           │ │ release/1.0 │              
+│              │     │            │  │           │ │             │              
+└───────┬──────┘     └──────┬─────┘  │           │ └─────┬───────┘              
+        │                   │        │           │       │ ▲                    
+        │                  ┌┼approved┘           │       │ │                    
+        │                  ││                    │       │ └───────fail────────┐
+        └──────────────────┼┤                    │       │                     │
+                           ││                    │       └──────────────┐      │
+                           ││                    │                      │      │
+                           │▼                    │                      │      │
+                           ╱╲                    │                      │      │
+                         ╱    ╲                  │                      │      │
+                       ╱        ╲                │                      │      │
+                     < PR Review  >              │                      │      │
+                       ╲        ╱                │                      │      │
+                         ╲    ╱                  │                      │      │
+                           ╲╱                    │                      │      │
+                                                 │                      │      │
+                                                 │                      │      │
+                                                 │        ┌─────────────┘      │
+                                                 └─pass──┐│                    │
+                                                         ││┌───────────────────┘
+                                                         │││                    
+                                                         │▼│                    
+                                                         ╱─╲                    
+                                                      ╱       ╲                 
+                                                   <    Tests?   >              
+                                                      ╲       ╱                 
+                                                         ╲─╱                    "
+`;
+
+exports[`a decision’s entry face gives three ends a cell each (#2913) > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 832.45 752" width="832.45" height="752" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm5av2am-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm5av2am-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 502.7 88 L 502.7 100.93 Q 502.7 108, 495.63 108 L 388.07 108 Q 381 108, 381 115.07 L 381 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5av2am-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 335.4 176 L 335.4 188.93 Q 335.4 196, 328.33 196 L 123.07 196 Q 116 196, 116 203.07 L 116 236" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5av2am-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 365.8 176 L 365.8 208.93 Q 365.8 216, 358.73 216 L 315.07 216 Q 308 216, 308 223.07 L 308 236" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5av2am-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 284 L 116 296.93 Q 116 304, 123.07 304 L 257.43 304 Q 264.5 304, 264.5 311.07 L 264.5 367.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5av2am-arrowhead)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 284 L 308 324" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5av2am-arrowhead)" />
+<path class="edge" data-from="E" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="approved" d="M 351.5 367.5 L 351.5 311.07 Q 351.5 304, 358.57 304 L 446.93 304 Q 454 304, 454 296.93 L 454 223.07 Q 454 216, 446.93 216 L 403.27 216 Q 396.2 216, 396.2 208.93 L 396.2 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5av2am-arrowhead)" />
+<path class="edge" data-from="B" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 426.6 176 L 426.6 188.93 Q 426.6 196, 433.67 196 L 592.3 196 Q 599.37 196, 599.37 203.07 L 599.37 236" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5av2am-arrowhead)" />
+<path class="edge" data-from="F" data-to="G" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 574.03 284 L 574.03 299.83 Q 574.03 304, 578.2 304 L 578.2 304 Q 582.37 304, 582.37 308.17 L 582.37 511.88 Q 582.37 518, 588.49 518 L 588.49 518 Q 594.62 518, 594.62 524.12 L 594.62 581.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5av2am-arrowhead)" />
+<path class="edge" data-from="G" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="pass" d="M 681.62 581.5 L 681.62 525.07 Q 681.62 518, 688.69 518 L 725.8 518 Q 732.87 518, 732.87 510.93 L 732.87 115.07 Q 732.87 108, 725.8 108 L 560.44 108 Q 553.37 108, 553.37 100.93 L 553.37 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5av2am-arrowhead)" />
+<path class="edge" data-from="G" data-to="F" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="fail" d="M 638.12 538 L 638.12 525.07 Q 638.12 518, 631.04 518 L 628.19 518 Q 621.12 518, 621.12 510.93 L 621.12 305.79 Q 621.12 304, 622.91 304 L 622.91 304 Q 624.7 304, 624.7 302.21 L 624.7 284" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5av2am-arrowhead)" />
+<g class="edge-label" data-from="E" data-to="B" data-label="approved">
+  <rect x="428" y="252.85" width="51.37" height="14.3" fill="var(--bg)" />
+  <text x="453.68" y="260" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">approved</text>
+</g>
+<g class="edge-label" data-from="G" data-to="A" data-label="pass">
+  <rect x="719.37" y="252.85" width="26.17" height="14.3" fill="var(--bg)" />
+  <text x="732.45" y="260" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">pass</text>
+</g>
+<g class="edge-label" data-from="G" data-to="F" data-label="fail">
+  <rect x="612.12" y="403.85" width="17.22" height="14.3" fill="var(--bg)" />
+  <text x="620.73" y="411" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">fail</text>
+</g>
+<g class="node" data-id="A" data-label="main" data-shape="rectangle">
+  <rect x="452.03" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="528.03" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">main</text>
+</g>
+<g class="node" data-id="B" data-label="develop" data-shape="rectangle">
+  <rect x="305" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="381" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">develop</text>
+</g>
+<g class="node" data-id="C" data-label="feature/auth" data-shape="rectangle">
+  <rect x="40" y="236" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="260" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">feature/auth</text>
+</g>
+<g class="node" data-id="D" data-label="feature/ui" data-shape="rectangle">
+  <rect x="232" y="236" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="260" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">feature/ui</text>
+</g>
+<g class="node" data-id="E" data-label="PR Review" data-shape="diamond">
+  <polygon points="308,324 395,411 308,498 221,411" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="411" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">PR Review</text>
+</g>
+<g class="node" data-id="F" data-label="release/1.0" data-shape="rectangle">
+  <rect x="523.37" y="236" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="599.37" y="260" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">release/1.0</text>
+</g>
+<g class="node" data-id="G" data-label="Tests?" data-shape="diamond">
+  <polygon points="638.12,538 725.12,625 638.12,712 551.12,625" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="638.12" y="625" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Tests?</text>
+</g>
+</svg>"
+`;

@@ -427,6 +427,16 @@
       "owner": "__tests__/ascii-subgraph-nested-self-loops-2913.test.ts",
       "mermaid": "12.3.0",
       "verdict": "inside a subgraph, with ELK hints, N duplicate self-loops draw N nested hooks in the frame, as mermaid draws them (topology gate subgraph self-loop cases exact 24/24); the plain-grid snapshot (one hook) and the SVG snapshots only pin this renderer's output"
+    },
+    {
+      "paths": [
+        "__tests__/__snapshots__/ascii-decision-entry-face-2913.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-decision-entry-face-2913.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "with ELK hints the decision's entry face gives its three ends a cell each, as mermaid draws it (topology gate end cells 375/379, arrowheads 391/395); the order of G's three ends differs from mermaid (see the PR), and the plain-grid and SVG snapshots only pin this renderer's output"
     }
   ]
 }
