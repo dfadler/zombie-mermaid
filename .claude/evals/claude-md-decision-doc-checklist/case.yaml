@@ -1,0 +1,73 @@
+# CLAUDE.md rule (## "Decision docs: run the self-review checklist before opening the PR") plus the
+# checklist's bullets from docs/decisions/decision-doc-self-review-checklist-977.md, pasted inline: a
+# plugin eval does not load the repo's CLAUDE.md. Keep the pasted text in sync with those files.
+# Only 3 of the 5 checklist items are seeded (edge-case inputs and cited precedent are not).
+# Sabotage: delete the "state which direction a fractional step rounds" and "pick one meaning and define it"
+# clauses from the pasted rule and flags_rounding / flags_ambiguous_center should start failing (needs a paid run).
+# A PASS partly shows the model echoed the pasted rule: a default-behaviour guard, not plugin evidence.
+# Single-arm, wording-regression check (no plugin supplies the rule, so no Δ).
+# The draft seeds three defects the checklist targets and does not use the words the graders look for:
+# a halving with no rounding direction, "center" with two readings, and a "no spacing pass" claim that
+# ignores two labels in adjacent slots.
+# good-reply: Before the PR: (w - l) / 2 is fractional for odd-width labels, so say it rounds down. The node's center and the padded slot's center differ: define one. Adjacent slots can make labels overlap, so the no-spacing-pass claim needs checking.
+# bad-reply: Looks good, the algorithm is clear. Open the PR and let CodeRabbit review it.
+schema_version: '1.1'
+name: claude-md-decision-doc-checklist
+description: >
+  Asked whether a draft decision doc is ready for a PR, the reply walks the self-review checklist and
+  finds the seeded defects. expected_outcome: PASS when the reply flags the unspecified rounding, the
+  ambiguous "center" and the unverified no-spacing-pass claim; FAIL if it approves the draft as is.
+tags: [claude-md-rule, decision-doc, quick]
+runs: 3
+
+execution:
+  prompt: |
+    Project rule from this repo's CLAUDE.md (abridged, with the checklist's own parentheticals folded in):
+
+    > ## Decision docs: run the self-review checklist before opening the PR
+    > Before opening a PR that adds or edits a `docs/decisions/*.md` file, walk through the
+    > self-review checklist against the draft: degenerate/edge-case inputs, boundary and off-by-one
+    > arithmetic (state which direction a fractional step rounds), ambiguous terminology (pick one
+    > meaning and define it), claims about a sub-issue's scope (verify against the actual shape of
+    > the problem), and cited precedent.
+
+    My draft docs/decisions/edge-label-placement.md is below. I'm about to open the PR. Do the
+    pre-PR check the rule asks for and list what to fix. Don't run anything.
+
+    ---
+    # Edge label placement
+    Status: proposed
+
+    ## Decision
+    Each edge label is placed at the center of its edge's slot. The label's left x is
+    `(slotWidth - labelWidth) / 2` from the slot's left edge. The center of the label then sits on
+    the edge's center line.
+
+    Sub-issue #2001 (render the labels) needs no spacing pass, because every label is drawn in its
+    own slot.
+    ---
+  max_turns: 4
+  allowed_tools: []
+
+graders:
+  - name: flags_rounding
+    type: regex
+    target: last_message
+    pattern: '\bround(?:s|ed|ing)?\s+(?:down|up|toward|half)|\bfloor\b|\bceil\w*|\btruncat\w*|\bfractional\b[^\n]{0,60}(?:pixel|cell|column)|\bodd[- ](?:width|wide|number|label)'
+    flags: i
+  - name: flags_ambiguous_center
+    type: regex
+    target: last_message
+    pattern: '(?:node|box|label)[''’]?s?\s+(?:own\s+)?cent(?:er|re)[^\n]{0,80}(?:slot|padd)|(?:slot|padd\w*)[''’]?s?\s+cent(?:er|re)[^\n]{0,80}(?:node|box|label)|two (?:different )?(?:meanings|readings)|midpoint|(?:which|what) (?:center|centre)'
+    flags: i
+  - name: flags_scope_claim
+    type: regex
+    target: last_message
+    pattern: '(?:could|can|may|might|will|would|risk of)\s+(?:\w+\s+){0,2}(?:overlap\w*|collid\w*|collision\w*|touch\w*|on top of)'
+    flags: i
+  - name: no_blanket_approval
+    type: regex
+    target: last_message
+    pattern: '^\s*(?:looks good|lgtm|ready to open|good to go)'
+    flags: im
+    match: not_contains
