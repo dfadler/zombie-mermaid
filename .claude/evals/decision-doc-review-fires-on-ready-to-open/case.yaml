@@ -1,0 +1,59 @@
+# Should-fire: a pasted decision doc with three seeded defects (no rounding direction, two readings of
+# "center", a scope claim that ignores adjacent slots). No delta expected from the Skill check alone.
+# good-reply: Fix before the PR: (slotWidth - labelWidth) / 2 is fractional for odd widths, so say it rounds down. The node's center and the padded slot's center differ: define one. Adjacent slots can make labels overlap, so the no-spacing-pass claim needs checking.
+# bad-reply: Looks good, the algorithm is clear. Open the PR.
+schema_version: '1.1'
+name: decision-doc-review-fires-on-ready-to-open
+description: >
+  A pasted decision doc is checked for its defects before the PR. expected_outcome: PASS when the reply flags the unspecified rounding, the ambiguous center and the unverified scope claim, and does not approve it as is; FAIL otherwise.
+tags: [decision-doc-review, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    My draft docs/decisions/edge-label-placement.md is below and I'm about to open the PR. Is it
+    ready? Don't run anything.
+
+    ---
+    # Edge label placement
+    Status: proposed
+
+    ## Decision
+    Each edge label is placed at the center of its edge's slot. The label's left x is
+    `(slotWidth - labelWidth) / 2` from the slot's left edge. The center of the label then sits on
+    the edge's center line.
+
+    Sub-issue #2001 (render the labels) needs no spacing pass, because every label is drawn in its
+    own slot.
+    ---
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?decision-doc-review"'
+    min: 1
+  - name: flags_rounding
+    type: regex
+    target: last_message
+    pattern: '\bround(?:s|ed|ing)?\s+(?:down|up|toward|half)|\bfloor\b|\bceil\w*|\btruncat\w*|\bodd[- ](?:width|wide|number|label)'
+    flags: i
+  - name: flags_ambiguous_center
+    type: regex
+    target: last_message
+    pattern: '(?:node|box|label)[''’]?s?\s+(?:own\s+)?cent(?:er|re)[^\n]{0,80}(?:slot|padd)|(?:slot|padd\w*)[''’]?s?\s+cent(?:er|re)[^\n]{0,80}(?:node|box|label)|two (?:different )?(?:meanings|readings)|midpoint'
+    flags: i
+  - name: flags_scope_claim
+    type: regex
+    target: last_message
+    pattern: '(?:could|can|may|might|will|would|risk of)\s+(?:\w+\s+){0,2}(?:overlap\w*|collid\w*|collision\w*|touch\w*|on top of)'
+    flags: i
+  - name: no_blanket_approval
+    type: regex
+    target: last_message
+    pattern: '^\s*(?:looks good|lgtm|ready to open|good to go)'
+    flags: im
+    match: not_contains

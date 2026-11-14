@@ -1,0 +1,24 @@
+schema_version: '1.1'
+name: decision-doc-review-quiet-on-contributing-doc
+description: >
+  Proofreading a CONTRIBUTING paragraph is outside docs/decisions.
+tags:
+  - decision-doc-review
+  - trigger-boundary
+  - pair:decision-doc-review-fires-on-ready-to-open
+runs: 3
+
+execution:
+  prompt: |
+    Proofread this paragraph from CONTRIBUTING.md, fix typos only: 'Run pnpm install, then pnpm run verfiy before you push youre branch.'
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: decision-doc-review_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?decision-doc-review"'
+    min: 0
+    max: 0

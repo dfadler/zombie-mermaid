@@ -1,0 +1,40 @@
+# Should-fire: spike results for an issue. No delta expected from the Skill check alone; the regex graders carry the outcome.
+# good-reply: Post this as a comment on #1234: conclusion first, then <details><summary>Raw timings</summary> 800 nodes 1.9 s, 3200 nodes 41 s </details>, linking https://github.com/dfadler/zombie-mermaid/blob/<sha>/scripts/bench-layout.ts. No new research doc.
+# bad-reply: I'll create docs/research/layout-timing.md with the numbers and open a PR for it.
+schema_version: '1.1'
+name: research-findings-fires-on-spike-writeup
+description: >
+  A spike write-up for an issue goes in an issue comment with the raw timings collapsed, and no new research doc. expected_outcome: PASS when the reply has a collapsed block holding the timings, a permalink to the script and no docs/research file; FAIL otherwise.
+tags: [research-findings, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    I just finished the spike on issue #1234 (layout is slow on big flowcharts). Numbers from
+    scripts/bench-layout.ts, already pushed: 50 nodes 12 ms, 200 nodes 95 ms, 800 nodes 1.9 s,
+    3200 nodes 41 s. About 60 lines of raw output in total. Write this up so the team can find it
+    later. Don't run anything; show me the text and say where it goes.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?research-findings"'
+    min: 1
+  - name: timings_collapsed
+    type: regex
+    target: last_message
+    pattern: '<details>\s*<summary>[\s\S]*?1\.9\s*s[\s\S]*?</details>'
+  - name: script_permalink
+    type: regex
+    target: last_message
+    pattern: 'blob/[^\s)]*scripts/bench-layout\.ts'
+  - name: no_research_doc
+    type: regex
+    target: last_message
+    pattern: '(?<!(?:\bnot|\bno|\bnever|n''t|instead of|rather than|skip|avoid|without)\s(?:\w+\s){0,3})docs/research/[\w.-]+\.md'
+    flags: i
+    match: not_contains

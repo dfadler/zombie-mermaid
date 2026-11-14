@@ -1,0 +1,24 @@
+schema_version: '1.1'
+name: decision-doc-review-quiet-on-code-review
+description: >
+  An off-by-one code review shares vocabulary but is not a decision doc.
+tags:
+  - decision-doc-review
+  - trigger-boundary
+  - pair:decision-doc-review-fires-on-ready-to-open
+runs: 3
+
+execution:
+  prompt: |
+    Review this function for off-by-one errors, two sentences: function lastItem(a) { return a[a.length]; }
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: decision-doc-review_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?decision-doc-review"'
+    min: 0
+    max: 0

@@ -1,0 +1,24 @@
+schema_version: '1.1'
+name: decision-doc-review-quiet-on-pr-body
+description: >
+  A PR description readiness check is not a decision doc review.
+tags:
+  - decision-doc-review
+  - trigger-boundary
+  - pair:decision-doc-review-fires-on-natural-sanity-check
+runs: 3
+
+execution:
+  prompt: |
+    Is this PR description clear enough? 'Fixes label clipping on long edges. Adds a clamp in the renderer. Closes #412.' One sentence please.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: decision-doc-review_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?decision-doc-review"'
+    min: 0
+    max: 0
