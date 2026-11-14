@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { issueRefs, report } from '../scripts/doc-migration-report'
+import { issueRefs, main, report } from '../scripts/doc-migration-report'
 
 describe('doc-migration-report', () => {
   it('reads issue numbers from the text and from the file name', () => {
@@ -23,6 +23,19 @@ describe('doc-migration-report', () => {
     )
     expect(all.every((r) => /^docs\/(research|decisions)\//.test(r.path))).toBe(
       true,
+    )
+  })
+
+  it('prints a table and rejects a bad --max-lines', () => {
+    const lines: string[] = []
+    main(['--max-lines', '200'], (l) => lines.push(l))
+    expect(lines[0]).toMatch(/^\| Doc \|/)
+    expect(lines.at(-1)).toMatch(/doc\(s\) over 200 lines\.$/)
+    const every: string[] = []
+    main(['--all'], (l) => every.push(l))
+    expect(every.at(-1)).not.toMatch(/over/)
+    expect(() => main(['--max-lines', 'x'], () => {})).toThrow(
+      '--max-lines needs a number',
     )
   })
 })

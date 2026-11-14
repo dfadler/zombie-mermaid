@@ -70,23 +70,25 @@ export function report(maxLines: number, all: boolean): DocRow[] {
     .sort((a, b) => b.lines - a.lines)
 }
 
-if (process.argv[1]?.endsWith('doc-migration-report.ts')) {
-  const args = process.argv.slice(2)
+/** Prints the report for `args` (`--max-lines N`, `--all`) through `out`. */
+export function main(args: string[], out: (line: string) => void): void {
   const i = args.indexOf('--max-lines')
   const maxLines = i >= 0 ? Number(args[i + 1]) : 80
   if (!Number.isFinite(maxLines)) throw new Error('--max-lines needs a number')
-  const rows = report(maxLines, args.includes('--all'))
-  console.log('| Doc | Lines | Status | Issues named | Referenced by |')
-  console.log('| --- | ---: | --- | --- | ---: |')
+  const all = args.includes('--all')
+  const rows = report(maxLines, all)
+  out('| Doc | Lines | Status | Issues named | Referenced by |')
+  out('| --- | ---: | --- | --- | ---: |')
   for (const r of rows) {
     const issues = r.issues.length
       ? r.issues.map((n) => `#${n}`).join(' ')
       : 'none'
-    console.log(
+    out(
       `| ${r.path} | ${r.lines} | ${r.status} | ${issues} | ${r.referencedBy} |`,
     )
   }
-  console.log(
-    `\n${rows.length} doc(s)${args.includes('--all') ? '' : ` over ${maxLines} lines`}.`,
-  )
+  out(`\n${rows.length} doc(s)${all ? '' : ` over ${maxLines} lines`}.`)
 }
+
+if (process.argv[1]?.endsWith('doc-migration-report.ts'))
+  main(process.argv.slice(2), console.log)
