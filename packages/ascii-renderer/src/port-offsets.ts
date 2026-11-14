@@ -1114,8 +1114,28 @@ function jogCost(jogs: Jog[], rows: number[], lo: number): number {
   return cost
 }
 
+/**
+ * `jogCost` reads only each jog's `near` and `far`, so the answer is a pure
+ * function of those, `lo` and `hi`. The planner asks for the same gap again on
+ * every re-route of an unchanged layout (1156 searches for 8 distinct gaps in
+ * the LR "Five Cluster Exit Siblings" sample, #3093), and each is up to 6^6
+ * cost evaluations: memoize it.
+ */
+const jogRowsCache = new Map<string, number[]>()
+const JOG_ROWS_CACHE_MAX = 500
+
 /** The rows `lo..hi` that cost least for these jogs: exhaustive for the few a gap holds, else coordinate descent. */
 export function bestJogRows(jogs: Jog[], lo: number, hi: number): number[] {
+  const key = `${lo},${hi}|${jogs.map((j) => `${j.near},${j.far}`).join(';')}`
+  const hit = jogRowsCache.get(key)
+  if (hit) return [...hit]
+  const rows = searchJogRows(jogs, lo, hi)
+  if (jogRowsCache.size >= JOG_ROWS_CACHE_MAX) jogRowsCache.clear()
+  jogRowsCache.set(key, rows)
+  return [...rows]
+}
+
+function searchJogRows(jogs: Jog[], lo: number, hi: number): number[] {
   const n = jogs.length
   const count = hi - lo + 1
   let best = jogs.map(() => lo)

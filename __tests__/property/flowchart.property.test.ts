@@ -92,5 +92,8 @@ describe('flowchart properties (#1860)', () => {
       }),
       PARAMS,
     )
-  })
+    // 60 s timeout (#3093): 50 ASCII layouts take ~8 s at load average ~90 on
+    // 12 cores (mean ~160 ms each, worst generated case ~3 s), against the 20 s
+    // default, so a loaded machine could time it out with no real failure.
+  }, 60_000)
 })

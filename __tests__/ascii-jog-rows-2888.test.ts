@@ -79,6 +79,24 @@ describe('jog row per edge (#2888)', () => {
     expect(text).toContain('no')
   })
 
+  it('answers a repeated gap from its cache, each caller with its own array (#3093)', () => {
+    const jogs = [
+      { near: 0, far: 40 },
+      { near: 10, far: 30 },
+    ] as Jog[]
+    const first = bestJogRows(jogs, 6, 11)
+    // Same spans, other edges and bend rows: the cost cannot differ.
+    const again = bestJogRows(
+      jogs.map((j) => ({ ...j, row: 8 })),
+      6,
+      11,
+    )
+    expect(again).toEqual(first)
+    expect(again).not.toBe(first)
+    again[0] = 99
+    expect(bestJogRows(jogs, 6, 11)).toEqual(first)
+  })
+
   it('searches row by row for a gap with more jogs than it can enumerate', () => {
     // Ten disjoint strokes fit on one row: no cost, so each stays on the first.
     const jogs = Array.from({ length: 10 }, (_, i) => ({
