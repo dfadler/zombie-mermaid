@@ -15,6 +15,7 @@ import {
   isGraph,
   measureEr,
   measureSample,
+  missLines,
   readErText,
   readGrid,
 } from '../scripts/lib/ascii-topology.ts'
@@ -90,7 +91,25 @@ describe('compareFaces', () => {
         { index: 2, from: 'X', to: 'Y', start: end('B'), end: end('T') },
       ],
     }
-    expect(compareFaces(grid, hints)).toMatchObject({ faceEnds: 4, faceOk: 3 })
+    const misses: string[] = []
+    expect(compareFaces(grid, hints, misses)).toMatchObject({
+      faceEnds: 4,
+      faceOk: 3,
+    })
+    // The end that differs is named, with the edge's position in the grid's order.
+    expect(misses).toEqual(['A->B #1 end: ELK T, grid L'])
+  })
+})
+
+describe('missLines', () => {
+  it('names the sample, then each miss, and only when --misses is on', () => {
+    const misses = ['A->B #1 end: ELK T, grid L']
+    expect(missLines('ENTRY x', misses, true)).toEqual([
+      '  ENTRY x',
+      '    A->B #1 end: ELK T, grid L',
+    ])
+    expect(missLines('ENTRY x', misses, false)).toEqual([])
+    expect(missLines('ENTRY x', [], true)).toEqual([])
   })
 })
 

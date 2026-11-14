@@ -2641,8 +2641,9 @@ const MIRROR: Record<string, Record<AsciiFace, AsciiFace>> = {
 function gridEdgeHints(
   graph: AsciiGraph,
   hints: AsciiLayoutHints,
+  rootMirror = true,
 ): Map<AsciiEdge, AsciiEdgeHint> {
-  const mirror = MIRROR[graph.parsed!.direction]
+  const mirror = rootMirror ? MIRROR[graph.parsed!.direction] : undefined
   // The provider lists edges in the layout's order, which is not the parsed
   // order (self-loops come last), so an edge takes the next hint for its own
   // pair of nodes.
@@ -2885,24 +2886,37 @@ export function createMapping(graph: AsciiGraph): void {
   }
   graph.edgeHints = slots && hints ? gridEdgeHints(graph, hints) : undefined
   // #3053: a frame with its own direction keeps the grid's placement, but its
-  // members' self-loops still take ELK's hooks (one per loop, nested). ELK
-  // laid the loop out in the graph's direction: a hook it put on the left face
-  // (TD) goes over the top in an LR frame, and the other way round.
+  // members' self-loops still take ELK's hooks (one per loop, nested). The hint
+  // layout draws a loop by its frame's direction, as mermaid does (#2913), and
+  // the frame is drawn in its own orientation (`flipSubgraphRegions` undoes the
+  // root's flip), so the root's mirror does not apply to its loops.
   if (hints && !slots && graph.subgraphs.some((sg) => sg.direction)) {
-    const turn: Record<string, AsciiFace> = { L: 'T', T: 'L' }
     const loops = new Map<AsciiEdge, AsciiEdgeHint>()
-    for (const [e, h] of gridEdgeHints(graph, hints)) {
-      const dir = e.from === e.to && getNodeSubgraph(graph, e.from)?.direction
-      if (!dir) continue
-      const f = (x: AsciiEdgeEndHint): AsciiEdgeEndHint =>
-        dir === graph.config.graphDirection
-          ? x
-          : /* v8 ignore next -- ELK hooks a loop on the left (TD) or top (LR) */ {
-              ...x,
-              face: turn[x.face] ?? x.face,
-            }
-      loops.set(e, { ...h, start: f(h.start), end: f(h.end) })
+    for (const [e, h] of gridEdgeHints(graph, hints, false))
+      if (e.from === e.to && getNodeSubgraph(graph, e.from)?.direction)
+        loops.set(e, h)
+    // The layout runs a loop's ends against the reading order in an RL or BT
+    // frame; the grid draws the frame in its own orientation and the flips then
+    // undo that, so the ends reach it reversed only where the root flips along
+    // the frame's axis (RL root: LR/RL frames; BT root: TD/BT frames).
+    const root = graph.parsed!.direction
+    const key = (e: AsciiEdge, end: AsciiEdgeEndHint): string =>
+      `${e.from.name}${end.face}`
+    const top = new Map<string, number>()
+    for (const [e, h] of loops)
+      for (const end of [h.start, h.end])
+        top.set(key(e, end), Math.max(top.get(key(e, end)) ?? 0, end.order))
+    const turn = (e: AsciiEdge, end: AsciiEdgeEndHint): AsciiEdgeEndHint => {
+      const d = getNodeSubgraph(graph, e.from)!.rawDirection
+      const horizontal = d === 'LR' || d === 'RL'
+      const laidOutReversed = d === 'RL' || d === 'BT'
+      const rootFlips = horizontal ? root === 'RL' : root === 'BT'
+      return laidOutReversed === rootFlips
+        ? end
+        : { ...end, order: top.get(key(e, end))! - end.order }
     }
+    for (const [e, h] of loops)
+      loops.set(e, { ...h, start: turn(e, h.start), end: turn(e, h.end) })
     if (loops.size > 0) graph.edgeHints = loops
   }
 

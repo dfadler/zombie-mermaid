@@ -126,7 +126,10 @@ export function renderFlowchartAscii(
  * An honored override means no edge crosses the box, so its contents are
  * self-contained. The flip is relative to what the surrounding output already
  * shows: `h`/`v` say whether an ancestor (or the root) mirrors this region, so
- * `RL` inside `RL` flips nothing and `LR` inside `RL` flips back. Inner boxes
+ * `RL` inside `RL` flips nothing and `LR` inside `RL` flips back. A frame with
+ * its own direction is laid out by it alone, on both axes (mermaid@12.3.0 puts
+ * the same nodes in the same places under every root, #2913): `LR` under `BT`
+ * flips back vertically as well, `TD` under `RL` horizontally. Inner boxes
  * flip first, while the coordinates of the outer one are still valid.
  */
 function flipSubgraphRegions(
@@ -136,18 +139,11 @@ function flipSubgraphRegions(
 ): void {
   const visit = (sg: AsciiSubgraph, h0: boolean, v0: boolean): void => {
     const d = sg.rawDirection
-    let h = h0
-    let v = v0
-    let flip: 'h' | 'v' | undefined
-    if (d === 'LR' || d === 'RL') {
-      if ((d === 'RL') !== h) flip = 'h'
-      h = d === 'RL'
-    } else if (d === 'TD' || d === 'BT') {
-      if ((d === 'BT') !== v) flip = 'v'
-      v = d === 'BT'
-    }
+    const h = d ? d === 'RL' : h0
+    const v = d ? d === 'BT' : v0
     for (const c of sg.children) visit(c, h, v)
-    if (flip) flipRegion(graph, linkCanvas, sg, flip)
+    if (h !== h0) flipRegion(graph, linkCanvas, sg, 'h')
+    if (v !== v0) flipRegion(graph, linkCanvas, sg, 'v')
   }
   for (const sg of graph.subgraphs) {
     if (!sg.parent) visit(sg, rootDir === 'RL', rootDir === 'BT')

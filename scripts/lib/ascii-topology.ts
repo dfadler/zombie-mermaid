@@ -262,10 +262,14 @@ export function readGrid(
   return { ...out, direction: dir, arrowGlyphs }
 }
 
-/** Counts the grid's edge ends whose face is the hints' face (matched by from/to, in order). */
+/**
+ * Counts the grid's edge ends whose face is the hints' face (matched by from/to, in order).
+ * Each end that differs is listed in `misses` (`ascii-topology.ts --misses`).
+ */
 export function compareFaces(
   grid: GridRender['edges'],
   hints: AsciiLayoutHints,
+  misses: string[] = [],
 ): Counts {
   const c = emptyCounts()
   const used = new Set<number>()
@@ -275,9 +279,17 @@ export function compareFaces(
     )
     if (i < 0) continue
     used.add(i)
-    c.faceEnds += 2
-    if (grid[i]!.start.includes(h.start.face)) c.faceOk++
-    if (grid[i]!.end.includes(h.end.face)) c.faceOk++
+    for (const [end, want, got] of [
+      ['start', h.start.face, grid[i]!.start],
+      ['end', h.end.face, grid[i]!.end],
+    ] as const) {
+      c.faceEnds++
+      if (got.includes(want)) c.faceOk++
+      else
+        misses.push(
+          `${h.from}->${h.to} #${i} ${end}: ELK ${want}, grid ${got.join('/')}`,
+        )
+    }
   }
   return c
 }
@@ -409,9 +421,23 @@ export function measureEr(
   return compareSpots(elk, grid)
 }
 
-/** Full measure for one flowchart/state/ER source: grid versus ELK. */
-export function measureSample(source: string): Counts {
+/** `--misses` output: the sample's title, then each edge end whose face differs from ELK's. */
+export const missLines = (
+  title: string,
+  misses: string[],
+  enabled: boolean,
+): string[] =>
+  enabled && misses.length > 0
+    ? [`  ${title}`, ...misses.map((m) => `    ${m}`)]
+    : []
+
+/**
+ * Full measure for one flowchart/state/ER source: grid versus ELK. With a
+ * `title` and `--misses` on the command line it lists the face misses too.
+ */
+export function measureSample(source: string, title = ''): Counts {
   if (isEr(source)) return measureEr(source)
+  const misses: string[] = []
   const parsed = parseMermaid(source)
   const { spots, edges, direction, arrowGlyphs } = readGrid(source)
   // The layout the ASCII provider takes its hints from (see `asciiLayoutProvider`).
@@ -435,8 +461,11 @@ export function measureSample(source: string): Counts {
     }
   }
   const c = compareSpots(elk, spots)
+  const faces = compareFaces(edges, hints, misses)
+  const enabled = process.argv.includes('--misses')
+  for (const l of missLines(title, misses, enabled)) console.log(l)
   return addCounts(
-    addCounts(addCounts(c, compareFaces(edges, hints)), compareLoops(edges)),
+    addCounts(addCounts(c, faces), compareLoops(edges)),
     compareEnds(edges, hints, arrowGlyphs),
   )
 }

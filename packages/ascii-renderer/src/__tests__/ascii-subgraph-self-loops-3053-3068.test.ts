@@ -58,6 +58,76 @@ describe('#3053 duplicate self-loops in a frame with its own direction', () => {
   })
 })
 
+/**
+ * #2913: mermaid@12.3.0 draws a frame's loops by the frame's own direction, whatever
+ * the root's: an LR frame starts them on the left and a TD frame at the top,
+ * RL on the right and BT at the bottom (measured in all 16 root/frame pairs).
+ * ELK's loop face now follows the frame, so the grid's hints are the frame's own.
+ */
+describe('#2913 loop hooks follow the frame direction, not the root', () => {
+  const src = (root: string, inner: string, loops = 2): string =>
+    `flowchart ${root}\n subgraph S\n direction ${inner}\n a --> b\n${' b --> b\n'.repeat(loops)} end`
+  /** Where a hook's legs sit against its arrowheads, on the axis the frame lays out along. */
+  const startSide = (text: string, inner: string): string => {
+    const rows = text.split('\n').map((l) => [...l])
+    const at = (re: RegExp, pos: 'row' | 'col'): number =>
+      Math.min(
+        ...rows.flatMap((l, r) =>
+          l.flatMap((c, i) => (re.test(c) ? [pos === 'row' ? r : i] : [])),
+        ),
+      )
+    if (inner === 'LR' || inner === 'RL')
+      return at(/[┴┬]/, 'col') < at(/[▼▲]/, 'col') ? 'left' : 'right'
+    return at(/[┤├]/, 'row') < at(/[►◄]/, 'row') ? 'top' : 'bottom'
+  }
+  const want = { LR: 'left', RL: 'right', TD: 'top', BT: 'bottom' } as const
+
+  for (const root of ['TD', 'LR', 'RL', 'BT'])
+    for (const inner of ['LR', 'RL', 'TD', 'BT'] as const)
+      it(`root ${root}, frame ${inner}: the hooks start ${want[inner]}`, () => {
+        expect(startSide(renderMermaidASCII(src(root, inner)), inner)).toBe(
+          want[inner],
+        )
+      })
+
+  it('draws an LR frame the same under every root, for any loop count', () => {
+    for (const loops of [1, 2, 3]) {
+      const td = renderMermaidASCII(src('TD', 'LR', loops))
+      for (const root of ['LR', 'RL', 'BT'])
+        expect(renderMermaidASCII(src(root, 'LR', loops))).toBe(td)
+    }
+  })
+
+  // mermaid@12.3.0 orients a frame by its own direction alone, on both axes: its
+  // nodes, title and edges sit where they do under a TD root (measured for a
+  // fan-out in all 16 root/frame pairs). A BT root used to mirror the cross axis
+  // of an LR or RL frame (and an RL root that of a TD or BT frame).
+  for (const inner of ['LR', 'RL', 'TD', 'BT'])
+    it(`draws a ${inner} frame with a fan-out under a BT root as under a TD root`, () => {
+      const fan = (root: string): string =>
+        renderMermaidASCII(
+          `flowchart ${root}\n subgraph S\n direction ${inner}\n a --> b\n a --> c\n end`,
+        )
+      expect(fan('BT')).toBe(fan('TD'))
+    })
+
+  it('puts b above c in an LR frame under a BT root, and b left of c in a TD frame under RL', () => {
+    const at = (text: string, k: string): [number, number] => {
+      const rows = text.split('\n')
+      const r = rows.findIndex((l) => l.includes(` ${k} `))
+      return [rows[r]!.indexOf(` ${k} `), r]
+    }
+    const lr = renderMermaidASCII(
+      'flowchart BT\n subgraph S\n direction LR\n a --> b\n a --> c\n end',
+    )
+    expect(at(lr, 'b')[1]).toBeLessThan(at(lr, 'c')[1])
+    const td = renderMermaidASCII(
+      'flowchart RL\n subgraph S\n direction TD\n a --> b\n a --> c\n end',
+    )
+    expect(at(td, 'b')[0]).toBeLessThan(at(td, 'c')[0])
+  })
+})
+
 describe('#3068 unhinted LR loop clears its frame bottom wall', () => {
   it('draws the loop run inside the frame, a row above the wall', () => {
     registerAsciiLayout(undefined)
