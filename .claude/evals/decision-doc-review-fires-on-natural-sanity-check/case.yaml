@@ -33,7 +33,7 @@ graders:
   - name: checks_range
     type: regex
     target: last_message
-    pattern: '\b3999\b|3500\s*(?:-|to|–|through)\s*3999'
+    pattern: '3500\s*(?:-|to|–|through)\s*3999'
     flags: i
   - name: no_blanket_approval
     type: regex
