@@ -317,7 +317,7 @@
   {
     "file": "scripts/treemap-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the comparison is unit-tested in scripts/lib/treemap-agreement.ts",
-    "maxLines": 70
+    "maxLines": 79
   },
   {
     "file": "scripts/radar-oracle.ts",

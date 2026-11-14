@@ -52,8 +52,10 @@ const unescape = (s: string): string =>
     .replace(/&amp;/g, '&')
 
 const attr = (tag: string, name: string): string | undefined => {
-  const m = new RegExp(`\\s${name}="([^"]*)"`).exec(tag)
-  return m?.[1]
+  const at = tag.indexOf(` ${name}="`)
+  if (at < 0) return undefined
+  const from = at + name.length + 3
+  return tag.slice(from, tag.indexOf('"', from))
 }
 
 const nums = (s: string): number[] =>
