@@ -4139,4 +4139,86 @@ sankey-beta
     Book ..> : include Cancel
     note for Guest "May be anonymous"`,
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  TREEMAP DIAGRAMS
+  //  Mermaid's `treemap` / `treemap-beta` (checked against mermaid 12.3.0).
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Treemap: Basic',
+    category: 'Treemap',
+    gallery: true,
+    description:
+      'Indented rows nest: a quoted name with no value is a section, `"Name": value` is a leaf whose area follows its value, and a section totals its leaves.',
+    source: `treemap-beta
+"Products"
+    "Electronics"
+        "Phones": 800
+        "Laptops": 600
+    "Clothing"
+        "Men": 300
+        "Women": 400
+"Services": 200`,
+  },
+  {
+    title: 'Treemap: Title And Flat Sections',
+    category: 'Treemap',
+    description:
+      'A `title` line is drawn above the map; sections one level deep sit side by side, largest first.',
+    source: `treemap-beta
+title Monthly spend
+"Rent"
+    "Studio": 1400
+"Food"
+    "Groceries": 420
+    "Eating out": 180
+"Transport"
+    "Fuel": 90
+    "Transit pass": 60`,
+  },
+  {
+    title: 'Treemap: Class Styling',
+    category: 'Treemap',
+    description:
+      'A `classDef` row styles every node that names it with `:::class` (a leaf after its value): here `fill` and `stroke`.',
+    source: `treemap-beta
+"Budget"
+    "Core": 50:::keep
+    "Growth": 30
+    "Reserve": 20:::keep
+classDef keep fill:#f96,stroke:#333;`,
+  },
+  {
+    title: 'Treemap: Many Leaves',
+    category: 'Treemap',
+    description:
+      'With more than 20 leaves the labels start at a smaller size, and those that cannot fit their cell are left off.',
+    source: `treemap-beta
+"Languages"
+    "Compiled"
+        "C": 12
+        "C++": 11
+        "Rust": 9
+        "Go": 8
+        "Java": 14
+        "C#": 10
+        "Swift": 4
+    "Scripting"
+        "Python": 18
+        "JavaScript": 20
+        "TypeScript": 13
+        "Ruby": 5
+        "PHP": 6
+        "Perl": 2
+        "Lua": 1
+    "Other"
+        "SQL": 9
+        "Shell": 4
+        "R": 3
+        "Haskell": 1
+        "Elixir": 2
+        "Zig": 1
+        "Kotlin": 5`,
+  },
 ]

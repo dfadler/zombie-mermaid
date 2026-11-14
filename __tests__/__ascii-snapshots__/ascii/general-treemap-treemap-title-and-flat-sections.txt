@@ -1,0 +1,10 @@
+            Monthly spend
+
+Rent             1,400  #############
+`- Studio        1,400  #############
+Food               600  #####|
++- Groceries       420  ###|
+`- Eating out      180  #|
+Transport          150  #
++- Fuel             90  |
+`- Transit pass     60  |

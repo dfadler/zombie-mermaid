@@ -86,6 +86,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   kanban: 'kanban\n  Todo\n    a[One]',
   sankey: 'sankey-beta\n  A,B,1',
   usecase: 'usecase-beta\n  actor A\n  A --> B',
+  treemap: 'treemap-beta\n  "A": 1',
   requirement:
     'requirementDiagram\n  requirement r {\n    id: 1\n  }\n  element e {\n  }\n  e - satisfies -> r',
 }

@@ -71,6 +71,7 @@ import {
   parseRequirementDiagram,
   parseUsecase,
   usecaseToGraph,
+  parseTreemap,
 } from '@zombie-mermaid/mermaid-parser'
 import type { UsecaseDiagram } from '@zombie-mermaid/mermaid-parser'
 import type {
@@ -108,6 +109,8 @@ import type {
   PositionedSankey,
   RequirementDiagram,
   PositionedRequirementDiagram,
+  Treemap,
+  PositionedTreemap,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -142,6 +145,8 @@ import { layoutKanban } from './kanban/layout.ts'
 import { renderKanbanSvg } from './kanban/renderer.ts'
 import { layoutSankey } from './sankey/layout.ts'
 import { renderSankeySvg } from './sankey/renderer.ts'
+import { layoutTreemap } from './treemap/layout.ts'
+import { renderTreemapSvg } from './treemap/renderer.ts'
 import { layoutRequirementDiagramSync } from './requirement/layout.ts'
 import { renderRequirementSvg } from './requirement/renderer.ts'
 import { layoutFlowchartSync } from './layout-engine.ts'
@@ -782,6 +787,29 @@ const sankeyModule: DiagramModule<Sankey, PositionedSankey> = {
 }
 
 /**
+ * Treemaps parse from the raw `text` (Mermaid's lexer has no `;` statement
+ * separator), then lay out with a port of d3-hierarchy's squarified treemap.
+ * No theme variables or interactivity apply.
+ */
+const treemapModule: DiagramModule<Treemap, PositionedTreemap> = {
+  type: 'treemap',
+  parse: (_lines, text) => parseTreemap(text),
+  layoutForSvg: (tm) => layoutTreemap(tm),
+  renderSvg(positioned, ctx) {
+    return renderTreemapSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -822,4 +850,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   requirement: requirementModule,
   usecase: usecaseModule,
   gitgraph: gitgraphModule,
+  treemap: treemapModule,
 }

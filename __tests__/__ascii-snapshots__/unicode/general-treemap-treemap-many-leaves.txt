@@ -1,0 +1,25 @@
+Languages         158  ████████████████████
+├─ Compiled        68  ████████▏
+│  ├─ Java         14  █▏
+│  ├─ C            12  █▏
+│  ├─ C++          11  █
+│  ├─ C#           10  █
+│  ├─ Rust          9  █
+│  ├─ Go            8  █
+│  └─ Swift         4  ▏
+├─ Scripting       65  ████████
+│  ├─ JavaScript   20  ██▏
+│  ├─ Python       18  ██
+│  ├─ TypeScript   13  █▏
+│  ├─ PHP           6  ▏
+│  ├─ Ruby          5  ▏
+│  ├─ Perl          2  ▏
+│  └─ Lua           1  ▏
+└─ Other           25  ███
+   ├─ SQL           9  █
+   ├─ Kotlin        5  ▏
+   ├─ Shell         4  ▏
+   ├─ R             3  ▏
+   ├─ Elixir        2  ▏
+   ├─ Haskell       1  ▏
+   └─ Zig           1  ▏
