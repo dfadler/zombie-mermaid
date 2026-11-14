@@ -295,6 +295,11 @@
     "maxLines": 50
   },
   {
+    "file": "scripts/block-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/block-agreement.ts",
+    "maxLines": 48
+  },
+  {
     "file": "scripts/timeline-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/timeline-agreement.ts",
     "maxLines": 60
