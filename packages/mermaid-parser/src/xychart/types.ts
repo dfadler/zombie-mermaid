@@ -67,6 +67,8 @@ export interface PositionedXYChart {
   gridLines: GridLine[]
   /** Legend items (shown when multiple series) */
   legend: LegendItem[]
+  /** Bar value labels (`showDataLabel`). */
+  dataLabels?: DataLabel[]
   /** The chart's `xyChart` init block; the renderer reads the per-axis `show*` switches. */
   config?: XyChartInitConfig
 }
@@ -89,11 +91,20 @@ export interface PositionedTitle {
   text: string
   x: number
   y: number
+  /** Font size in px, when `titleFontSize` sets one. */
+  fontSize?: number
 }
 
 export interface PositionedAxis {
   /** Optional axis title text and position */
-  title?: { text: string; x: number; y: number; rotate?: number }
+  title?: {
+    text: string
+    x: number
+    y: number
+    rotate?: number
+    /** Font size in px, when the axis' `titleFontSize` sets one. */
+    fontSize?: number
+  }
   /** Tick positions along the axis */
   ticks: AxisTick[]
   /** Axis line: start and end coordinates */
@@ -114,6 +125,20 @@ export interface AxisTick {
   labelY: number
   /** Text anchor for label */
   textAnchor: 'start' | 'middle' | 'end'
+  /** `labelRotation`: turn the label by this many degrees about (labelX, labelY), its top centre. */
+  rotate?: number
+  /** Tick label font size in px, when `labelFontSize` sets one. */
+  fontSize?: number
+}
+
+/** A bar's value printed on it (`showDataLabel`), as mermaid 12.3.0 places it. */
+export interface DataLabel {
+  x: number
+  y: number
+  text: string
+  fontSize: number
+  textAnchor: 'start' | 'middle' | 'end'
+  baseline: 'middle' | 'hanging' | 'auto'
 }
 
 export interface PlotArea {
