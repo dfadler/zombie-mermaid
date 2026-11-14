@@ -42,6 +42,7 @@ export const DIAGRAM_TYPES = [
   'block',
   'treemap',
   'ishikawa',
+  'wardley',
 ] as const
 
 /** The diagram types this library can detect and route to a renderer. */
@@ -91,6 +92,8 @@ export function detectDiagramType(text: string): DiagramType {
   // Case-sensitive: Mermaid's detector is `/^\s*treemap/`; its grammar keyword
   // is `treemap-beta|treemap`.
   if (/^treemap(?:-beta)?(?:\s|$)/.test(header)) return 'treemap'
+  // Case-sensitive: Mermaid's detector is `/^\s*wardley-beta/`.
+  if (/^wardley-beta/.test(header)) return 'wardley'
 
   // Case-sensitive: Mermaid's detector is `/^\s*requirement(Diagram)?/`, its
   // grammar keyword `requirementDiagram\b`.

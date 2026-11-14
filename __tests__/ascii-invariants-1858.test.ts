@@ -29,7 +29,7 @@ function skipFor(source: string): Rule[] {
   // A fishbone is ragged and slants its bones and leaders in from the left.
   if (/^\s*ishikawa/im.test(source)) return ['equal-width', 'arms', 'node-text']
   if (
-    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|journey|radar-beta|gitGraph|sankey|block(?:-beta)?\b|treemap|eventmodeling)/m.test(
+    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|journey|radar-beta|wardley-beta|gitGraph|sankey|block(?:-beta)?\b|treemap|eventmodeling)/m.test(
       source,
     )
   )

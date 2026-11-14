@@ -1,0 +1,30 @@
+                              Market Forces
+
+Visibility
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :                 :  Customer      :                  
+|                  :                 :     /          :                  
+|                  :                 :    /           :                  
+|                  :                 :   /            :                  
+|                  :                 : (1)Product     :                  
+|                  :                 :   -\           :                  
+|                  :                 :     -\         :                  
+|              >> Open Source        :       -\       :                  
+|                  :                 :         -\     :                  
+|                  :                 :           -\   :                  
+|                  :                 :            (2)Platform            
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :  Check the build or buy call     :                  
+|                  :                 :                :                  
+|                  :                 :  << Lock-in    :                  
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :                 :                :                  
+|                  :                 :                :                  
++------------------+-----------------+----------------+------------------
+       Genesis         Custom Built        Product         Commodity  Evolution
+
+1. Product is differentiating
+2. Platform is a commodity
