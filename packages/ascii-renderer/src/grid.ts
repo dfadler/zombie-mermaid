@@ -268,7 +268,7 @@ function diamondFaceRows(graph: AsciiGraph, node: AsciiNode): number {
  * node's own size. A loop of a node inside a subgraph is routed another way.
  */
 function nestedLoops(graph: AsciiGraph, node: AsciiNode): number {
-  const dir = graph.config.graphDirection
+  const dir = getEffectiveDirection(graph, node)
   if (!graph.edgeHints || (dir !== 'TD' && dir !== 'LR')) return 0
   const face = dir === 'TD' ? 'L' : 'T'
   const n = graph.edges.filter((e) => {
@@ -289,7 +289,7 @@ function nestedLoops(graph: AsciiGraph, node: AsciiNode): number {
  * legs on its own hook's row (an LR label sits in the row between two legs).
  */
 export function nestStride(graph: AsciiGraph, node: AsciiNode): number {
-  if (graph.config.graphDirection !== 'TD') return 2
+  if (getEffectiveDirection(graph, node) !== 'TD') return 2
   const widest = widestLoopLabel(graph, node)
   return widest ? 3 + widest : 2
 }
@@ -309,7 +309,7 @@ function widestLoopLabel(graph: AsciiGraph, node: AsciiNode): number {
  * clear of the border.
  */
 export function nestInset(graph: AsciiGraph, node: AsciiNode): number {
-  if (graph.config.graphDirection !== 'TD') return 2
+  if (getEffectiveDirection(graph, node) !== 'TD') return 2
   return Math.max(2, Math.ceil(widestLoopLabel(graph, node) / 2) + 2)
 }
 
@@ -356,7 +356,7 @@ export function setColumnWidth(
   // #2913: N nested hooks have 2N ends on one face (left in TD, top in LR),
   // two cells apart.
   const nest = nestedLoops(graph, node)
-  const lr = graph.config.graphDirection === 'LR'
+  const lr = getEffectiveDirection(graph, node) === 'LR'
   for (let idx = 0; idx < colWidths.length; idx++) {
     const xCoord = gc.x + idx
     const current = graph.columnWidth.get(xCoord) ?? 0
@@ -878,6 +878,14 @@ function calculateSubgraphBoundingBox(
       const d = gridToDrawingCoord(graph, p)
       minX = Math.min(minX, d.x)
       maxX = Math.max(maxX, d.x)
+    }
+    // #3068: an unhinted loop's run below its node (LR) or past it must stay
+    // inside the wall too, not share its row.
+    if (edge.from === edge.to) {
+      for (const p of edge.path) {
+        const d = gridToDrawingCoord(graph, p)
+        maxY = Math.max(maxY, d.y)
+      }
     }
     // #2913: a hook beside a node (left, in TD) or over it (top, in LR) lies in
     // its gutter, which is a margin cell when the node is first: the frame
@@ -2876,6 +2884,24 @@ export function createMapping(graph: AsciiGraph): void {
     for (const [node, at] of slots) reserveSpotInGrid(graph, node, at)
   }
   graph.edgeHints = slots && hints ? gridEdgeHints(graph, hints) : undefined
+  // #3053: a frame with its own direction keeps the grid's placement, but its
+  // members' self-loops still take ELK's hooks (one per loop, nested). ELK
+  // laid the loop out in the graph's direction: a hook it put on the left face
+  // (TD) goes over the top in an LR frame, and the other way round.
+  if (hints && !slots && graph.subgraphs.some((sg) => sg.direction)) {
+    const turn: Record<string, AsciiFace> = { L: 'T', T: 'L' }
+    const loops = new Map<AsciiEdge, AsciiEdgeHint>()
+    for (const [e, h] of gridEdgeHints(graph, hints)) {
+      const dir = e.from === e.to && getNodeSubgraph(graph, e.from)?.direction
+      if (!dir) continue
+      const f = (x: AsciiEdgeEndHint): AsciiEdgeEndHint =>
+        dir === graph.config.graphDirection
+          ? x
+          : { ...x, face: turn[x.face] ?? x.face }
+      loops.set(e, { ...h, start: f(h.start), end: f(h.end) })
+    }
+    if (loops.size > 0) graph.edgeHints = loops
+  }
 
   // Place external root nodes
   // A source lowered beside its child (#3001) goes first, and the level-0
