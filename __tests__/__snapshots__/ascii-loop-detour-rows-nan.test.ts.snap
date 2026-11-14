@@ -80,6 +80,56 @@ exports[`self-loop detour through unseeded rows renders (BT crash) > snapshots S
  ╰───────────╯         └───────────┘      "
 `;
 
+exports[`self-loop detour through unseeded rows renders (BT crash) > snapshots SVG and ASCII (unicode and ASCII-only) > ascii-elk 1`] = `
+"                 ┌───────────┐  
+                 │           │  
+                 │     n3    │  
+                 │           │  
+                 └────┬───┬──┘  
+                    ▲ │ ▲ │     
+             ┌──0───┘ │ ┆ └────┐
+             │ ┌─ccc──┘ ┆      │
+             │ │        ┆      │
+             │ │        ┆      │
+           ┌─┴─┴──┐     ┆      │
+           │      │     ┆      │
+           │  n1  │     ┆      │
+           │      │     ┆      │
+           └──────┘     ┆      │
+             ▲ ▲        ┆      │
+             ┆ └┄0┄┄┐   ┆      │
+             ┆      ┆   ┆      │
+             0      ┆   0      │
+             ┆      ┆   ┆      │
+             ┆      ┆   ┆      │
+           ┌─┴────┐ ┆   ┆      │
+           │      │ ┆   ┆      │
+           │  n5  │ ┆   ┆      │
+           │      │ ┆   ┆      │
+           └──────┘ ┆   ┆      │
+              ▲     ┆   ┆      │
+              │     ┆   ┆      │
+              a     ┆   ┆      │
+              │     ┆   ┆      │
+              └─────┆─┐ ┆      │
+                    ┆ │ ┆      │
+                 ┌──┴─┴─┴────┐ │
+                 │           │ │
+                 │     n6    │ │
+                 │           │ │
+                 └───────────┘ │
+                      ▲        │
+                      ┃        │
+                     ccc┌──────┘
+                      ┃ │       
+                      ┃ │       
+ ╭─────────╮     ┌────┴─┴────┐  
+ (         )  ┌━►│           │  
+ (  IwjRJr )  ┃  │     n4    │  
+ (         )  └━━┤           │  
+ ╰─────────╯     └───────────┘  "
+`;
+
 exports[`self-loop detour through unseeded rows renders (BT crash) > snapshots SVG and ASCII (unicode and ASCII-only) > ascii-only 1`] = `
 "                       +-----------+      
                        |           |      

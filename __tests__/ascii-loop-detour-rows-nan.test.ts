@@ -9,7 +9,13 @@
  * goldens (the repo rule is one of each per case).
  */
 import { describe, expect, it } from 'vitest'
-import { renderMermaidASCII } from '../packages/ascii-renderer/src/index.ts'
+import {
+  getAsciiLayout,
+  registerAsciiLayout,
+  renderMermaidASCII as render,
+} from '../packages/ascii-renderer/src/index.ts'
+// The root entry registers the ELK layout provider (as the CLI does).
+import '../src/index.ts'
 import { renderMermaidSVG } from '../packages/svg-renderer/src/index.ts'
 
 const body = `
@@ -25,8 +31,18 @@ const body = `
   n4 ==> n4`
 const SRC = `flowchart BT${body}`
 
-const draw = (src: string, useAscii: boolean): string =>
-  renderMermaidASCII(src, { colorMode: 'none', useAscii })
+const elk = getAsciiLayout()
+const renderElk = render
+
+/** The bare grid, as with no provider registered (where the crash was). */
+const draw = (src: string, useAscii: boolean): string => {
+  registerAsciiLayout(undefined)
+  try {
+    return render(src, { colorMode: 'none', useAscii })
+  } finally {
+    registerAsciiLayout(elk)
+  }
+}
 
 describe('self-loop detour through unseeded rows renders (BT crash)', () => {
   for (const dir of ['BT', 'TD', 'LR', 'RL']) {
@@ -43,9 +59,23 @@ describe('self-loop detour through unseeded rows renders (BT crash)', () => {
     })
   }
 
+  // The default entry registers the ELK layout provider. There `n6 -.-> n3` is
+  // a long edge whose bend `raiseFlowFanBars` pulled up beside n6, so its run
+  // into n3 went down through the n5 and n1 boxes and overwrote their text.
+  for (const dir of ['BT', 'TD']) {
+    it(`keeps every node box clear of other edges with ELK hints (${dir})`, () => {
+      const out = renderElk(`flowchart ${dir}${body}`, { colorMode: 'none' })
+      for (const text of ['n1', 'n3', 'n4', 'n5', 'n6', 'IwjRJr']) {
+        expect(out).toContain(` ${text} `)
+      }
+      expect(out.match(/\bccc\b/g)).toHaveLength(2)
+    })
+  }
+
   it('snapshots SVG and ASCII (unicode and ASCII-only)', () => {
     expect(renderMermaidSVG(SRC)).toMatchSnapshot('svg')
     expect(draw(SRC, false)).toMatchSnapshot('ascii')
     expect(draw(SRC, true)).toMatchSnapshot('ascii-only')
+    expect(renderElk(SRC, { colorMode: 'none' })).toMatchSnapshot('ascii-elk')
   })
 })
