@@ -33,6 +33,7 @@ import {
   groupStyle,
   measureMultilineText,
   resolveNodeStyle,
+  subgraphDirectionIsHonored,
 } from '@zombie-mermaid/core'
 
 /** Margin routing info for cross-hierarchy edges */
@@ -70,6 +71,34 @@ const SELF_LOOP_LABEL_GAP = 4
 const SELF_LOOP_FACE_INSET = 24
 /** Padding added around a self-loop label's text, matching `simple-layout.ts`. */
 const SELF_LOOP_LABEL_PAD = { width: 8, height: 6 }
+
+/**
+ * The direction each node is laid out in: its innermost frame's own `direction`
+ * when that applies (`subgraphDirectionIsHonored`, as `subgraphToElk` decides),
+ * else the enclosing frame's, else the graph's. mermaid@12.3.0 picks a
+ * self-loop's face by it, not by the root's (#2913: a `direction LR` frame in a
+ * TD graph draws its loops over the top).
+ */
+function nodeDirections(
+  graph: MermaidGraph,
+): Map<string, MermaidGraph['direction']> {
+  const out = new Map<string, MermaidGraph['direction']>()
+  const walk = (
+    sgs: MermaidSubgraph[],
+    inherited: MermaidGraph['direction'],
+  ): void => {
+    for (const sg of sgs) {
+      const dir =
+        sg.direction !== undefined && subgraphDirectionIsHonored(sg, graph)
+          ? sg.direction
+          : inherited
+      for (const id of sg.nodeIds) out.set(id, dir)
+      walk(sg.children, dir)
+    }
+  }
+  walk(graph.subgraphs, graph.direction)
+  return out
+}
 
 /**
  * Build the routed points and label position for every self-loop on `node`.
@@ -147,6 +176,8 @@ export function synthesizeSelfLoopEdges(
   nodeMap: Map<string, PositionedNode>,
   edges: PositionedEdge[],
   edgeLabelFontSize: number = FONT_SIZES.edgeLabel,
+  /** Direction a node is laid out in when a frame's own `direction` applies; else `graph.direction`. */
+  directions?: Map<string, MermaidGraph['direction']>,
 ): { minX: number; minY: number } {
   let minX = Infinity
   let minY = Infinity
@@ -163,7 +194,7 @@ export function synthesizeSelfLoopEdges(
     const node = nodeMap.get(id)!
     const geometries = buildSelfLoopGeometries(
       node,
-      graph.direction,
+      directions?.get(id) ?? graph.direction,
       indices.map((i) => {
         const text = graph.edges[i]!.label
         if (!text) return undefined
@@ -306,6 +337,7 @@ export function elkToPositioned(
     nodeMap,
     edges,
     edgeLabelFontSize,
+    nodeDirections(graph),
   )
   // Loops sit on the left/top face (#2740), which ELK did not reserve room for
   // on the canvas edge: slide the layout over so none is clipped.

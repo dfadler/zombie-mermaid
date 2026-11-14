@@ -58,6 +58,47 @@ describe('#3053 duplicate self-loops in a frame with its own direction', () => {
   })
 })
 
+/**
+ * #2913: mermaid@12.3.0 draws a frame's loops by the frame's own direction, whatever
+ * the root's: an LR frame starts them on the left and a TD frame at the top,
+ * RL on the right and BT at the bottom (measured in all 16 root/frame pairs).
+ * ELK's loop face now follows the frame, so the grid's hints are the frame's own.
+ */
+describe('#2913 loop hooks follow the frame direction, not the root', () => {
+  const src = (root: string, inner: string, loops = 2): string =>
+    `flowchart ${root}\n subgraph S\n direction ${inner}\n a --> b\n${' b --> b\n'.repeat(loops)} end`
+  /** Where a hook's legs sit against its arrowheads, on the axis the frame lays out along. */
+  const startSide = (text: string, inner: string): string => {
+    const rows = text.split('\n').map((l) => [...l])
+    const at = (re: RegExp, pos: 'row' | 'col'): number =>
+      Math.min(
+        ...rows.flatMap((l, r) =>
+          l.flatMap((c, i) => (re.test(c) ? [pos === 'row' ? r : i] : [])),
+        ),
+      )
+    if (inner === 'LR' || inner === 'RL')
+      return at(/[┴┬]/, 'col') < at(/[▼▲]/, 'col') ? 'left' : 'right'
+    return at(/[┤├]/, 'row') < at(/[►◄]/, 'row') ? 'top' : 'bottom'
+  }
+  const want = { LR: 'left', RL: 'right', TD: 'top', BT: 'bottom' } as const
+
+  for (const root of ['TD', 'LR', 'RL', 'BT'])
+    for (const inner of ['LR', 'RL', 'TD', 'BT'] as const)
+      it(`root ${root}, frame ${inner}: the hooks start ${want[inner]}`, () => {
+        expect(startSide(renderMermaidASCII(src(root, inner)), inner)).toBe(
+          want[inner],
+        )
+      })
+
+  it('draws an LR frame the same under a TD, LR and RL root, for any loop count', () => {
+    for (const loops of [1, 2, 3]) {
+      const td = renderMermaidASCII(src('TD', 'LR', loops))
+      expect(renderMermaidASCII(src('LR', 'LR', loops))).toBe(td)
+      expect(renderMermaidASCII(src('RL', 'LR', loops))).toBe(td)
+    }
+  })
+})
+
 describe('#3068 unhinted LR loop clears its frame bottom wall', () => {
   it('draws the loop run inside the frame, a row above the wall', () => {
     registerAsciiLayout(undefined)

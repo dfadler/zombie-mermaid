@@ -3,7 +3,8 @@
  * ELK layout, over the gallery flowchart/state/ER samples plus the fork-fixes
  * entries (#2645). The numbers gate each ASCII placement PR (Q3).
  *
- * Usage: tsx scripts/ascii-topology.ts [--verbose] [--no-hints] [--dir TD|LR|RL|BT]
+ * Usage: tsx scripts/ascii-topology.ts [--verbose] [--misses] [--no-hints] [--dir TD|LR|RL|BT]
+ * `--misses` lists every edge end whose face differs from ELK's, per sample.
  */
 import { allForkFixes } from '../demo/fork-fixes-data.ts'
 import { samples } from '../samples/samples-data.ts'
@@ -34,11 +35,17 @@ const list = [
 const verbose = process.argv.includes('--verbose')
 let total = emptyCounts()
 let exact = 0
+const listMisses = process.argv.includes('--misses')
 for (const e of list) {
-  const c: Counts = measureSample(e.source)
+  const misses: string[] = []
+  const c: Counts = measureSample(e.source, misses)
   total = addCounts(total, c)
   if (isExact(c)) exact++
   if (verbose || !isExact(c)) console.log(describeSample(e.title, c, verbose))
+  if (listMisses && misses.length > 0) {
+    console.log(`  ${e.title}`)
+    misses.forEach((m) => console.log(`    ${m}`))
+  }
 }
 const loops = scoreSubgraphLoops(verbose)
 loops.lines.forEach((l) => console.log(l))
