@@ -1,5 +1,5 @@
 /**
- * Label-level verdicts for the 288 gallery cases (188 `general-N` + 100 `xychart-N`)
+ * Label-level verdicts for every gallery case (`general-N` minus Hero, plus `xychart-N`)
  * against the repo-pinned mermaid (#2678). Renders each source with real mermaid
  * (`scripts/lib/real-mermaid.ts`), then checks that every word mermaid draws also
  * appears in our SVG and in our ASCII. Pure numbers (ticks) are skipped; extras on
@@ -18,8 +18,7 @@ const decode = (t: string) =>
   t
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
+    .replace(/&(quot|#39);/g, (_, e) => (e === 'quot' ? '"' : "'"))
     .replace(/&amp;/g, '&')
 const words = (t: string) =>
   decode(t)
@@ -33,9 +32,8 @@ const mermaidWords = (svg: string) =>
     words(m[2].split(/<[^>]*>/).join(' ')),
   )
 
-const pkg = JSON.parse(
-  await readFile('node_modules/mermaid/package.json', 'utf8'),
-)
+const pkgPath = 'node_modules/mermaid/package.json'
+const pkg = JSON.parse(await readFile(pkgPath, 'utf8'))
 const cases = [
   ...samples.map((s, i) => ({
     s,
@@ -45,32 +43,11 @@ const cases = [
   ...xychartSamples.map((s, i) => ({ s, id: `xychart-${i}`, hero: false })),
 ].filter((c) => !c.hero)
 
-// Why a non-match is not a new defect (checked against open and closed issues when this was written).
-// `expect` is the exact `verdict|svg missing|ascii missing` signature recorded for it: a row that
-// differs in any other way (another word, another failure) is a new difference and fails the run.
-const KNOWN: Record<string, { expect: string; note: string }> = {
-  'general-112': {
-    expect: 'differs||lt;&amp;&gt',
-    note: 'the known pie entity false positive of the word check (dfadler/zombie-mermaid#3069)',
-  },
-  'general-186': {
-    expect:
-      'differs|pneumonoultramicroscopicsilic,ovolcanoconiosis_extra|Antidisestablishmentarianism,pneumonoultramicroscopicsilic,ovolcanoconiosis_extra',
-    note: 'a word wider than the frame is split with a hyphen at a different point than mermaid, by design (dfadler/zombie-mermaid#2773)',
-  },
-  'general-196': {
-    expect: 'not-renderable||',
-    note: 'mermaid 12.3.0 throws in headless Chromium, so there is nothing to compare (dfadler/zombie-mermaid#3069)',
-  },
-  'general-237': {
-    expect: 'differs||URG,ACK',
-    note: 'packet ASCII truncates narrow field labels (terminal adaptation, dfadler/zombie-mermaid#3069)',
-  },
-  'general-242': {
-    expect: 'differs||quotes',
-    note: 'packet ASCII truncates narrow field labels (terminal adaptation, dfadler/zombie-mermaid#3069)',
-  },
-}
+// Differences already filed or documented: id -> exact `verdict|svg missing|ascii missing`
+// signature plus why. Any other difference (another word, another failure) exits 1.
+const KNOWN: Record<string, { expect: string; note: string }> = JSON.parse(
+  await readFile('scripts/gallery-known.json', 'utf8'),
+)
 const sig = (r: Record<string, unknown>) =>
   [
     r.verdict,
@@ -145,13 +122,11 @@ try {
 } finally {
   await session.close()
 }
-const known = (r: Record<string, unknown>) => KNOWN[r.id as string]
-for (const r of rows) if (known(r)?.expect === sig(r)) r.note = known(r).note
-const unexplained = rows.filter(
-  (r) => r.verdict !== 'match' && known(r)?.expect !== sig(r),
-)
-for (const r of unexplained)
-  console.log('UNEXPLAINED', sig(r), JSON.stringify(r))
+const known = (r: Record<string, unknown>) =>
+  KNOWN[r.id as string]?.expect === sig(r) ? KNOWN[r.id as string] : null
+for (const r of rows) if (known(r)) r.note = known(r)!.note
+const unexplained = rows.filter((r) => r.verdict !== 'match' && !known(r))
+for (const r of unexplained) console.log('UNEXPLAINED', sig(r), r.id)
 const count = (v: string) => rows.filter((r) => r.verdict === v).length
 const out = {
   mermaidVersion: pkg.version,
