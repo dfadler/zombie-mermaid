@@ -4,7 +4,12 @@ name: pr-visual-verification-quiet-on-github-mermaid-preview
 description: >
   A question about previewing a Mermaid diagram in a GitHub markdown file must not fire
   pr-visual-verification. Trigger-boundary negative: plugin arm only, no delta.
-tags: [pr-visual-verification, trigger-boundary, 'pair:pr-visual-verification-svg-only-section']
+tags:
+  [
+    pr-visual-verification,
+    trigger-boundary,
+    'pair:pr-visual-verification-svg-only-section',
+  ]
 runs: 3
 
 execution:
