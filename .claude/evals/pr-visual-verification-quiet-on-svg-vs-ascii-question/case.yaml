@@ -1,0 +1,24 @@
+# target sentence: the description's scope, "Build the complete Visual verification section of a PR or issue body"; this prompt shares the SVG/ASCII vocabulary but is a usage question, not a PR body.
+schema_version: '1.1'
+name: pr-visual-verification-quiet-on-svg-vs-ascii-question
+description: >
+  A usage question about when to pick the SVG or the ASCII output must not fire
+  pr-visual-verification. Trigger-boundary negative: plugin arm only, no delta.
+tags: [pr-visual-verification, trigger-boundary, 'pair:pr-visual-verification-svg-only-section']
+runs: 3
+
+execution:
+  prompt: |
+    What's the practical difference between the SVG output and the ASCII output of this
+    library? When would I pick one over the other for a flowchart in docs?
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: pr_visual_verification_not_invoked
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+    min: 0
+    max: 0

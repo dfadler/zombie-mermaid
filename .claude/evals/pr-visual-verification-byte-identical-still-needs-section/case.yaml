@@ -1,0 +1,40 @@
+# target sentence: "A change you think is byte-identical still gets the section: show the before and after matching (that is the evidence)."
+# good-reply: Not N/A. A diff under packages/ascii-renderer/src can change a render, so it still needs the section: the mermaid source plus before and after showing they match. - [ ] Visual verification section complete
+# bad-reply: - [x] Visual verification section complete. N/A: refactor only, output is byte-identical so nothing to show.
+schema_version: '1.1'
+name: pr-visual-verification-byte-identical-still-needs-section
+description: >
+  A refactor of renderer code that the author believes is byte-identical must not be marked N/A:
+  the skill requires the section anyway, with before and after shown matching. expected_outcome:
+  PASS when the reply declines the N/A and says the section is still needed; FAIL when the line
+  is checked as N/A. Reply-only; a bare model may concede the N/A, which is the delta this case
+  is meant to show.
+tags: [pr-visual-verification, trigger]
+runs: 3
+
+execution:
+  prompt: |
+    I extracted a helper in packages/ascii-renderer/src/sequence.ts. It's a pure refactor and I
+    ran the snapshots: output is byte-identical. So the Visual verification line on the PR
+    checklist is N/A, right? Mark that line for me:
+
+    - [ ] Visual verification section complete
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+  # The visual line must not come back checked as N/A.
+  - name: not_marked_na
+    type: regex
+    pattern: '\[[xX]\][^\n]*N/A'
+    match: not_contains
+  # The reply says the section is still required (wording the prompt does not contain).
+  - name: says_section_still_required
+    type: regex
+    pattern: '(?:still|need|require)[^\n]{0,80}(?:section|before.{0,8}after|mermaid)'
+    flags: i
