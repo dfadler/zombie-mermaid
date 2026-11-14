@@ -194,6 +194,8 @@
     "radar:oracle": "tsx scripts/radar-oracle.ts",
     "wardley:oracle": "tsx scripts/wardley-oracle.ts",
     "radar:parser-fixture": "tsx scripts/radar-parser-fixture.ts",
+    "usecase:oracle": "tsx scripts/usecase-oracle.ts",
+    "usecase:parser-fixture": "tsx scripts/usecase-parser-fixture.ts",
     "kanban:oracle": "tsx scripts/kanban-oracle.ts",
     "requirement:oracle": "tsx scripts/requirement-oracle.ts",
     "pie:oracle": "tsx scripts/pie-oracle.ts",

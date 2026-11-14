@@ -142,6 +142,11 @@ export type NodeShape =
   | 'anchor' // Invisible point
   // State diagram `note left of X` / `note right of X`
   | 'note' // dog-eared box
+  // Use case diagram (usecase-beta)
+  | 'usecase-actor' // Stick figure, label underneath
+  | 'usecase-ellipse' // Use case: an ellipse
+  | 'usecase-rect' // Use case: a rectangle (`Name[label]`)
+  | 'usecase-note' // `note for X`
 
 export interface MermaidEdge {
   source: string
@@ -159,9 +164,9 @@ export interface MermaidEdge {
    * governs whether anything is drawn there. Drawn by the ASCII
    * renderer (issue #330) and the SVG renderer.
    */
-  startMarker?: 'circle' | 'cross'
-  /** Terminator shape at the target end (`--o`/`--x`). See `startMarker`. */
-  endMarker?: 'circle' | 'cross'
+  startMarker?: 'circle' | 'cross' | 'triangle'
+  /** Terminator shape at the target end (`--o`/`--x`; `triangle` is a use case diagram's hollow generalization head). See `startMarker`. */
+  endMarker?: 'circle' | 'cross' | 'triangle'
   /** Edge id from `A e1@--> B` (Mermaid v11.10.0+), for `e1@{ ... }` and CSS targeting */
   id?: string
   /** Set by `e1@{ animate: true }` — renders as a marching-ants dash */
@@ -276,8 +281,8 @@ export interface PositionedEdge {
   hasArrowStart: boolean
   hasArrowEnd: boolean
   /** Circle/cross terminator at the source or target end (`o--`, `--x`), drawn by the SVG renderer instead of an arrowhead */
-  startMarker?: 'circle' | 'cross' | undefined
-  endMarker?: 'circle' | 'cross' | undefined
+  startMarker?: 'circle' | 'cross' | 'triangle' | undefined
+  endMarker?: 'circle' | 'cross' | 'triangle' | undefined
   /** Full path including bends — array of {x, y} points */
   points: Point[]
   /** Layout-computed label center position (avoids label-label collisions) */

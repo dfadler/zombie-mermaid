@@ -872,8 +872,8 @@ export function parseSequenceDiagram(lines: Statement[], text?: string): Sequenc
 // @public
 export function parseTimeline(text: string): Timeline;
 
-// @public
-export function parseWardley(text: string): WardleyMap;
+// @public (undocumented)
+export function parseUsecase(source: string): UsecaseDiagram;
 
 // @public
 export function parseXYChart(lines: Statement[], config?: XyChartInitConfig): XYChart;
@@ -2386,131 +2386,83 @@ export function toBlockType(value: string): Block['type'];
 export { toDirection }
 
 // @public
-export const WARDLEY_DEFAULT_STAGES: readonly ["Genesis", "Custom Built", "Product", "Commodity"];
-
-// @public (undocumented)
-export interface WardleyAnnotation {
+export interface UsecaseActor {
     // (undocumented)
-    number: number;
+    id: string;
     // (undocumented)
-    text: string;
-    // (undocumented)
-    x: number;
-    // (undocumented)
-    y: number;
+    label: string;
+    parentId?: string;
 }
 
 // @public
-export interface WardleyArrow {
+export interface UsecaseBoundary {
     // (undocumented)
-    name: string;
+    id: string;
     // (undocumented)
-    x: number;
+    label: string;
+    members: string[];
+}
+
+// @public
+export interface UsecaseCase {
     // (undocumented)
-    y: number;
+    id: string;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    parentId?: string;
+    // (undocumented)
+    shape: 'ellipse' | 'rect';
 }
 
 // @public (undocumented)
-export type WardleyFlow = 'forward' | 'backward' | 'bidirectional';
+export interface UsecaseDiagram {
+    // (undocumented)
+    actors: UsecaseActor[];
+    // (undocumented)
+    boundaries: UsecaseBoundary[];
+    // (undocumented)
+    direction: UsecaseDirection;
+    // (undocumented)
+    notes: UsecaseNote[];
+    // (undocumented)
+    relationships: UsecaseRelationship[];
+    // (undocumented)
+    useCases: UsecaseCase[];
+}
 
 // @public (undocumented)
-export interface WardleyLink {
+export type UsecaseDirection = 'TB' | 'TD' | 'BT' | 'LR' | 'RL';
+
+// @public
+export interface UsecaseNote {
     // (undocumented)
-    dashed: boolean;
-    // (undocumented)
-    flow?: WardleyFlow;
-    // (undocumented)
-    label?: string;
-    source: string;
+    label: string;
     // (undocumented)
     target: string;
 }
 
 // @public
-export interface WardleyMap {
+export const usecaseNoteId: (n: number) => string;
+
+// @public (undocumented)
+export interface UsecaseRelationship {
+    arrow: 'forward' | 'backward' | 'none';
     // (undocumented)
-    accelerators: WardleyArrow[];
+    label?: string;
     // (undocumented)
-    annotations: WardleyAnnotation[];
-    annotationsBox?: {
-        x: number;
-        y: number;
-    };
+    source: string;
     // (undocumented)
-    deaccelerators: WardleyArrow[];
+    target: string;
     // (undocumented)
-    links: WardleyLink[];
-    // (undocumented)
-    nodes: WardleyNode[];
-    // (undocumented)
-    notes: WardleyNote[];
-    // (undocumented)
-    pipelines: WardleyPipeline[];
-    size?: {
-        width: number;
-        height: number;
-    };
-    stageBoundaries?: number[];
-    stages?: string[];
-    title?: string;
-    // (undocumented)
-    trends: WardleyTrend[];
+    type: UsecaseRelationshipType;
 }
 
 // @public (undocumented)
-export interface WardleyNode {
-    id: string;
-    // (undocumented)
-    inertia?: boolean;
-    isPipelineParent?: boolean;
-    // (undocumented)
-    kind: WardleyNodeKind;
-    // (undocumented)
-    label: string;
-    labelOffsetX?: number;
-    // (undocumented)
-    labelOffsetY?: number;
-    // (undocumented)
-    strategy?: WardleyStrategy;
-    // (undocumented)
-    x: number;
-    // (undocumented)
-    y: number;
-}
-
-// @public (undocumented)
-export type WardleyNodeKind = 'anchor' | 'component' | 'pipeline-component';
-
-// @public (undocumented)
-export interface WardleyNote {
-    // (undocumented)
-    text: string;
-    // (undocumented)
-    x: number;
-    // (undocumented)
-    y: number;
-}
-
-// @public (undocumented)
-export interface WardleyPipeline {
-    // (undocumented)
-    componentIds: string[];
-    // (undocumented)
-    nodeId: string;
-}
-
-// @public (undocumented)
-export type WardleyStrategy = 'build' | 'buy' | 'outsource' | 'market';
+export type UsecaseRelationshipType = 'association' | 'include' | 'extend' | 'generalization';
 
 // @public
-export interface WardleyTrend {
-    // (undocumented)
-    nodeId: string;
-    // (undocumented)
-    targetX: number;
-    // (undocumented)
-    targetY: number;
-}
+export function usecaseToGraph(diagram: UsecaseDiagram): MermaidGraph;
 
 // @public
 export function weekdayName(ms: number): string;
