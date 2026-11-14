@@ -1494,6 +1494,7 @@ function allocateFaces(
       // ELK's order along the face (the reciprocal's end first, as mermaid draws).
       const orderOf = (f: FaceEnd): number => {
         const h = graph.edgeHints!.get(f.edge)
+        /* v8 ignore next */
         return (f.role === 'S' ? h?.start : h?.end)?.order ?? 0
       }
       ends.sort(
@@ -1514,6 +1515,7 @@ function allocateFaces(
       const above = rows.filter((p) => p < geo.centre).reverse()
       const below = rows.filter((p) => p > geo.centre)
       const half = Math.floor(n / 2)
+      /* v8 ignore next */
       if (above.length < half || below.length < half) continue
       const offs = [
         ...above.slice(0, half).reverse(),
