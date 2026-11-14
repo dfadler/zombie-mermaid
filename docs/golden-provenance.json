@@ -465,6 +465,16 @@
       "owner": "__tests__/ascii-fan-in-landing-2678.test.ts",
       "mermaid": "12.3.0",
       "verdict": "each edge into a node ends on its own cell with its own arrowhead, as mermaid 12.3.0 draws A & B --> C, the diamond rejoin and the state join (headless render: distinct end x per source); a node too narrow for a stroke each or holding a self-loop keeps one trunk, and the plain-grid and SVG snapshots only pin this renderer's output"
+    },
+    {
+      "paths": [
+        "__tests__/__snapshots__/ascii-loop-detour-rows-nan.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-loop-detour-rows-nan.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "mermaid 12.3.0 draws the same nine edges, labels 0 (x4), ccc (x2) and a, and a self-loop on n4; these snapshots pin this renderer only, and its n4 self-loop is a long detour where mermaid's is a small hook"
     }
   ]
 }

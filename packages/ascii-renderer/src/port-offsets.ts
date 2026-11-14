@@ -1050,6 +1050,24 @@ function raiseFlowFanBars(
     const d = (lr ? from.x : from.y) + size + 1 - (lr ? at.x : at.y)
     /* v8 ignore next */
     if (d >= 0) continue
+    // Raising the bar lengthens the run on the target's side of it: it must not
+    // now run through a node between the two layers (a long edge's bend sits
+    // beside its target on purpose, where the column past the nodes is free).
+    const [mainAt, crossAt] = lr ? (['x', 'y'] as const) : (['y', 'x'] as const)
+    const lo = requireGridCoord(edge.from)[mainAt] + 2
+    const hi = p[1]![mainAt]
+    const blocked = graph.nodes.some((n) => {
+      const g = requireGridCoord(n)
+      return (
+        n !== edge.from &&
+        n !== edge.to &&
+        g[crossAt] <= p[2]![crossAt] &&
+        p[2]![crossAt] <= g[crossAt] + 2 &&
+        g[mainAt] + 2 > lo &&
+        g[mainAt] < hi
+      )
+    })
+    if (blocked) continue
     const shift = result.get(edge) ?? { start: 0, end: 0 }
     const points = shift.points ?? p.map(() => ({ x: 0, y: 0 }))
     for (const i of [1, 2]) points[i]![lr ? 'x' : 'y'] = d

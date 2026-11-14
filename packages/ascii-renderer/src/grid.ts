@@ -3197,11 +3197,13 @@ export function createMapping(graph: AsciiGraph): void {
       edge,
       requireGridCoord(edge.from),
     )
+    // A track the loop only passes through has no entry (increaseGridSizeForPath
+    // seeds waypoints only); `undefined + 2` was NaN and crashed mkCanvas.
     for (const x of cols) {
-      graph.columnWidth.set(x, graph.columnWidth.get(x)! + 2)
+      graph.columnWidth.set(x, (graph.columnWidth.get(x) ?? 0) + 2)
     }
     for (const y of rows) {
-      graph.rowHeight.set(y, graph.rowHeight.get(y)! + 2)
+      graph.rowHeight.set(y, (graph.rowHeight.get(y) ?? 0) + 2)
     }
   }
 
