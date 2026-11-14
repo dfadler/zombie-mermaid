@@ -80,6 +80,25 @@ function wrapBudget(span: number): number {
   return Math.max(Math.floor(2.6 * span) - 3, 10)
 }
 
+// A word wider than `avail` columns, split mid-word with a trailing `-` like
+// mermaid's breakString (#2773, #2963). `rest` is the unfinished last piece,
+// which later words on the line join.
+function breakLongWord(
+  word: string,
+  avail: number,
+): { lines: string[]; rest: string } {
+  const lines: string[] = []
+  let rest = ''
+  const chars = [...word]
+  chars.forEach((ch, i) => {
+    if (displayWidth(rest + ch) >= avail) {
+      lines.push(i === chars.length - 1 ? rest + ch : `${rest + ch}-`)
+      rest = ''
+    } else rest += ch
+  })
+  return { lines, rest }
+}
+
 // Break a block label (shown as `[label]`) like mermaid's wrapLabel: at spaces
 // once the line so far plus the next word and its trailing space reaches
 // `avail`; a word that alone is wider than that is split mid-word with a
@@ -90,15 +109,10 @@ function wrapBracketed(label: string, avail: number): string[] {
     let cur = ''
     for (const word of line.split(' ')) {
       if (displayWidth(word) + 1 > avail) {
-        const chars = [...word]
         out.push(cur)
-        cur = ''
-        chars.forEach((ch, i) => {
-          if (displayWidth(cur + ch) >= avail) {
-            out.push(i === chars.length - 1 ? cur + ch : `${cur + ch}-`)
-            cur = ''
-          } else cur += ch
-        })
+        const b = breakLongWord(word, avail)
+        out.push(...b.lines)
+        cur = b.rest
       } else if (cur && displayWidth(cur) + displayWidth(word) + 1 >= avail) {
         out.push(cur)
         cur = word
@@ -165,30 +179,37 @@ function selfExtent(msg: Message): number {
 /** `sequence.wrap`: notes wrap at `width` (150px), messages at `width + actorMargin`, at 8px a column. */
 function wrapDiagramText(d: SequenceDiagram): SequenceDiagram {
   const l = d.layout ?? {}
-  const wrap = (text: string, px: number, on = l.wrap) =>
-    !on
-      ? text
-      : splitLines(text)
-          .map((line) =>
-            line
-              .split(/\s+/)
-              .filter(Boolean)
-              .reduce<string[]>((rows, w) => {
-                const last = rows[rows.length - 1]
-                if (
-                  last !== undefined &&
-                  displayWidth(`${last} ${w}`) <= px / 8
-                )
-                  rows[rows.length - 1] = `${last} ${w}`
-                else rows.push(w)
-                return rows
-              }, [])
-              .join('\n'),
-          )
-          .join('\n')
+  const wrap = (text: string, px: number, on = l.wrap) => {
+    if (!on) return text
+    const cols = px / 8
+    return splitLines(text)
+      .map((line) => {
+        const rows: string[] = []
+        let cur = ''
+        for (const w of line.split(/\s+/).filter(Boolean)) {
+          if (displayWidth(w) + 1 > cols) {
+            if (cur) rows.push(cur)
+            const b = breakLongWord(w, cols)
+            rows.push(...b.lines)
+            cur = b.rest
+          } else if (cur && displayWidth(`${cur} ${w}`) > cols) {
+            rows.push(cur)
+            cur = w
+          } else cur = cur ? `${cur} ${w}` : w
+        }
+        if (cur) rows.push(cur)
+        return rows.join('\n')
+      })
+      .join('\n')
+  }
   const w = l.width ?? 150
   return {
     ...d,
+    // A participant name wraps at `width` like a note; its box grows taller.
+    actors: d.actors.map((a) => ({
+      ...a,
+      label: wrap(a.label, w, a.wrap ?? l.wrap),
+    })),
     notes: d.notes.map((n) => ({
       ...n,
       text: wrap(n.text, w, n.wrap ?? l.wrap),
@@ -211,7 +232,8 @@ export function renderSequenceAscii(
   const diagram =
     parsed.layout?.wrap ||
     parsed.messages.some((m) => m.wrap) ||
-    parsed.notes.some((n) => n.wrap)
+    parsed.notes.some((n) => n.wrap) ||
+    parsed.actors.some((a) => a.wrap)
       ? wrapDiagramText(parsed)
       : parsed
   const noteAlign = parsed.layout?.noteAlign
