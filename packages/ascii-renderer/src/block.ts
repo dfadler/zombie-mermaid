@@ -30,8 +30,30 @@ import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 import { colorizeText } from './ansi.ts'
 import { displayWidth } from './display-width.ts'
 
-const UNI = { h: '─', v: '│', tl: '┌', tr: '┐', bl: '└', br: '┘', rtl: '╭', rtr: '╮', rbl: '╰', rbr: '╯' }
-const ASC = { h: '-', v: '|', tl: '+', tr: '+', bl: '+', br: '+', rtl: '+', rtr: '+', rbl: '+', rbr: '+' }
+const UNI = {
+  h: '─',
+  v: '│',
+  tl: '┌',
+  tr: '┐',
+  bl: '└',
+  br: '┘',
+  rtl: '╭',
+  rtr: '╮',
+  rbl: '╰',
+  rbr: '╯',
+}
+const ASC = {
+  h: '-',
+  v: '|',
+  tl: '+',
+  tr: '+',
+  bl: '+',
+  br: '+',
+  rtl: '+',
+  rtr: '+',
+  rbl: '+',
+  rbr: '+',
+}
 
 /** Columns between neighbouring cells. */
 const GAP = 1
@@ -64,7 +86,10 @@ function gridOf(node: BlockNode): { xSize: number; ySize: number } {
   let xSize = node.children.length
   const columns = node.columns ?? -1
   if (columns > 0 && columns < items) xSize = columns
-  return { xSize: Math.max(1, xSize), ySize: Math.ceil(items / Math.max(1, xSize)) }
+  return {
+    xSize: Math.max(1, xSize),
+    ySize: Math.ceil(items / Math.max(1, xSize)),
+  }
 }
 
 /** Natural size of a node's box. */

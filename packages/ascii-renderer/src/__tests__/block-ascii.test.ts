@@ -45,7 +45,9 @@ describe('block ASCII', () => {
   })
 
   it('frames a group around its cells and stretches its neighbours to match', () => {
-    expect(render('block-beta\n  block:g\n    columns 1\n    a\n    b\n  end\n  c')).toBe(
+    expect(
+      render('block-beta\n  block:g\n    columns 1\n    a\n    b\n  end\n  c'),
+    ).toBe(
       [
         '┌───────┐ ┌───────┐',
         '│ ┌───┐ │ │       │',

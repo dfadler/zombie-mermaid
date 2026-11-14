@@ -108,7 +108,8 @@ describe('parseBlock', () => {
       expect((err as Error).message).toMatch(re)
     }
 
-    it('needs the header', () => fails('a b', /expected the "block-beta" header/))
+    it('needs the header', () =>
+      fails('a b', /expected the "block-beta" header/))
     it('needs a label in quotes', () =>
       fails('block-beta\n  a[text]', /Expected a quoted label/))
     it('needs a closing quote', () =>

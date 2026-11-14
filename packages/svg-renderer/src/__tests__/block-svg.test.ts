@@ -35,7 +35,9 @@ describe('block layout (Mermaid 12.3.0 figures)', () => {
   })
 
   it('nests groups, parents before children, and skips spaces', () => {
-    const b = layout('block-beta\n  columns 2\n  block:g\n    x y\n  end\n  space')
+    const b = layout(
+      'block-beta\n  columns 2\n  block:g\n    x y\n  end\n  space',
+    )
     expect(b.nodes.map((n) => n.id)).toEqual(['g', 'x', 'y'])
     expect(b.nodes[0]!.type).toBe('composite')
   })

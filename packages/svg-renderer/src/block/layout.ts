@@ -61,17 +61,12 @@ interface Cell {
 
 /** A label's lines: `<br>` breaks, whitespace collapsed as in an HTML label. */
 function labelLines(label: string): string[] {
-  return label
-    .split(/<br\s*\/?>/i)
-    .map((l) => l.replace(/\s+/g, ' ').trim())
+  return label.split(/<br\s*\/?>/i).map((l) => l.replace(/\s+/g, ' ').trim())
 }
 
 function toCell(node: BlockNode): Cell {
   const lines = node.type === 'node' ? labelLines(node.label) : []
-  const textW = Math.max(
-    0,
-    ...lines.map((l) => textWidth(l, BLOCK.fontSize)),
-  )
+  const textW = Math.max(0, ...lines.map((l) => textWidth(l, BLOCK.fontSize)))
   const cell: Cell = {
     node,
     lines,
@@ -154,7 +149,9 @@ function setBlockSizes(
   if (width < (cell.size?.width || 0)) {
     width = cell.size?.width || 0
     const num =
-      columns > 0 ? Math.min(cell.children.length, columns) : cell.children.length
+      columns > 0
+        ? Math.min(cell.children.length, columns)
+        : cell.children.length
     if (num > 0) {
       const childWidth = (width - num * padding - padding) / num
       for (const child of cell.children) {
@@ -196,8 +193,7 @@ function layoutBlocks(cell: Cell, padding: number = BLOCK.padding): void {
     offset += (rowHeights.get(row) ?? 0) + padding
   }
 
-  const left = () =>
-    parent.x ? parent.x + (-parent.width / 2 || 0) : -padding
+  const left = () => (parent.x ? parent.x + (-parent.width / 2 || 0) : -padding)
   let columnPos = 0
   let startingPosX = left()
   let rowPos = 0

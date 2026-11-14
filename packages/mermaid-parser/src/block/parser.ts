@@ -217,7 +217,11 @@ function tokenize(source: string, lines: readonly string[]): Token[] {
         const afterQuote = here.slice(close + 1)
         const end = SHAPE_ENDS.find((e) => afterQuote.startsWith(e))
         if (end === undefined)
-          throw parseError(lines, line, `Expected a closing bracket after "${label}"`)
+          throw parseError(
+            lines,
+            line,
+            `Expected a closing bracket after "${label}"`,
+          )
         const full = here.slice(0, close + 1 + end.length)
         push({ kind: 'NODE', text: full, label, typeStr: start + end })
         advance(full)
@@ -232,7 +236,8 @@ function tokenize(source: string, lines: readonly string[]): Token[] {
       }
       for (const re of LINK_RES) {
         re.lastIndex = 0
-        if (re.exec(here) !== null) throw unsupported(lines, line, 'A link', 3105)
+        if (re.exec(here) !== null)
+          throw unsupported(lines, line, 'A link', 3105)
       }
       if ((m = /^:(\d+)/.exec(here)) !== null) {
         push({ kind: 'SIZE', text: m[0], num: Number(m[1]) })
@@ -404,7 +409,11 @@ export function parseBlock(text: string): BlockDiagram {
     const node: BlockNode = {
       id: b.id,
       type:
-        b.type === 'space' ? 'space' : b.type === 'composite' ? 'composite' : 'node',
+        b.type === 'space'
+          ? 'space'
+          : b.type === 'composite'
+            ? 'composite'
+            : 'node',
       label: decodeMermaidEntities(b.label ?? ''),
       shape: b.type === 'round' ? 'round' : 'square',
       widthInColumns: b.widthInColumns ?? 1,
