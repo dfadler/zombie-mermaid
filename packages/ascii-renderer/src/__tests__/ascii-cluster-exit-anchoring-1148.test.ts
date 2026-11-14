@@ -787,13 +787,18 @@ describe('cluster-exit anchoring: shape of the whole composite-states render', (
     expect([...columns]).toHaveLength(1)
   })
 
-  it('done and fail labels do not share a row (no `done────fail` run)', () => {
+  // #3049: mermaid@12.3.0 draws both labels at one height, done left of fail
+  // (y 505 for both; x 80 and 194). They share the jog row, but `done` sits on
+  // its own stroke, so the two never run together as `done────fail`.
+  it('done and fail labels share a row, done left, with no `done────fail` run', () => {
     const lines = render(COMPOSITE_SAMPLE)
     const doneRow = lines.findIndex((l) => l.includes('done'))
     const failRow = lines.findIndex((l) => l.includes('fail'))
     expect(doneRow).toBeGreaterThan(-1)
-    expect(failRow).toBeGreaterThan(-1)
-    expect(doneRow).not.toBe(failRow)
+    expect(doneRow).toBe(failRow)
+    expect(lines[doneRow]!.indexOf('done')).toBeLessThan(
+      lines[doneRow]!.indexOf('fail'),
+    )
     expect(lines.join('\n')).not.toMatch(/done─+fail/)
   })
 
