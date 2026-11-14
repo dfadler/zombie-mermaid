@@ -196,6 +196,9 @@ ALLOWLIST=(
   # repo rule is an SVG and an ASCII snapshot per case; reviewed via `git diff`
   # (`vitest -u`).
   "__tests__/ascii-lane-sibling-label-3103.test.ts"
+  # SVG + ASCII goldens for a self-loop detour through unseeded rows (BT crash,
+  # found by the #3103 property sweep); reviewed via `git diff` (`vitest -u`).
+  "__tests__/ascii-loop-detour-rows-nan.test.ts"
   # SVG + ASCII goldens for a decision's entry face with three ends (#2913): the
   # repo rule is an SVG and an ASCII snapshot per case; reviewed via `git diff`
   # (`vitest -u`).
