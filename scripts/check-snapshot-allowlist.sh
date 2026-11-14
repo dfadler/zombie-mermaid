@@ -196,6 +196,9 @@ ALLOWLIST=(
   # repo rule is an SVG and an ASCII snapshot per case; reviewed via `git diff`
   # (`vitest -u`).
   "__tests__/ascii-decision-entry-face-2913.test.ts"
+  # SVG + ASCII goldens for fan-in landing cells (#2678): the repo rule is an SVG
+  # and an ASCII snapshot per case; reviewed via `git diff` (`vitest -u`).
+  "__tests__/ascii-fan-in-landing-2678.test.ts"
 )
 
 is_allowlisted() {

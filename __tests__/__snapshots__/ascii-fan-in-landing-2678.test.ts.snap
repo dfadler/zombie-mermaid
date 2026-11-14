@@ -1,0 +1,1687 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`fan-in landing cells (#2678) > A & B --> C > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"    ┌───┐    
+    │   │    
+    │ C │    
+    │   │    
+    └───┘    
+     ▲ ▲     
+  ┌──┘ └──┐  
+  │       │  
+  │       │  
+  │       │  
+┌─┴─┐   ┌─┴─┐
+│   │   │   │
+│ A │   │ B │
+│   │   │   │
+└───┘   └───┘"
+`;
+
+exports[`fan-in landing cells (#2678) > A & B --> C > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"    ┌───┐    
+    │   │    
+    │ C │    
+    │   │    
+    └───┘    
+     ▲ ▲     
+  ┌──┘ └──┐  
+  │       │  
+  │       │  
+  │       │  
+┌─┴─┐   ┌─┴─┐
+│   │   │   │
+│ A │   │ B │
+│   │   │   │
+└───┘   └───┘"
+`;
+
+exports[`fan-in landing cells (#2678) > A & B --> C > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 216" width="424" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1xrn9j8-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1xrn9j8-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1xrn9j8-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1xrn9j8-arrowhead)" />
+<g class="node" data-id="A" data-label="A" data-shape="rectangle">
+  <rect x="40" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>
+</g>
+<g class="node" data-id="B" data-label="B" data-shape="rectangle">
+  <rect x="232" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">B</text>
+</g>
+<g class="node" data-id="C" data-label="C" data-shape="rectangle">
+  <rect x="136" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">C</text>
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > A & B --> C > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐   ┌───┐
+│   │   │   │
+│ A │   │ B │
+│   │   │   │
+└─┬─┘   └─┬─┘
+  │       │  
+  │       │  
+  │       │  
+  └──┐ ┌──┘  
+     ▼ ▼     
+    ┌───┐    
+    │   │    
+    │ C │    
+    │   │    
+    └───┘    "
+`;
+
+exports[`fan-in landing cells (#2678) > A & B --> C > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"┌───┐   ┌───┐
+│   │   │   │
+│ A │   │ B │
+│   │   │   │
+└─┬─┘   └─┬─┘
+  │       │  
+  │       │  
+  │       │  
+  └──┐ ┌──┘  
+     ▼ ▼     
+    ┌───┐    
+    │   │    
+    │ C │    
+    │   │    
+    └───┘    "
+`;
+
+exports[`fan-in landing cells (#2678) > A & B --> C > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 216" width="424" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmw0gbz5-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmw0gbz5-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 115.07 L 186.67 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmw0gbz5-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 100.93 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 115.07 L 237.33 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmw0gbz5-arrowhead)" />
+<g class="node" data-id="A" data-label="A" data-shape="rectangle">
+  <rect x="40" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>
+</g>
+<g class="node" data-id="B" data-label="B" data-shape="rectangle">
+  <rect x="232" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">B</text>
+</g>
+<g class="node" data-id="C" data-label="C" data-shape="rectangle">
+  <rect x="136" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">C</text>
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > colour-coded edges > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"         ┌──────────┐         
+         │          │         
+         │   Done   │         
+         │          │         
+         └──────────┘         
+              ▲ ▲             
+     ┌────────┘ └────────┐    
+     │                   │    
+     │                   │    
+     │                   │    
+┌────┴───┐          ┌────┴───┐
+│        │          │        │
+│ Accept │          │ Reject │
+│        │          │        │
+└────────┘          └────────┘
+     ▲                   ▲    
+     │                   │    
+    Yes                 No    
+     │                   │    
+     └─────────┬─────────┘    
+               │              
+              ╱╲              
+            ╱    ╲            
+         < Decision >         
+            ╲    ╱            
+              ╲╱              
+               ▲              
+               │              
+               │              
+               │              
+               │              
+         ┌─────┴────┐         
+         │          │         
+         │  Start   │         
+         │          │         
+         └──────────┘         "
+`;
+
+exports[`fan-in landing cells (#2678) > colour-coded edges > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"         ┌──────────┐         
+         │          │         
+         │   Done   │         
+         │          │         
+         └──────────┘         
+              ▲ ▲             
+     ┌────────┘ └────────┐    
+     │                   │    
+     │                   │    
+     │                   │    
+┌────┴───┐          ┌────┴───┐
+│        │          │        │
+│ Accept │          │ Reject │
+│        │          │        │
+└────────┘          └────────┘
+     ▲                   ▲    
+     │                   │    
+    Yes                 No    
+     │                   │    
+     └────────┐┌─────────┘    
+              ││              
+              ╱╲              
+            ╱    ╲            
+         < Decision >         
+            ╲    ╱            
+              ╲╱              
+               ▲              
+               │              
+               │              
+               │              
+               │              
+         ┌─────┴────┐         
+         │          │         
+         │  Start   │         
+         │          │         
+         └──────────┘         "
+`;
+
+exports[`fan-in landing cells (#2678) > colour-coded edges > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 578.3" width="424" height="578.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmpayumg-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmpayumg-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmpayumg-arrowhead-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="#565f89" stroke="#565f89" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmpayumg-arrowhead-start-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="#565f89" stroke="#565f89" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 490.3 L 212 450.3" fill="none" stroke="#7aa2f7" stroke-width="3px" marker-end="url(#zmpayumg-arrowhead-23565f89)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 305.3 L 183 263.37 Q 183 256.3, 175.93 256.3 L 123.07 256.3 Q 116 256.3, 116 249.23 L 116 176" fill="none" stroke="#9ece6a" stroke-width="2px" marker-end="url(#zmpayumg-arrowhead-23565f89)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 305.3 L 241 263.37 Q 241 256.3, 248.07 256.3 L 300.93 256.3 Q 308 256.3, 308 249.23 L 308 176" fill="none" stroke="#f7768e" stroke-width="2px" marker-end="url(#zmpayumg-arrowhead-23565f89)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zmpayumg-arrowhead-23565f89)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zmpayumg-arrowhead-23565f89)" />
+<g class="edge-label" data-from="B" data-to="C" data-label="Yes">
+  <rect x="105" y="219" width="21.34" height="14.3" fill="var(--bg)" />
+  <text x="115.67" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
+</g>
+<g class="edge-label" data-from="B" data-to="D" data-label="No">
+  <rect x="299.5" y="219" width="16.53" height="14.3" fill="var(--bg)" />
+  <text x="307.76" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
+</g>
+<g class="node" data-id="A" data-label="Start" data-shape="rectangle">
+  <rect x="136" y="490.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="514.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="B" data-label="Decision" data-shape="diamond">
+  <polygon points="212,276.3 299,363.3 212,450.3 125,363.3" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="363.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Decision</text>
+</g>
+<g class="node" data-id="C" data-label="Accept" data-shape="rectangle">
+  <rect x="40" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Accept</text>
+</g>
+<g class="node" data-id="D" data-label="Reject" data-shape="rectangle">
+  <rect x="232" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Reject</text>
+</g>
+<g class="node" data-id="E" data-label="Done" data-shape="rectangle">
+  <rect x="136" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Done</text>
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > colour-coded edges > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"         ┌──────────┐         
+         │          │         
+         │  Start   │         
+         │          │         
+         └─────┬────┘         
+               │              
+               │              
+               │              
+               │              
+               ▼              
+              ╱╲              
+            ╱    ╲            
+         < Decision >         
+            ╲    ╱            
+              ╲╱              
+               │              
+     ┌─────────┴─────────┐    
+     │                   │    
+    Yes                 No    
+     │                   │    
+     ▼                   ▼    
+┌────────┐          ┌────────┐
+│        │          │        │
+│ Accept │          │ Reject │
+│        │          │        │
+└────┬───┘          └────┬───┘
+     │                   │    
+     │                   │    
+     │                   │    
+     └────────┐ ┌────────┘    
+              ▼ ▼             
+         ┌──────────┐         
+         │          │         
+         │   Done   │         
+         │          │         
+         └──────────┘         "
+`;
+
+exports[`fan-in landing cells (#2678) > colour-coded edges > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"         ┌──────────┐         
+         │          │         
+         │  Start   │         
+         │          │         
+         └─────┬────┘         
+               │              
+               │              
+               │              
+               │              
+               ▼              
+              ╱╲              
+            ╱    ╲            
+         < Decision >         
+            ╲    ╱            
+              ╲╱              
+              ││              
+     ┌────────┘└─────────┐    
+     │                   │    
+    Yes                 No    
+     │                   │    
+     ▼                   ▼    
+┌────────┐          ┌────────┐
+│        │          │        │
+│ Accept │          │ Reject │
+│        │          │        │
+└────┬───┘          └────┬───┘
+     │                   │    
+     │                   │    
+     │                   │    
+     └────────┐ ┌────────┘    
+              ▼ ▼             
+         ┌──────────┐         
+         │          │         
+         │   Done   │         
+         │          │         
+         └──────────┘         "
+`;
+
+exports[`fan-in landing cells (#2678) > colour-coded edges > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 578.3" width="424" height="578.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmr6nyq6-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmr6nyq6-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmr6nyq6-arrowhead-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="#565f89" stroke="#565f89" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmr6nyq6-arrowhead-start-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="#565f89" stroke="#565f89" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 88 L 212 128" fill="none" stroke="#7aa2f7" stroke-width="3px" marker-end="url(#zmr6nyq6-arrowhead-23565f89)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 273 L 183 314.93 Q 183 322, 175.93 322 L 123.07 322 Q 116 322, 116 329.07 L 116 402.3" fill="none" stroke="#9ece6a" stroke-width="2px" marker-end="url(#zmr6nyq6-arrowhead-23565f89)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 273 L 241 314.93 Q 241 322, 248.07 322 L 300.93 322 Q 308 322, 308 329.07 L 308 402.3" fill="none" stroke="#f7768e" stroke-width="2px" marker-end="url(#zmr6nyq6-arrowhead-23565f89)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 450.3 L 116 463.23 Q 116 470.3, 123.07 470.3 L 179.6 470.3 Q 186.67 470.3, 186.67 477.37 L 186.67 490.3" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zmr6nyq6-arrowhead-23565f89)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 450.3 L 308 463.23 Q 308 470.3, 300.93 470.3 L 244.4 470.3 Q 237.33 470.3, 237.33 477.37 L 237.33 490.3" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zmr6nyq6-arrowhead-23565f89)" />
+<g class="edge-label" data-from="B" data-to="C" data-label="Yes">
+  <rect x="105" y="345" width="21.34" height="14.3" fill="var(--bg)" />
+  <text x="115.67" y="352.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
+</g>
+<g class="edge-label" data-from="B" data-to="D" data-label="No">
+  <rect x="299.5" y="345" width="16.53" height="14.3" fill="var(--bg)" />
+  <text x="307.76" y="352.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
+</g>
+<g class="node" data-id="A" data-label="Start" data-shape="rectangle">
+  <rect x="136" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="B" data-label="Decision" data-shape="diamond">
+  <polygon points="212,128 299,215 212,302 125,215" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="215" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Decision</text>
+</g>
+<g class="node" data-id="C" data-label="Accept" data-shape="rectangle">
+  <rect x="40" y="402.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="426.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Accept</text>
+</g>
+<g class="node" data-id="D" data-label="Reject" data-shape="rectangle">
+  <rect x="232" y="402.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="426.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Reject</text>
+</g>
+<g class="node" data-id="E" data-label="Done" data-shape="rectangle">
+  <rect x="136" y="490.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="514.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Done</text>
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > diamond fan-in > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"                 ┌──────────────┐               
+                 │              │               
+                 │    Finish    │               
+                 │              │               
+                 └──────────────┘               
+                        ▲ ▲                     
+         ┌──────────────┘ └─────────────┐       
+         │                              │       
+         │                              │       
+         │                              │       
+┌────────┴───────┐              ┌───────┴──────┐
+│                │              │              │
+│ Go to the park │              │ Stay indoors │
+│                │              │              │
+└────────────────┘              └──────────────┘
+         ▲                              ▲       
+         │                              │       
+        Yes                            No       
+         │                              │       
+         └───────────────┬──────────────┘       
+                         │                      
+                        ╱╲                      
+                      ╱    ╲                    
+                   ╱          ╲                 
+                 < Is it sunny? >               
+                   ╲          ╱                 
+                      ╲    ╱                    
+                        ╲╱                      
+                         ▲                      
+                         │                      
+                         │                      
+                         │                      
+                         │                      
+                 ╭───────┴──────╮               
+                 │              │               
+                 │    Start     │               
+                 │              │               
+                 ╰──────────────╯               "
+`;
+
+exports[`fan-in landing cells (#2678) > diamond fan-in > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"                 ┌──────────────┐               
+                 │              │               
+                 │    Finish    │               
+                 │              │               
+                 └──────────────┘               
+                        ▲ ▲                     
+         ┌──────────────┘ └─────────────┐       
+         │                              │       
+         │                              │       
+         │                              │       
+┌────────┴───────┐              ┌───────┴──────┐
+│                │              │              │
+│ Go to the park │              │ Stay indoors │
+│                │              │              │
+└────────────────┘              └──────────────┘
+         ▲                              ▲       
+         │                              │       
+        Yes                            No       
+         │                              │       
+         └──────────────┐┌──────────────┘       
+                        ││                      
+                        ╱╲                      
+                      ╱    ╲                    
+                   ╱          ╲                 
+                 < Is it sunny? >               
+                   ╲          ╱                 
+                      ╲    ╱                    
+                        ╲╱                      
+                         ▲                      
+                         │                      
+                         │                      
+                         │                      
+                         │                      
+                 ╭───────┴──────╮               
+                 │              │               
+                 │    Start     │               
+                 │              │               
+                 ╰──────────────╯               "
+`;
+
+exports[`fan-in landing cells (#2678) > diamond fan-in > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 584.3" width="424" height="584.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm9ebgl7-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm9ebgl7-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 490.3 L 212 450.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9ebgl7-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 305.3 L 183 263.37 Q 183 256.3, 175.93 256.3 L 123.07 256.3 Q 116 256.3, 116 249.23 L 116 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9ebgl7-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 305.3 L 241 263.37 Q 241 256.3, 248.07 256.3 L 300.93 256.3 Q 308 256.3, 308 249.23 L 308 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9ebgl7-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9ebgl7-arrowhead)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9ebgl7-arrowhead)" />
+<g class="edge-label" data-from="B" data-to="C" data-label="Yes">
+  <rect x="105" y="219" width="21.34" height="14.3" fill="var(--bg)" />
+  <text x="115.67" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
+</g>
+<g class="edge-label" data-from="B" data-to="D" data-label="No">
+  <rect x="299.5" y="219" width="16.53" height="14.3" fill="var(--bg)" />
+  <text x="307.76" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
+</g>
+<g class="node" data-id="A" data-label="Start" data-shape="rounded">
+  <rect x="137" y="490.3" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="517.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="B" data-label="Is it sunny?" data-shape="diamond">
+  <polygon points="212,276.3 299,363.3 212,450.3 125,363.3" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="363.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Is it sunny?</text>
+</g>
+<g class="node" data-id="C" data-label="Go to the park" data-shape="rectangle">
+  <rect x="40" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Go to the park</text>
+</g>
+<g class="node" data-id="D" data-label="Stay indoors" data-shape="rectangle">
+  <rect x="232" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Stay indoors</text>
+</g>
+<g class="node" data-id="E" data-label="Finish" data-shape="rectangle">
+  <rect x="136" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Finish</text>
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > diamond fan-in > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"                 ╭──────────────╮               
+                 │              │               
+                 │    Start     │               
+                 │              │               
+                 ╰───────┬──────╯               
+                         │                      
+                         │                      
+                         │                      
+                         │                      
+                         ▼                      
+                        ╱╲                      
+                      ╱    ╲                    
+                   ╱          ╲                 
+                 < Is it sunny? >               
+                   ╲          ╱                 
+                      ╲    ╱                    
+                        ╲╱                      
+                         │                      
+         ┌───────────────┴──────────────┐       
+         │                              │       
+        Yes                            No       
+         │                              │       
+         ▼                              ▼       
+┌────────────────┐              ┌──────────────┐
+│                │              │              │
+│ Go to the park │              │ Stay indoors │
+│                │              │              │
+└────────┬───────┘              └───────┬──────┘
+         │                              │       
+         │                              │       
+         │                              │       
+         └──────────────┐ ┌─────────────┘       
+                        ▼ ▼                     
+                 ┌──────────────┐               
+                 │              │               
+                 │    Finish    │               
+                 │              │               
+                 └──────────────┘               "
+`;
+
+exports[`fan-in landing cells (#2678) > diamond fan-in > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"                 ╭──────────────╮               
+                 │              │               
+                 │    Start     │               
+                 │              │               
+                 ╰───────┬──────╯               
+                         │                      
+                         │                      
+                         │                      
+                         │                      
+                         ▼                      
+                        ╱╲                      
+                      ╱    ╲                    
+                   ╱          ╲                 
+                 < Is it sunny? >               
+                   ╲          ╱                 
+                      ╲    ╱                    
+                        ╲╱                      
+                        ││                      
+         ┌──────────────┘└──────────────┐       
+         │                              │       
+        Yes                            No       
+         │                              │       
+         ▼                              ▼       
+┌────────────────┐              ┌──────────────┐
+│                │              │              │
+│ Go to the park │              │ Stay indoors │
+│                │              │              │
+└────────┬───────┘              └───────┬──────┘
+         │                              │       
+         │                              │       
+         │                              │       
+         └──────────────┐ ┌─────────────┘       
+                        ▼ ▼                     
+                 ┌──────────────┐               
+                 │              │               
+                 │    Finish    │               
+                 │              │               
+                 └──────────────┘               "
+`;
+
+exports[`fan-in landing cells (#2678) > diamond fan-in > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 584.3" width="424" height="584.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmluu726-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmluu726-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 94 L 212 134" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmluu726-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 279 L 183 320.93 Q 183 328, 175.93 328 L 123.07 328 Q 116 328, 116 335.07 L 116 408.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmluu726-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 279 L 241 320.93 Q 241 328, 248.07 328 L 300.93 328 Q 308 328, 308 335.07 L 308 408.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmluu726-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 456.3 L 116 469.23 Q 116 476.3, 123.07 476.3 L 179.6 476.3 Q 186.67 476.3, 186.67 483.37 L 186.67 496.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmluu726-arrowhead)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 456.3 L 308 469.23 Q 308 476.3, 300.93 476.3 L 244.4 476.3 Q 237.33 476.3, 237.33 483.37 L 237.33 496.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmluu726-arrowhead)" />
+<g class="edge-label" data-from="B" data-to="C" data-label="Yes">
+  <rect x="105" y="351" width="21.34" height="14.3" fill="var(--bg)" />
+  <text x="115.67" y="358.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
+</g>
+<g class="edge-label" data-from="B" data-to="D" data-label="No">
+  <rect x="299.5" y="351" width="16.53" height="14.3" fill="var(--bg)" />
+  <text x="307.76" y="358.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
+</g>
+<g class="node" data-id="A" data-label="Start" data-shape="rounded">
+  <rect x="137" y="40" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="67" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="B" data-label="Is it sunny?" data-shape="diamond">
+  <polygon points="212,134 299,221 212,308 125,221" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="221" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Is it sunny?</text>
+</g>
+<g class="node" data-id="C" data-label="Go to the park" data-shape="rectangle">
+  <rect x="40" y="408.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="432.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Go to the park</text>
+</g>
+<g class="node" data-id="D" data-label="Stay indoors" data-shape="rectangle">
+  <rect x="232" y="408.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="432.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Stay indoors</text>
+</g>
+<g class="node" data-id="E" data-label="Finish" data-shape="rectangle">
+  <rect x="136" y="496.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="520.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Finish</text>
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > parallel links > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌────────┐           ┌────────┐
+│        │           │        │
+│ Output │           │  Log   │
+│        │           │        │
+└────────┘           └────────┘
+     ▲                    ▲    
+     │                    │    
+     └─────────┬──────────┘    
+               │               
+               │               
+         ┌─────┴─────┐         
+         │           │         
+         │ Processor │         
+         │           │         
+         └───────────┘         
+              ▲ ▲              
+     ┌────────┘ └─────────┐    
+     │                    │    
+     │                    │    
+     │                    │    
+┌────┴───┐           ┌────┴───┐
+│        │           │        │
+│ Input  │           │ Config │
+│        │           │        │
+└────────┘           └────────┘"
+`;
+
+exports[`fan-in landing cells (#2678) > parallel links > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"┌────────┐           ┌────────┐
+│        │           │        │
+│ Output │           │  Log   │
+│        │           │        │
+└────────┘           └────────┘
+     ▲                    ▲    
+     │                    │    
+     └─────────┬──────────┘    
+               │               
+               │               
+         ┌─────┴─────┐         
+         │           │         
+         │ Processor │         
+         │           │         
+         └───────────┘         
+              ▲ ▲              
+     ┌────────┘ └─────────┐    
+     │                    │    
+     │                    │    
+     │                    │    
+┌────┴───┐           ┌────┴───┐
+│        │           │        │
+│ Input  │           │ Config │
+│        │           │        │
+└────────┘           └────────┘"
+`;
+
+exports[`fan-in landing cells (#2678) > parallel links > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 304" width="424" height="304" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmee4r8t-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmee4r8t-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 216 L 116 203.07 Q 116 196, 123.07 196 L 179.6 196 Q 186.67 196, 186.67 188.93 L 186.67 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmee4r8t-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 216 L 308 203.07 Q 308 196, 300.93 196 L 244.4 196 Q 237.33 196, 237.33 188.93 L 237.33 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmee4r8t-arrowhead)" />
+<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 186.67 128 L 186.67 115.07 Q 186.67 108, 179.6 108 L 123.07 108 Q 116 108, 116 100.93 L 116 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmee4r8t-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 237.33 128 L 237.33 115.07 Q 237.33 108, 244.4 108 L 300.93 108 Q 308 108, 308 100.93 L 308 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmee4r8t-arrowhead)" />
+<g class="node" data-id="A" data-label="Input" data-shape="rectangle">
+  <rect x="40" y="216" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="240" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Input</text>
+</g>
+<g class="node" data-id="B" data-label="Config" data-shape="rectangle">
+  <rect x="232" y="216" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="240" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Config</text>
+</g>
+<g class="node" data-id="C" data-label="Processor" data-shape="rectangle">
+  <rect x="136" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Processor</text>
+</g>
+<g class="node" data-id="D" data-label="Output" data-shape="rectangle">
+  <rect x="40" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Output</text>
+</g>
+<g class="node" data-id="E" data-label="Log" data-shape="rectangle">
+  <rect x="232" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Log</text>
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > parallel links > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌────────┐           ┌────────┐
+│        │           │        │
+│ Input  │           │ Config │
+│        │           │        │
+└────┬───┘           └────┬───┘
+     │                    │    
+     │                    │    
+     │                    │    
+     └────────┐ ┌─────────┘    
+              ▼ ▼              
+         ┌───────────┐         
+         │           │         
+         │ Processor │         
+         │           │         
+         └─────┬─────┘         
+               │               
+               │               
+     ┌─────────┴──────────┐    
+     │                    │    
+     ▼                    ▼    
+┌────────┐           ┌────────┐
+│        │           │        │
+│ Output │           │  Log   │
+│        │           │        │
+└────────┘           └────────┘"
+`;
+
+exports[`fan-in landing cells (#2678) > parallel links > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"┌────────┐           ┌────────┐
+│        │           │        │
+│ Input  │           │ Config │
+│        │           │        │
+└────┬───┘           └────┬───┘
+     │                    │    
+     │                    │    
+     │                    │    
+     └────────┐ ┌─────────┘    
+              ▼ ▼              
+         ┌───────────┐         
+         │           │         
+         │ Processor │         
+         │           │         
+         └─────┬─────┘         
+               │               
+               │               
+     ┌─────────┴──────────┐    
+     │                    │    
+     ▼                    ▼    
+┌────────┐           ┌────────┐
+│        │           │        │
+│ Output │           │  Log   │
+│        │           │        │
+└────────┘           └────────┘"
+`;
+
+exports[`fan-in landing cells (#2678) > parallel links > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 304" width="424" height="304" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmnj340h-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmnj340h-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 115.07 L 186.67 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnj340h-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 100.93 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 115.07 L 237.33 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnj340h-arrowhead)" />
+<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 186.67 176 L 186.67 188.93 Q 186.67 196, 179.6 196 L 123.07 196 Q 116 196, 116 203.07 L 116 216" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnj340h-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 237.33 176 L 237.33 188.93 Q 237.33 196, 244.4 196 L 300.93 196 Q 308 196, 308 203.07 L 308 216" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnj340h-arrowhead)" />
+<g class="node" data-id="A" data-label="Input" data-shape="rectangle">
+  <rect x="40" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Input</text>
+</g>
+<g class="node" data-id="B" data-label="Config" data-shape="rectangle">
+  <rect x="232" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Config</text>
+</g>
+<g class="node" data-id="C" data-label="Processor" data-shape="rectangle">
+  <rect x="136" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Processor</text>
+</g>
+<g class="node" data-id="D" data-label="Output" data-shape="rectangle">
+  <rect x="40" y="216" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="240" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Output</text>
+</g>
+<g class="node" data-id="E" data-label="Log" data-shape="rectangle">
+  <rect x="232" y="216" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="240" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Log</text>
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > self-loop on the target > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"      ┌───┐  
+      │   │  
+    ┌─┴─┐ │  
+    │   │ │  
+    │ D │◄┘  
+    │   │    
+    └───┘    
+      ▲      
+      │      
+  ┌───┴───┐  
+  │       │  
+  │       │  
+┌─┴─┐   ┌─┴─┐
+│   │   │   │
+│ A │   │ B │
+│   │   │   │
+└───┘   └───┘"
+`;
+
+exports[`fan-in landing cells (#2678) > self-loop on the target > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"    ┌───┐    
+  ┌►│   │    
+  │ │ D │    
+  └─┤   │    
+    └───┘    
+      ▲      
+      │      
+  ┌───┴───┐  
+  │       │  
+  │       │  
+┌─┴─┐   ┌─┴─┐
+│   │   │   │
+│ A │   │ B │
+│   │   │   │
+└───┘   └───┘"
+`;
+
+exports[`fan-in landing cells (#2678) > self-loop on the target > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 216" width="424" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1lpqg9g-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1lpqg9g-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lpqg9g-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lpqg9g-arrowhead)" />
+<path class="edge" data-from="D" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 136 68 L 120 68 Q 116 68, 116 64 L 116 64 Q 116 60, 120 60 L 136 60" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lpqg9g-arrowhead)" />
+<g class="node" data-id="A" data-label="A" data-shape="rectangle">
+  <rect x="40" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>
+</g>
+<g class="node" data-id="B" data-label="B" data-shape="rectangle">
+  <rect x="232" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">B</text>
+</g>
+<g class="node" data-id="D" data-label="D" data-shape="rectangle">
+  <rect x="136" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">D</text>
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > self-loop on the target > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐   ┌───┐
+│   │   │   │
+│ A │   │ B │
+│   │   │   │
+└─┬─┘   └─┬─┘
+  │       │  
+  │       │  
+  └───┬───┘  
+      │      
+      ▼      
+    ┌───┐    
+    │   │    
+    │ D │◄┐  
+    │   │ │  
+    └─┬─┘ │  
+      │   │  
+      └───┘  "
+`;
+
+exports[`fan-in landing cells (#2678) > self-loop on the target > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"┌───┐   ┌───┐
+│   │   │   │
+│ A │   │ B │
+│   │   │   │
+└─┬─┘   └─┬─┘
+  │       │  
+  │       │  
+  └───┬───┘  
+      │      
+      ▼      
+    ┌───┐    
+  ┌─┤   │    
+  │ │ D │    
+  └►│   │    
+    └───┘    "
+`;
+
+exports[`fan-in landing cells (#2678) > self-loop on the target > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 216" width="424" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmmo1by4-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmmo1by4-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 115.07 L 186.67 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmmo1by4-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 100.93 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 115.07 L 237.33 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmmo1by4-arrowhead)" />
+<path class="edge" data-from="D" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 136 148 L 120 148 Q 116 148, 116 152 L 116 152 Q 116 156, 120 156 L 136 156" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmmo1by4-arrowhead)" />
+<g class="node" data-id="A" data-label="A" data-shape="rectangle">
+  <rect x="40" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>
+</g>
+<g class="node" data-id="B" data-label="B" data-shape="rectangle">
+  <rect x="232" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">B</text>
+</g>
+<g class="node" data-id="D" data-label="D" data-shape="rectangle">
+  <rect x="136" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="212" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">D</text>
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > state join > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"                  ◉    
+                  ▲    
+                  │    
+                  │    
+                  │    
+              █████████
+                 ▲ ▲   
+   ┌─────────────┘ │   
+   │               │   
+   │               │   
+   ◇               │   
+   ▲               │   
+   │               │   
+   │               │   
+   │               │   
+   │               │   
+╭──┴──╮       ╭────┴──╮
+│     │       │       │
+│  A  │       │   B   │
+│     │       │       │
+╰─────╯       ╰───────╯
+   ▲              ▲    
+   │              │    
+   └──────┬───────┘    
+          │            
+      █████████        
+          ▲            
+          │            
+          │            
+          │            
+          ●            "
+`;
+
+exports[`fan-in landing cells (#2678) > state join > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"          ◉        
+          ▲        
+          │        
+          │        
+          │        
+      █████████    
+         ▲ ▲       
+   ┌─────┘ └────┐  
+   │            │  
+   │            │  
+   │            │  
+              ╭─┴─╮
+              │   │
+              │ B │
+              │   │
+   ◇          ╰───╯
+   ▲            ▲  
+   │            │  
+   │            │  
+   │            │  
+   │            │  
+╭──┴──╮         │  
+│     │         │  
+│  A  │         │  
+│     │         │  
+╰─────╯         │  
+   ▲            │  
+   │            │  
+   └──────┬─────┘  
+          │        
+      █████████    
+          ▲        
+          │        
+          │        
+          │        
+          ●        "
+`;
+
+exports[`fan-in landing cells (#2678) > state join > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 338 408" width="338" height="408" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1alt96h-arrowhead" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto">
+    <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
+  </marker>
+  <marker id="zm1alt96h-arrowhead-start" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<path class="edge" data-from="_start" data-to="f" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 354 L 169 319.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
+<path class="edge" data-from="f" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 160.67 304 L 160.67 291.07 Q 160.67 284, 153.6 284 L 115.07 284 Q 108 284, 108 276.93 L 108 269.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
+<path class="edge" data-from="f" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 177.33 304 L 177.33 291.07 Q 177.33 284, 184.4 284 L 222.93 284 Q 230 284, 230 276.93 L 230 189.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
+<path class="edge" data-from="A" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 224 L 108 183.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
+<path class="edge" data-from="c" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 150 L 108 131.07 Q 108 124, 115.07 124 L 153.6 124 Q 160.67 124, 160.67 116.93 L 160.67 109.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
+<path class="edge" data-from="B" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 230 144 L 230 131.07 Q 230 124, 222.93 124 L 184.4 124 Q 177.33 124, 177.33 116.93 L 177.33 109.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
+<path class="edge" data-from="j" data-to="_end" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 94 L 169 59.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
+<g class="node" data-id="_start" data-label="" data-shape="state-start">
+  <circle cx="169" cy="361" r="7" fill="var(--_text)" stroke="none" />
+</g>
+<g class="node" data-id="f" data-label="" data-shape="fork-join">
+  <rect x="134" y="305" width="70" height="8" fill="var(--_node-stroke)" stroke="var(--_node-stroke)" />
+  <text x="169" y="309" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
+</g>
+<g class="node" data-id="A" data-label="A" data-shape="rounded">
+  <rect x="40" y="224" width="136" height="40" rx="5" ry="5" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="108" y="244" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+</g>
+<g class="node" data-id="B" data-label="B" data-shape="rounded">
+  <rect x="162" y="144" width="136" height="40" rx="5" ry="5" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="230" y="164" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+</g>
+<g class="node" data-id="c" data-label="" data-shape="diamond">
+  <polygon points="108,150 122,164 108,178 94,164" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="108" y="164" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
+</g>
+<g class="node" data-id="j" data-label="" data-shape="fork-join">
+  <rect x="134" y="95" width="70" height="8" fill="var(--_node-stroke)" stroke="var(--_node-stroke)" />
+  <text x="169" y="99" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
+</g>
+<g class="node" data-id="_end" data-label="" data-shape="state-end">
+  <circle cx="169" cy="47" r="7" fill="none" stroke="var(--_text)" stroke-width="2" />
+  <circle cx="169" cy="47" r="2.5" fill="var(--_text)" stroke="none" />
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > state join > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"          ●            
+          │            
+          │            
+          │            
+          ▼            
+      █████████        
+          │            
+   ┌──────┴───────┐    
+   │              │    
+   ▼              ▼    
+╭─────╮       ╭───────╮
+│     │       │       │
+│  A  │       │   B   │
+│     │       │       │
+╰──┬──╯       ╰────┬──╯
+   │               │   
+   │               │   
+   │               │   
+   │               │   
+   ▼               │   
+   ◇               │   
+   │               │   
+   │               │   
+   └─────────────┐ │   
+                 ▼ ▼   
+              █████████
+                  │    
+                  │    
+                  │    
+                  ▼    
+                  ◉    "
+`;
+
+exports[`fan-in landing cells (#2678) > state join > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"          ●        
+          │        
+          │        
+          │        
+          ▼        
+      █████████    
+          │        
+   ┌──────┴─────┐  
+   │            │  
+   ▼            │  
+╭─────╮         │  
+│     │         │  
+│  A  │         │  
+│     │         │  
+╰──┬──╯         │  
+   │            │  
+   │            │  
+   │            │  
+   │            │  
+   ▼            ▼  
+   ◇          ╭───╮
+              │   │
+              │ B │
+              │   │
+              ╰─┬─╯
+   │            │  
+   │            │  
+   │            │  
+   └─────┐ ┌────┘  
+         ▼ ▼       
+      █████████    
+          │        
+          │        
+          │        
+          ▼        
+          ◉        "
+`;
+
+exports[`fan-in landing cells (#2678) > state join > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 338 408" width="338" height="408" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmyku4me-arrowhead" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto">
+    <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
+  </marker>
+  <marker id="zmyku4me-arrowhead-start" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<path class="edge" data-from="_start" data-to="f" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 54 L 169 88.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
+<path class="edge" data-from="f" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 160.67 104 L 160.67 116.93 Q 160.67 124, 153.6 124 L 115.07 124 Q 108 124, 108 131.07 L 108 138.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
+<path class="edge" data-from="f" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 177.33 104 L 177.33 116.93 Q 177.33 124, 184.4 124 L 222.93 124 Q 230 124, 230 131.07 L 230 218.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
+<path class="edge" data-from="A" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 184 L 108 224.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
+<path class="edge" data-from="c" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 258 L 108 276.93 Q 108 284, 115.07 284 L 153.6 284 Q 160.67 284, 160.67 291.07 L 160.67 298.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
+<path class="edge" data-from="B" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 230 264 L 230 276.93 Q 230 284, 222.93 284 L 184.4 284 Q 177.33 284, 177.33 291.07 L 177.33 298.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
+<path class="edge" data-from="j" data-to="_end" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 314 L 169 348.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
+<g class="node" data-id="_start" data-label="" data-shape="state-start">
+  <circle cx="169" cy="47" r="7" fill="var(--_text)" stroke="none" />
+</g>
+<g class="node" data-id="f" data-label="" data-shape="fork-join">
+  <rect x="134" y="95" width="70" height="8" fill="var(--_node-stroke)" stroke="var(--_node-stroke)" />
+  <text x="169" y="99" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
+</g>
+<g class="node" data-id="A" data-label="A" data-shape="rounded">
+  <rect x="40" y="144" width="136" height="40" rx="5" ry="5" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="108" y="164" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+</g>
+<g class="node" data-id="B" data-label="B" data-shape="rounded">
+  <rect x="162" y="224" width="136" height="40" rx="5" ry="5" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="230" y="244" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+</g>
+<g class="node" data-id="c" data-label="" data-shape="diamond">
+  <polygon points="108,230 122,244 108,258 94,244" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="108" y="244" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
+</g>
+<g class="node" data-id="j" data-label="" data-shape="fork-join">
+  <rect x="134" y="305" width="70" height="8" fill="var(--_node-stroke)" stroke="var(--_node-stroke)" />
+  <text x="169" y="309" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55"></text>
+</g>
+<g class="node" data-id="_end" data-label="" data-shape="state-end">
+  <circle cx="169" cy="361" r="7" fill="none" stroke="var(--_text)" stroke-width="2" />
+  <circle cx="169" cy="361" r="2.5" fill="var(--_text)" stroke="none" />
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > three strokes, narrow target > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"          ┌───┐          
+          │   │          
+          │ D │          
+          │   │          
+          └───┘          
+            ▲            
+            │            
+  ┌─────────┼─────────┐  
+  │         │         │  
+  │         │         │  
+┌─┴─┐     ┌─┴─┐     ┌─┴─┐
+│   │     │   │     │   │
+│ A │     │ B │     │ C │
+│   │     │   │     │   │
+└───┘     └───┘     └───┘"
+`;
+
+exports[`fan-in landing cells (#2678) > three strokes, narrow target > BT: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"          ┌───┐          
+          │   │          
+          │ D │          
+          │   │          
+          └───┘          
+            ▲            
+            │            
+  ┌─────────┼─────────┐  
+  │         │         │  
+  │         │         │  
+┌─┴─┐     ┌─┴─┐     ┌─┴─┐
+│   │     │   │     │   │
+│ A │     │ B │     │ C │
+│   │     │   │     │   │
+└───┘     └───┘     └───┘"
+`;
+
+exports[`fan-in landing cells (#2678) > three strokes, narrow target > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 616 216" width="616" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm55g1yr-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm55g1yr-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 262.93 108 Q 270 108, 270 100.93 L 270 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm55g1yr-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm55g1yr-arrowhead)" />
+<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 500 128 L 500 115.07 Q 500 108, 492.93 108 L 353.07 108 Q 346 108, 346 100.93 L 346 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm55g1yr-arrowhead)" />
+<g class="node" data-id="A" data-label="A" data-shape="rectangle">
+  <rect x="40" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>
+</g>
+<g class="node" data-id="B" data-label="B" data-shape="rectangle">
+  <rect x="232" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">B</text>
+</g>
+<g class="node" data-id="C" data-label="C" data-shape="rectangle">
+  <rect x="424" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="500" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">C</text>
+</g>
+<g class="node" data-id="D" data-label="D" data-shape="rectangle">
+  <rect x="232" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">D</text>
+</g>
+</svg>"
+`;
+
+exports[`fan-in landing cells (#2678) > three strokes, narrow target > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-grid 1`] = `
+"┌───┐     ┌───┐     ┌───┐
+│   │     │   │     │   │
+│ A │     │ B │     │ C │
+│   │     │   │     │   │
+└─┬─┘     └─┬─┘     └─┬─┘
+  │         │         │  
+  │         │         │  
+  └─────────┼─────────┘  
+            │            
+            ▼            
+          ┌───┐          
+          │   │          
+          │ D │          
+          │   │          
+          └───┘          "
+`;
+
+exports[`fan-in landing cells (#2678) > three strokes, narrow target > TD: snapshots SVG and ASCII (grid and ELK hints) > ascii-hints 1`] = `
+"┌───┐     ┌───┐     ┌───┐
+│   │     │   │     │   │
+│ A │     │ B │     │ C │
+│   │     │   │     │   │
+└─┬─┘     └─┬─┘     └─┬─┘
+  │         │         │  
+  │         │         │  
+  └─────────┼─────────┘  
+            │            
+            ▼            
+          ┌───┐          
+          │   │          
+          │ D │          
+          │   │          
+          └───┘          "
+`;
+
+exports[`fan-in landing cells (#2678) > three strokes, narrow target > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 616 216" width="616" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1fzihnh-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1fzihnh-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 262.93 108 Q 270 108, 270 115.07 L 270 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fzihnh-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fzihnh-arrowhead)" />
+<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 500 88 L 500 100.93 Q 500 108, 492.93 108 L 353.07 108 Q 346 108, 346 115.07 L 346 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fzihnh-arrowhead)" />
+<g class="node" data-id="A" data-label="A" data-shape="rectangle">
+  <rect x="40" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>
+</g>
+<g class="node" data-id="B" data-label="B" data-shape="rectangle">
+  <rect x="232" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">B</text>
+</g>
+<g class="node" data-id="C" data-label="C" data-shape="rectangle">
+  <rect x="424" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="500" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">C</text>
+</g>
+<g class="node" data-id="D" data-label="D" data-shape="rectangle">
+  <rect x="232" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">D</text>
+</g>
+</svg>"
+`;

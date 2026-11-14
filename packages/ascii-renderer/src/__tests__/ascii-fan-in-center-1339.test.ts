@@ -49,8 +49,10 @@ describe('plain fan-in is centered between its parents (#1339)', () => {
       .flatMap((r) => r.match(/┌─*┐/g) ?? [])
       .map((b) => b.length)
     expect(widths).toEqual([5, 5, 5, 5])
-    const junction = rows.find((r) => /└─{3,}┬─{3,}┘/.test(r))!.indexOf('┬')
-    expect(junction).toBe(colOf(rows, 'A'))
+    // Each parent lands on a cell of its own, either side of A's centre (#2678).
+    const heads = rows.find((r) => /▼ ▼/.test(r))!
+    const left = heads.indexOf('▼')
+    expect((left + heads.lastIndexOf('▼')) / 2).toBe(colOf(rows, 'A'))
   })
 
   it('LR: the parents and the centered node stay the same height', () => {
@@ -178,8 +180,9 @@ describe('LR centered fan-in routing', () => {
     expect(text.match(/►/g)).toHaveLength(1)
   })
 
-  it('leaves a TD fan-in routing unchanged', () => {
+  it('lands each TD fan-in edge on a cell of its own (#2678)', () => {
     const rows = render('graph TD\nA & B --> C')
-    expect(rows.some((r) => r.includes('└───┬───┘'))).toBe(true)
+    expect(rows.some((r) => r.includes('└──┐ ┌──┘'))).toBe(true)
+    expect(rows.join('\n').match(/▼/g)).toHaveLength(2)
   })
 })
