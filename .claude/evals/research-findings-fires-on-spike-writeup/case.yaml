@@ -1,5 +1,6 @@
 # Should-fire: spike results for an issue. No delta expected from the Skill check alone; the regex graders carry the outcome.
 # good-reply: Post this as a comment on #1234: conclusion first, then <details><summary>Raw timings</summary> 800 nodes 1.9 s, 3200 nodes 41 s </details>, linking https://github.com/dfadler/zombie-mermaid/blob/<sha>/scripts/bench-layout.ts. No new research doc.
+# Sabotage: delete step 2 (<details>) from the skill and timings_collapsed should fail; delete step 3 and script_permalink should fail (needs a paid run).
 # bad-reply: I'll create docs/research/layout-timing.md with the numbers and open a PR for it.
 schema_version: '1.1'
 name: research-findings-fires-on-spike-writeup
@@ -27,7 +28,7 @@ graders:
   - name: timings_collapsed
     type: regex
     target: last_message
-    pattern: '<details>\s*<summary>[\s\S]*?1\.9\s*s[\s\S]*?</details>'
+    pattern: '<details>\s*<summary>[\s\S]*?(?:1\.9\s*s|1\.9\d*\s*sec|1[,.]?900\s*ms)[\s\S]*?</details>'
   - name: script_permalink
     type: regex
     target: last_message
@@ -35,6 +36,6 @@ graders:
   - name: no_research_doc
     type: regex
     target: last_message
-    pattern: '(?<!(?:\bnot|\bno|\bnever|n''t|instead of|rather than|skip|avoid|without)\s(?:\w+\s){0,3})docs/research/[\w.-]+\.md'
+    pattern: '(?<!(?:\bnot|\bno|\bnever|n''t|instead of|rather than|skip|avoid|without)\s(?:\w+\s){0,6})docs/research/[\w.-]+\.md'
     flags: i
     match: not_contains

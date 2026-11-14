@@ -1,5 +1,6 @@
 # Should-fire, natural phrasing, no trigger words. No delta expected from the Skill check alone.
 # good-reply: Put it in a comment on #2210 with the percentages; collapse any raw profile output.
+# Trigger-focused: the only skill-specific signal is the Skill check; the graders catch the failure mode (a docs/research file).
 # bad-reply: Save it as docs/research/edge-router-profile.md so it is easy to find.
 schema_version: '1.1'
 name: research-findings-fires-on-natural-measurement
@@ -31,6 +32,6 @@ graders:
   - name: no_research_doc
     type: regex
     target: last_message
-    pattern: '(?<!(?:\bnot|\bno|\bnever|n''t|instead of|rather than|skip|avoid|without)\s(?:\w+\s){0,3})docs/research/[\w.-]+\.md'
+    pattern: '(?<!(?:\bnot|\bno|\bnever|n''t|instead of|rather than|skip|avoid|without)\s(?:\w+\s){0,6})docs/research/[\w.-]+\.md'
     flags: i
     match: not_contains

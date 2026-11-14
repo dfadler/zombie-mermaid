@@ -1,3 +1,4 @@
+# Should-not-fire guard: the Skill check passes without the plugin by design, so no delta is expected.
 # Near-miss: shares "snapshot" vocabulary but is about vitest API, not Linux baselines.
 schema_version: '1.1'
 name: linux-baselines-stays-quiet-on-vitest-snapshots

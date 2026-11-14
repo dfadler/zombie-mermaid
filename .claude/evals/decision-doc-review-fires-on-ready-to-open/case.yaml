@@ -39,21 +39,21 @@ graders:
   - name: flags_rounding
     type: regex
     target: last_message
-    pattern: '\bround(?:s|ed|ing)?\s+(?:down|up|toward|half)|\bfloor\b|\bceil\w*|\btruncat\w*|\bodd[- ](?:width|wide|number|label)'
+    pattern: '\bround(?:s|ed|ing)?\s+(?:down|up|toward|half)|\bfloor\b|\bceil\w*|\btruncat\w*|\bfraction\w*|half[- ]pixel|\binteger\b|\bodd[- ](?:width|wide|number|label)'
     flags: i
   - name: flags_ambiguous_center
     type: regex
     target: last_message
-    pattern: '(?:node|box|label)[''’]?s?\s+(?:own\s+)?cent(?:er|re)[^\n]{0,80}(?:slot|padd)|(?:slot|padd\w*)[''’]?s?\s+cent(?:er|re)[^\n]{0,80}(?:node|box|label)|two (?:different )?(?:meanings|readings)|midpoint'
+    pattern: '(?:node|box|label)[''’]?s?\s+(?:own\s+)?cent(?:er|re)[^\n]{0,80}(?:slot|padd)|(?:slot|padd\w*)[''’]?s?\s+cent(?:er|re)[^\n]{0,80}(?:node|box|label)|two (?:different )?(?:meanings|readings)'
     flags: i
   - name: flags_scope_claim
     type: regex
     target: last_message
-    pattern: '(?:could|can|may|might|will|would|risk of)\s+(?:\w+\s+){0,2}(?:overlap\w*|collid\w*|collision\w*|touch\w*|on top of)'
+    pattern: '(?:could|can|may|might|will|would|risk of)\s+(?:\w+\s+){0,2}(?:overlap\w*|collid\w*|collision\w*|touch\w*|on top of)[^\n]{0,120}(?:slot|spacing|#2001)|(?:slot|spacing|#2001)[^\n]{0,120}(?:overlap\w*|collid\w*|collision\w*)'
     flags: i
   - name: no_blanket_approval
     type: regex
     target: last_message
-    pattern: '^\s*(?:looks good|lgtm|ready to open|good to go)'
-    flags: im
+    pattern: '(?:looks good|lgtm|ready to open|good to go)'
+    flags: i
     match: not_contains

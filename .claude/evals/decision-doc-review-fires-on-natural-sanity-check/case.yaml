@@ -28,16 +28,16 @@ graders:
   - name: flags_collision
     type: regex
     target: last_message
-    pattern: '(?:same|identical|shared)\s+port|birthday|collid\w*|collision\w*'
+    pattern: '(?:same|identical|shared)\s+port|birthday|two\s+(?:worktrees|paths)[^\n]{0,60}(?:same|collid)'
     flags: i
   - name: checks_range
     type: regex
     target: last_message
-    pattern: '\b3999\b|off-by-one|inclusive|upper (?:bound|end)|range'
+    pattern: '\b3999\b|3500\s*(?:-|to|–)\s*3999|off-by-one'
     flags: i
   - name: no_blanket_approval
     type: regex
     target: last_message
-    pattern: '^\s*(?:looks good|lgtm|ready to open|good to go|this reads fine)'
-    flags: im
+    pattern: '(?:looks good|lgtm|ready to open|good to go|reads fine)'
+    flags: i
     match: not_contains

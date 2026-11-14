@@ -1,3 +1,4 @@
+# Should-not-fire guard: the Skill check passes without the plugin by design, so no delta is expected.
 schema_version: '1.1'
 name: research-findings-quiet-on-decision-doc
 description: >
@@ -5,6 +6,7 @@ description: >
 tags:
   - research-findings
   - trigger-boundary
+  - quick
   - pair:research-findings-fires-on-spike-writeup
 runs: 3
 
