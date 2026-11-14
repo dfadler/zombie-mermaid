@@ -134,7 +134,7 @@ describe('parseBlock', () => {
 
   describe('syntax tracked in issues', () => {
     const tracked = (src: string, issue: number) =>
-      expect(() => parseBlock(src)).toThrow(new RegExp(`issues/${issue}`))
+      expect(() => parseBlock(src)).toThrow(`issues/${issue}`)
 
     it('names the links issue', () => {
       for (const link of ['-->', '---', '==>', '-.-', '--x', '<-->'])

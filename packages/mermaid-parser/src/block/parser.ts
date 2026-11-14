@@ -103,15 +103,8 @@ const SHAPE_ENDS = [
 
 /** Node ids: Mermaid's `[^\(\[\n\-\)\{\}\s\<\>:=]+`. */
 const ID_RE = /[^([\n\-){}\s<>:=]+/y
-const LINK_RES = [
-  /\s*[xo<]?--+[-xo>]\s*/y,
-  /\s*[xo<]?==+[=xo>]\s*/y,
-  /\s*[xo<]?-?\.+-[xo>]?\s*/y,
-  /\s*~~[~]+\s*/y,
-  /\s*[xo<]?--\s*/y,
-  /\s*[xo<]?==\s*/y,
-  /\s*[xo<]?-\.\s*/y,
-]
+/** What a link starts with (Mermaid's link rules, which this port does not draw yet). */
+const LINK_STARTS = ['--', '==', '-.', '<-', '<=']
 
 /** Mermaid's `cleanupComments`: whole-line `%%` comments, then `%%{...}%%` directives, front matter. */
 function preprocess(text: string): string {
@@ -234,11 +227,8 @@ function tokenize(source: string, lines: readonly string[]): Token[] {
         advance(id[0])
         continue
       }
-      for (const re of LINK_RES) {
-        re.lastIndex = 0
-        if (re.exec(here) !== null)
-          throw unsupported(lines, line, 'A link', 3105)
-      }
+      if (LINK_STARTS.some((l) => here.startsWith(l)))
+        throw unsupported(lines, line, 'A link', 3105)
       if ((m = /^:(\d+)/.exec(here)) !== null) {
         push({ kind: 'SIZE', text: m[0], num: Number(m[1]) })
       } else {
