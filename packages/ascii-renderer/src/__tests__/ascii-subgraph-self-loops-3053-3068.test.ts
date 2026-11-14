@@ -114,7 +114,7 @@ describe('#2913 loop hooks follow the frame direction, not the root', () => {
   it('puts b above c in an LR frame under a BT root, and b left of c in a TD frame under RL', () => {
     const at = (text: string, k: string): [number, number] => {
       const rows = text.split('\n')
-      const r = rows.findIndex((l) => new RegExp(`[│┤├] ${k} [│┤├]`).test(l))
+      const r = rows.findIndex((l) => l.includes(` ${k} `))
       return [rows[r]!.indexOf(` ${k} `), r]
     }
     const lr = renderMermaidASCII(
