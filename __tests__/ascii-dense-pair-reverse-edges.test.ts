@@ -36,9 +36,9 @@ describe('four edges that all run from the later node to the earlier', () => {
       const out = draw(source(dir))
       expect(out).toContain('UN')
       expect(out).toContain('14')
-      // two of the four end in an arrowhead
+      // Two of the four end in an arrowhead
       expect([...out].filter((c) => '◄►'.includes(c)).length).toBe(2)
-      // four strokes leave the source's face, one row each (a tee on its border)
+      // Four strokes leave the source's face, one row each (a tee on its border)
       const rows = out.split('\n').filter((l) => /[├┤]/.test(l))
       expect(rows.length).toBe(4)
     })

@@ -36,7 +36,9 @@ describe('four edges between two decisions, two each way', () => {
       expect(out).toContain('0A')
       expect(out).toContain('AA')
       expect([...out].filter((c) => '◄►'.includes(c)).length).toBe(4)
-      const rows = out.split('\n').filter((l) => /[─]/.test(l) && /[◄►]/.test(l))
+      const rows = out
+        .split('\n')
+        .filter((l) => /[─]/.test(l) && /[◄►]/.test(l))
       expect(rows.length).toBe(4)
     })
   }

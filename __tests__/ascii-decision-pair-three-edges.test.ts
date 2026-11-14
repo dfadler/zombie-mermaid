@@ -37,9 +37,12 @@ describe('three edges between two decisions in a horizontal flow', () => {
       )
       expect(rows.every((r) => r >= 0)).toBe(true)
       expect(new Set(rows).size).toBe(3)
-      // reciprocal on top, then the straight one, then the last, as mermaid draws
+      // Reciprocal on top, then the straight one, then the last, as mermaid draws
       expect(rows).toEqual([...rows].sort((a, b) => a - b))
-      const arrows = lines.join('').split('').filter((c) => '◄►'.includes(c))
+      const arrows = lines
+        .join('')
+        .split('')
+        .filter((c) => '◄►'.includes(c))
       expect(arrows.length).toBe(2)
     })
   }
