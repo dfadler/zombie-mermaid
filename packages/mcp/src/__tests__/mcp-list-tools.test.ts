@@ -55,6 +55,7 @@ describe('list_diagram_types', () => {
       ishikawa: 'ishikawa\n  Effect\n    Cause',
       wardley: 'wardley-beta\ncomponent A [0.5, 0.5]',
       requirement: 'requirementDiagram\nrequirement r {\n}',
+      eventmodeling: 'eventmodeling\ntf 01 ui A',
       block: 'block-beta\ncolumns 2\na b',
       usecase: 'usecase-beta\nactor A\nA --> B',
       treemap: 'treemap-beta\n"A": 1',

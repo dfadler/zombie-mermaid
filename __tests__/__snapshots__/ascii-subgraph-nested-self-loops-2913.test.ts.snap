@@ -7,7 +7,7 @@ exports[`duplicate self-loops inside a subgraph nest (#2913) > BT 2 labelled loo
 │         │
 │   ┌───┐ │
 │   │   │ │
-│ ┌─┴─┐ │ │
+│ ┌─┴─┐ │y│
 │ │   │ │x│
 │ │ a │◄┘ │
 │ │   │   │
@@ -101,7 +101,7 @@ exports[`duplicate self-loops inside a subgraph nest (#2913) > BT 2 loops in nes
 │ │         │ │
 │ │   ┌───┐ │ │
 │ │   │   │ │ │
-│ │ ┌─┴─┐ │ │ │
+│ │ ┌─┴─┐ │y│ │
 │ │ │   │ │x│ │
 │ │ │ a │◄┘ │ │
 │ │ │   │   │ │
@@ -1705,7 +1705,7 @@ exports[`duplicate self-loops inside a subgraph nest (#2913) > TD 2 labelled loo
 │ │   │   │
 │ │ a │◄┐ │
 │ │   │ │x│
-│ └─┬─┘ │ │
+│ └─┬─┘ │y│
 │   │   │ │
 │   └───┘ │
 │         │
@@ -1819,7 +1819,7 @@ exports[`duplicate self-loops inside a subgraph nest (#2913) > TD 2 loops in nes
 │ │ │   │   │ │
 │ │ │ a │◄┐ │ │
 │ │ │   │ │x│ │
-│ │ └─┬─┘ │ │ │
+│ │ └─┬─┘ │y│ │
 │ │   │   │ │ │
 │ │   └───┘ │ │
 │ │         │ │

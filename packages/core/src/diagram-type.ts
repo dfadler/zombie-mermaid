@@ -37,6 +37,7 @@ export const DIAGRAM_TYPES = [
   'journey',
   'sankey',
   'requirement',
+  'eventmodeling',
   'usecase',
   'block',
   'treemap',
@@ -100,6 +101,8 @@ export function detectDiagramType(text: string): DiagramType {
   // Case-insensitive: Mermaid's detector is `/^\s*ishikawa(-beta)?\b/i`.
   if (/^ishikawa(?:-beta)?\b/i.test(header)) return 'ishikawa'
 
+  // Case-sensitive: Mermaid's detector is `/^\s*eventmodeling/`.
+  if (/^eventmodeling(?:\s|$)/.test(header)) return 'eventmodeling'
   // Case-sensitive: Mermaid's detector is `/^\s*usecase-beta(?:\s|$)/`.
   if (/^usecase-beta(?:\s|$)/.test(header)) return 'usecase'
   // Case-sensitive: Mermaid's detector is `/^\s*block(-beta)?/`.
