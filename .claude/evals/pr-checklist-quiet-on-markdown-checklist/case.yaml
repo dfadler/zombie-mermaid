@@ -1,3 +1,4 @@
+# Should-not-fire guard: the Skill check passes without the plugin by design, so no delta is expected.
 # target sentence: the description's scope line, "Rules for the checkbox list in a PR body"; this prompt is a checkbox question that is not a PR body.
 schema_version: '1.1'
 name: pr-checklist-quiet-on-markdown-checklist
