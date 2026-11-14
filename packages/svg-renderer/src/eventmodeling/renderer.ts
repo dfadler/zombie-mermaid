@@ -10,7 +10,8 @@
 //   lane label (bold, 16px)           <text>, bold
 //   box fill / stroke by entity       Mermaid's own pastel pairs, in every theme
 //   box text (HTML, centred)          <text>, #333 so it reads on the pastels
-//   inline data (<code>, left)        a left-aligned block under the name
+//   inline data (<code>, left)        a left-aligned block under the name, regular weight
+//                                     (Mermaid measures it bold but draws it outside <b>)
 //   arrow stroke #000                 --_line
 //
 // The entity colours are Mermaid's defaults (`emUiFill`, `emCommandFill`, ...),
@@ -52,7 +53,7 @@ const STYLE = (nonce?: string): string => `${styleOpenTag(nonce)}
   .em-box rect { stroke-width: 1px; }
   .em-text { fill: #333333; font-size: 16px; }
   .em-name { font-weight: 700; text-anchor: middle; }
-  .em-data { font-weight: 700; }
+  .em-data { font-weight: 400; }
   .em-relation { fill: none; stroke: var(--_line); stroke-width: 1px; }
   .em-arrowhead { fill: var(--_line); }
 </style>`
