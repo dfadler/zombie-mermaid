@@ -3070,8 +3070,12 @@ export function determineLabelLine(
     edge.parallelLane &&
     edge.parallelLane.index > 0 &&
     !(edge.clusterSource && edge.hintedFaces) &&
-    // A hinted Z lane took the ordinary route, which leaves its label to this search.
-    !(edge.labelLine.length === 0 && hintedZLane(graph, edge))
+    // A lane edge whose route set no label (a hinted Z lane, or a face lane
+    // from buildFaceLaneRoute, #3103) leaves its label to this search.
+    !(
+      edge.labelLine.length === 0 &&
+      (hintedZLane(graph, edge) || edge.faceLane)
+    )
   )
     return
   // Likewise a cluster-exit edge: determinePath placed its label directly
