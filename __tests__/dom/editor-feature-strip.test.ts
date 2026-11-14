@@ -72,6 +72,7 @@ describe('EditorFeatureStrip', () => {
       'twenty-two',
       'twenty-three',
       'twenty-four',
+      'twenty-five',
     )
     const expected = words[DIAGRAM_TYPES.length]
     expect(container.textContent).toContain(

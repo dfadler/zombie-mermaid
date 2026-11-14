@@ -1837,6 +1837,56 @@ Services          200  █▏
   gets at least a thin bar (`▏`, `|` in ASCII mode); a zero value gets none.
 - A `title` is centred above the list; `accTitle` and `accDescr` are not printed.
 
+## Ishikawa diagrams
+
+`ishikawa` (or `ishikawa-beta`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/ishikawa.html)
+and its renderer's layout. `pnpm run ishikawa:oracle` compares the gallery samples and
+a set of edge cases with `mermaid@12.3.0`: element order and count, all text, every
+bone's vector and every y relative to the spine agree exactly; x positions and the
+frame follow text widths, so they agree within a few percent (see
+[Known differences](known-differences.md#ishikawa-fishbone-diagrams)).
+
+```mermaid
+ishikawa-beta
+    Blurry Photo
+    Process
+        Out-of-focus
+        Shutter speed too slow
+    User
+        Shaky hands
+        Wrong settings
+    Equipment
+        Dirty lens
+        Low-end sensor
+```
+
+Supported: the first line under the header is the effect (the head); each line
+indented by the same amount under it is a category, and anything indented deeper
+is a cause of the line above it, to any depth. Categories alternate above and
+below the spine, the first pair nearest the head; a cause one level down hangs
+from its parent bone as a slanted bone, the next as a stub again. `<br>` breaks a
+label, a long cause wraps at 15 characters and a long effect in the head, `%%`
+comment lines and blank lines are skipped. Not drawn: the `handDrawn` look and the
+`ishikawa.diagramPadding` / `useMaxWidth` keys.
+
+### ASCII Ishikawa diagrams
+
+Mermaid has no text mode for ishikawa diagrams, so the ASCII output is this
+library's own: a fishbone on a character grid, the effect boxed at the right end
+of the spine, categories (`[ Name ]`) alternating above (`╲`, `\` in ASCII mode)
+and below (`╱`, `/`) it, and each cause on its own row joined to its bone by a
+leader line. A cause one level down is marked with `└` and indented.
+
+```text
+        [ Equipment ]                   [ Process ]
+Dirty lens ────╲       Out-of-focus ──────────╲
+Low-end sensor ─╲      Shutter speed too slow ─╲      ┌──────────────┐
+─────────────────┴───────────────────────┬──────┴────►│ Blurry Photo │
+                       Shaky hands ─────╱             └──────────────┘
+                       Wrong settings ─╱
+                                  [ User ]
+```
+
 ## Event Modeling
 
 `eventmodeling` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/eventmodeling.html)
@@ -1996,9 +2046,9 @@ and a `block ... end` group is a larger box around its cells.
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Support for these is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
 
-| Type                                                  | Header                                                                                         |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta` |
+| Type                                        | Header                                                                        |
+| ------------------------------------------- | ----------------------------------------------------------------------------- |
+| Tree view, Venn, Wardley, Cynefin, Railroad | `treeView-beta`, `venn-beta`, `wardley-beta`, `cynefin-beta`, `railroad-beta` |
 
 ## Accessibility
 

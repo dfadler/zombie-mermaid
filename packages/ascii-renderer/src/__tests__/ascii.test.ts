@@ -214,7 +214,12 @@ describe('Diagonal validation', () => {
       // Diamond `{}` and circle `(())` nodes draw their own diagonals (#2164);
       // this checks that edges stay orthogonal.
       // An event model's lane names (`UI/Automation`) hold a literal `/`.
-      if (/\{|\(\(/.test(mermaid) || /^eventmodeling\b/m.test(mermaid)) continue
+      if (
+        /\{|\(\(/.test(mermaid) ||
+        /^eventmodeling\b/m.test(mermaid) ||
+        /^\s*ishikawa/m.test(mermaid)
+      )
+        continue
       const output = renderMermaidASCII(mermaid, {
         useAscii: true,
         boxBorderPadding: paddingX,
@@ -237,7 +242,12 @@ describe('Diagonal validation', () => {
       // Diamond `{}` and circle `(())` nodes draw their own diagonals (#2164);
       // this checks that edges stay orthogonal.
       // An event model's lane names (`UI/Automation`) hold a literal `/`.
-      if (/\{|\(\(/.test(mermaid) || /^eventmodeling\b/m.test(mermaid)) continue
+      if (
+        /\{|\(\(/.test(mermaid) ||
+        /^eventmodeling\b/m.test(mermaid) ||
+        /^\s*ishikawa/m.test(mermaid)
+      )
+        continue
       const output = renderMermaidASCII(mermaid, {
         useAscii: false,
         boxBorderPadding: paddingX,

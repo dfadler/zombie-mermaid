@@ -88,6 +88,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   block: 'block-beta\n  columns 2\n  a b',
   usecase: 'usecase-beta\n  actor A\n  A --> B',
   treemap: 'treemap-beta\n  "A": 1',
+  ishikawa: 'ishikawa\n  Effect\n    Cause\n      Sub cause',
   requirement:
     'requirementDiagram\n  requirement r {\n    id: 1\n  }\n  element e {\n  }\n  e - satisfies -> r',
   eventmodeling: 'eventmodeling\n  tf 01 ui Cart\n  tf 02 cmd Add',
