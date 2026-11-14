@@ -35,6 +35,14 @@ export const RADAR_EXTRA_SOURCES: Record<string, string> = {
     '%%{init: {"radar": {"width": 500, "marginLeft": 120}}}%%\nradar-beta\naxis a, b, c\ncurve c{1, 2, 3}\ngraticule polygon',
   'Radar front matter: config':
     '---\nconfig:\n  radar:\n    width: 450\n    marginTop: 90\n---\nradar-beta\ntitle F\naxis a, b, c\ncurve c{1, 2, 3}',
+  'Radar edge: curve with fewer values than axes':
+    'radar-beta\naxis a, b, c, d\ncurve x["Full"]{1, 2, 3, 4}\ncurve y["Short"]{1, 2}',
+  'Radar edge: curve with more values than axes':
+    'radar-beta\naxis a, b, c\ncurve x["Full"]{1, 2, 3}\ncurve y["Long"]{1, 2, 3, 4, 5}',
+  'Radar edge: only a short curve':
+    'radar-beta\naxis a, b, c\ncurve y["Short"]{1, 2}',
+  'Radar edge: short curve, polygon, min and max, no legend':
+    'radar-beta\nshowLegend false\nmax 10\nmin 1\nticks 3\ngraticule polygon\naxis a, b, c\ncurve x{1, 2, 3}\ncurve y{1, 2}',
   'Radar edge: markup in labels':
     'radar-beta\ntitle A & B\naxis a["<x> & y"], b, c\ncurve c["1 < 2"]{1, 2, 3}',
 }

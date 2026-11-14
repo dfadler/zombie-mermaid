@@ -22,8 +22,11 @@
 //     `radarCurve-N` does. Curves are named in each group when `showLegend`
 //     is on (the default); with `showLegend false` they are not, as in the
 //     SVG.
-//   - A curve with a different number of values than there are axes is not
-//     drawn, as in Mermaid. `graticule polygon` and `circle` look the same.
+//   - A curve with a different number of values than there are axes gets no
+//     bars, as in Mermaid, which skips its polygon but still lists it in the
+//     legend: with `showLegend` on it is listed under the bars with its fill
+//     glyph. Its values still count towards the default `max`.
+//     `graticule polygon` and `circle` look the same.
 //   - accTitle/accDescr are not printed (see the pie renderer). Widths are
 //     display widths (CJK and emoji labels line up).
 // ============================================================================
@@ -83,6 +86,11 @@ export function renderRadarAscii(
   const drawn = curves
     .map((curve, index) => ({ curve, index }))
     .filter(({ curve }) => curve.entries.length === axes.length)
+  const skipped = options.showLegend
+    ? curves
+        .map((curve, index) => ({ curve, index }))
+        .filter(({ curve }) => curve.entries.length !== axes.length)
+    : []
   const max =
     options.max ?? Math.max(...curves.map((c) => Math.max(...c.entries)))
   const min = options.min
@@ -150,6 +158,16 @@ export function renderRadarAscii(
       )
   }
   if (rows.length === 0) rows.push('(no axes)')
+  if (skipped.length > 0) {
+    rows.push('')
+    for (const { curve, index } of skipped)
+      rows.push(
+        '  ' +
+          paint(g.fills[index % g.fills.length] as string, color(index)) +
+          ' ' +
+          paint(curve.label, theme.fg),
+      )
+  }
 
   const out: string[] = []
   if (radar.title) {

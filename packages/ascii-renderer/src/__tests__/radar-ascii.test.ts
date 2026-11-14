@@ -52,12 +52,33 @@ describe('radar ASCII', () => {
     expect(render('radar-beta\naxis a\ncurve x["Shown"]{1}')).toContain('Shown')
   })
 
-  it('does not draw a curve with the wrong number of values', () => {
-    const out = render(
-      'radar-beta\naxis a, b\ncurve x["Short"]{1}\ncurve y["Full"]{1, 2}',
+  it('lists a curve with the wrong number of values in the legend but draws no bars', () => {
+    const rows = render(
+      'radar-beta\naxis a, b\ncurve x["Short"]{1}\ncurve y["Full"]{1, 2}\ncurve z["Long"]{1, 2, 3}',
+    ).split('\n')
+    // Bars only for Full; the default max (3) still counts Long's values.
+    expect(rows.filter((r) => /Full █|Full ▓/.test(r))).toHaveLength(2)
+    expect(rows.filter((r) => /Short|Long/.test(r))).toEqual([
+      '  █ Short',
+      '  ▒ Long',
+    ])
+    expect(rows.at(-3)).toBe('')
+    expect(rows[0]!.trim()).toBe('0' + ' '.repeat(38) + '3')
+  })
+
+  it('lists a skipped curve even when no curve is drawn, and in ASCII mode', () => {
+    expect(render('radar-beta\naxis a, b\ncurve x["Short"]{1}', true)).toBe(
+      '  a\n  b\n\n  # Short',
     )
-    expect(out).not.toContain('Short')
-    expect(out).toContain('Full')
+    expect(render('radar-beta\ncurve x["Short"]{1}')).toBe(
+      '(no axes)\n\n  █ Short',
+    )
+  })
+
+  it('hides a skipped curve with showLegend false', () => {
+    expect(
+      render('radar-beta\nshowLegend false\naxis a, b\ncurve x["Short"]{1}'),
+    ).toBe('  a\n  b')
   })
 
   it('centres the title over the drawing', () => {

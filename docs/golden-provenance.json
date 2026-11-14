@@ -136,7 +136,7 @@
       "class": "b",
       "source": "our ASCII output for every gallery sample (#1708), accepted once; guards drift only",
       "owner": "__tests__/ascii-text-snapshots.test.ts",
-      "verdict": "label-level, 360 samples (unicode charset): 336 match; 23 differ in words only for terminal reasons (gantt tick format and legend, packet and gantt truncation, kanban priority text, journey Actors legend, glyph art) except 4 defects (sankey node totals, radar curve with fewer values dropped, xychart xAxis.showLabel:false still draws labels); gantt-top-axis not renderable by mermaid 12.3.0 headless; topology and geometry not compared (#2679)",
+      "verdict": "label-level, 360 samples (unicode charset): 337 match; 22 differ in words only for terminal reasons (gantt tick format and legend, packet and gantt truncation, kanban priority text, journey Actors legend, glyph art) except 3 defects (sankey node totals, xychart xAxis.showLabel:false still draws labels); gantt-top-axis not renderable by mermaid 12.3.0 headless; topology and geometry not compared (#2679)",
       "mermaid": "12.3.0"
     },
     {
