@@ -1216,39 +1216,60 @@ function buildParallelLanePath(
     const gutterTravelHasWidth = horizontalDeparture
       ? fromGutter.x !== toGutter.x
       : fromGutter.y !== toGutter.y
+    // The gutter jog runs toward the target's side: a lane past both ends
+    // doubles back along its own row, and the reversal draws as a stray `+`.
+    // Only when another edge of the node already heads that way (its own
+    // branch there would share the row).
+    const crowded = (axis: 'x' | 'y', sign: number): boolean =>
+      graph.edges.some(
+        (e) =>
+          e !== edge &&
+          e.from === edge.from &&
+          e.to !== edge.to &&
+          e.to !== edge.from &&
+          Math.sign(
+            requireGridCoord(e.to)[axis] - requireGridCoord(edge.from)[axis],
+          ) === sign,
+      )
+    const gMain =
+      fromAttach.y +
+      (toAttach.y < fromAttach.y && crowded('y', 1) ? -offset : offset)
+    const gCross =
+      fromAttach.x +
+      (toAttach.x < fromAttach.x && crowded('x', 1) ? -offset : offset)
     const gutterLabelSegment: [GridCoord, GridCoord] = horizontalDeparture
       ? gutterTravelHasWidth
         ? [
-            { x: fromGutter.x, y: laneMain },
-            { x: toGutter.x, y: laneMain },
+            { x: fromGutter.x, y: gMain },
+            { x: toGutter.x, y: gMain },
           ]
         : [
-            { x: fromGutter.x, y: laneMain },
-            { x: fromGutter.x, y: laneMain },
+            { x: fromGutter.x, y: gMain },
+            { x: fromGutter.x, y: gMain },
           ]
       : gutterTravelHasWidth
         ? [
-            { x: laneCross, y: fromGutter.y },
-            { x: laneCross, y: toGutter.y },
+            { x: gCross, y: fromGutter.y },
+            { x: gCross, y: toGutter.y },
           ]
         : [
-            { x: laneCross, y: fromGutter.y },
-            { x: laneCross, y: fromGutter.y },
+            { x: gCross, y: fromGutter.y },
+            { x: gCross, y: fromGutter.y },
           ]
     const gutterCandidate = horizontalDeparture
       ? lanePath([
           fromAttach,
           fromGutter,
-          { x: fromGutter.x, y: laneMain },
-          { x: toGutter.x, y: laneMain },
+          { x: fromGutter.x, y: gMain },
+          { x: toGutter.x, y: gMain },
           toGutter,
           toAttach,
         ])
       : lanePath([
           fromAttach,
           fromGutter,
-          { x: laneCross, y: fromGutter.y },
-          { x: laneCross, y: toGutter.y },
+          { x: gCross, y: fromGutter.y },
+          { x: gCross, y: toGutter.y },
           toGutter,
           toAttach,
         ])
