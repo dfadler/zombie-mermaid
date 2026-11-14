@@ -206,6 +206,11 @@ describe.skipIf(!available)('pre-pr-check.sh', () => {
     expect(check(repo, '--body-file', body).stderr).not.toContain(
       'no ```mermaid block',
     )
+
+    writeFileSync(body, '- [x] Visual verification: N/A: <reason>\n')
+    expect(check(repo, '--body-file', body).stderr).toContain(
+      'no ```mermaid block',
+    )
   })
 
   it('does not ask for a mermaid block when only tests change', () => {

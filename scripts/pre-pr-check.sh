@@ -108,7 +108,7 @@ fi
 # Anything that can change a render needs the full "Visual verification" section
 # (pr-visual-verification skill): a ```mermaid block GitHub renders, plus SVG/ASCII images.
 if printf '%s\n' "$files" | grep -E '^(src|packages/(ascii-renderer|svg-renderer|core|ascii-layout|elk-layout|mermaid-parser)/src|demo)/|^packages/site/ascii-html\.ts$|^scripts/visual-diff\.ts$' | grep -Ev '(__tests__|\.test\.)' | grep -q .; then
-  printf '%s' "$body" | grep -Eiq '^[[:space:]]*(```|~~~)[[:space:]]*mermaid|visual verification.*N/A: ' ||
+  printf '%s' "$body" | grep -Eiq '^[[:space:]]*(```|~~~)[[:space:]]*mermaid|visual verification.*N/A: [^<[:space:]]' ||
     warnings+=("Rendering paths changed but the PR body has no \`\`\`mermaid block for GitHub to render. Run the pr-visual-verification skill and fill the Visual verification section (or write N/A: <reason>).")
 fi
 if [ "$has_code" -eq 1 ] && [ "$has_changeset" -eq 0 ]; then
