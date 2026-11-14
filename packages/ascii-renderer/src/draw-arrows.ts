@@ -1401,6 +1401,45 @@ function onStrokePlacement(
   return null
 }
 
+/**
+ * #3049: a straight TD cluster exit beside a single exit that jogs right on
+ * the gutter row puts its label on that row too, left of the jog's own label,
+ * as mermaid@12.3.0 draws the pair (both at the same height). Any other
+ * shape, with three or more exits among them, is returned untouched.
+ */
+function onSiblingJogRow(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: DrawingCoord[],
+  placement: { x: number; y: number; text: string }[],
+): { x: number; y: number; text: string }[] {
+  const plan = edge.clusterSource
+    ? graph.clusterExitPlans?.get(edge.clusterSource)
+    : undefined
+  if (
+    graph.config.graphDirection === 'LR' ||
+    plan?.edges.size !== 2 ||
+    !plan.edges.has(edge) ||
+    edge.path.some((c) => c.x !== edge.path[0]!.x) ||
+    line.length < 2 ||
+    line[0]!.x !== line[1]!.x ||
+    placement.length !== 1
+  ) {
+    return placement
+  }
+  const jog = [...plan.edges].find(
+    (o) =>
+      o !== edge &&
+      o.text.length > 0 &&
+      o.path.length >= 3 &&
+      o.path[1]!.y === o.path[2]!.y &&
+      o.path[2]!.x > edge.path[0]!.x,
+  )
+  const at = jog && resolveLabelPlacement(graph, jog, false)
+  if (!at || at.length !== 1) return placement
+  return [{ ...placement[0]!, y: at[0]!.y }]
+}
+
 function centredLabelPlacement(
   graph: AsciiGraph,
   edge: AsciiEdge,
@@ -1439,7 +1478,7 @@ function centredLabelPlacement(
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
-  const centred = clearOfJoiningStrokes(
+  const placed = clearOfJoiningStrokes(
     graph,
     edge,
     drawingLine,
@@ -1471,6 +1510,7 @@ function centredLabelPlacement(
       ),
     ),
   )
+  const centred = onSiblingJogRow(graph, edge, drawingLine, placed)
 
   // #1284: every labelled vertical edge puts its label beside the stroke
   // instead of cutting through it, the down edge's to its right and the up
