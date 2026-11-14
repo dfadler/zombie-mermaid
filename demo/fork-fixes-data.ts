@@ -1084,6 +1084,8 @@ export const allForkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: `A → C` is one straight stroke along the row. After: it drops to the bottom border row, runs under `B`, and rises into `C`, as in mermaid 12.3.0.',
+  },
+  {
     id: 'ascii-subgraph-self-loops-frame-direction',
     title:
       'ASCII: duplicate self-loops in a frame with its own direction drew one hook',
