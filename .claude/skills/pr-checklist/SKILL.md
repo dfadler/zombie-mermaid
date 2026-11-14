@@ -34,7 +34,9 @@ Checking one to satisfy the gate defeats it, so:
 3. **N/A needs a reason.** If an item does not apply, check it and write
    `N/A: <one-line reason tied to this diff>` on the same line (for example
    `N/A: no ASCII output change, only demo/ CSS`). Don't mark N/A to skip work
-   that does apply; if unsure, do the work.
+   that does apply; if unsure, do the work. A diff that touches a rendering path
+   is never N/A for `Visual verification`, even when you believe the output is
+   byte-identical: run `pr-visual-verification` and show before and after matching.
 4. **Answer, don't just tick, the yes/no and link items.** "Breaking change?
    yes / no" gets the answer written; "Linked issue" gets the real `#N`;
    follow-ups are filed issues (see `close-out`).
