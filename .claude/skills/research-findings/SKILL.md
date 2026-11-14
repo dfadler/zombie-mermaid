@@ -11,6 +11,12 @@ description: |
 
 # research-findings
 
+## Contract
+
+- **Input:** the results of investigation, measurement or spike work on a GitHub issue.
+- **Output:** an issue comment body (conclusion first, long output in `<details>`, script permalinks) and where it is posted.
+- **Does not:** write decision docs or change code.
+
 Findings from investigation, measurement or spike work on an issue go **in the issue**.
 
 1. Post them as a comment on the issue (`gh issue comment <n> --body-file <file>`; write the
@@ -19,10 +25,9 @@ Findings from investigation, measurement or spike work on an issue go **in the i
    `<details><summary>…</summary> … </details>` block, with the conclusion above it.
 3. Link any script or other artifact by a permalink to its file in the repo
    (`https://github.com/dfadler/zombie-mermaid/blob/<sha>/<path>`), not a bare path.
-4. Do **not** add a `docs/research/*.md` doc. Write one only when something else (a guide, a
-   code comment, a script) links to it and it is worth keeping current: `pnpm run check:docs`
-   fails on an unreferenced doc under `docs/research/`, `scripts/pre-pr-check.sh` warns when a
-   PR adds one, and `scripts/research-nudge.sh` nudges when you create one.
+4. Post a comment instead of adding a `docs/research/*.md` doc. Write a doc only when something
+   else (a guide, a code comment, a script) links to it and it is worth keeping current;
+   `pnpm run check:docs` and the `pre-pr-check.sh` and `research-nudge.sh` hooks flag the rest.
 5. Former research docs and where their findings now live are indexed in
    `docs/research/README.md`; look there before re-running a past investigation.
 

@@ -9,10 +9,15 @@ description: |
 
 # decision-doc-review
 
+## Contract
+
+- **Input:** a draft `docs/decisions/*.md`, as a file or pasted text.
+- **Output:** one finding list per checklist item, or "nothing found" for an item you checked.
+- **Does not:** review code, PR bodies or docs outside `docs/decisions/`.
+
 A decision doc proposing an algorithm, data model, or boundary between pieces of work reads just
 as fluently when a claim in it is wrong as when it is right. Before opening the PR, walk the
-draft through these five items and fix what each finds; don't rely on an external reviewer
-(human or bot) to catch it afterwards. This applies whether a human or an agent drafted it.
+draft through these five items and fix what each finds before any external reviewer (human or bot) sees it. This applies whether a human or an agent drafted it.
 
 1. **Degenerate and edge-case inputs.** Trace the proposal by hand against empty input, a single
    element, a cycle or self-reference if the domain has a graph or tree shape, and the
@@ -32,6 +37,6 @@ draft through these five items and fix what each finds; don't rely on an externa
    justification, open the reference and confirm it says what is claimed.
 
 Report the result as a list of findings per item (or "nothing found" for an item you actually
-checked), not a blanket "looks good". The full checklist and its rationale live in
+checked), not a blanket "looks good". The rationale lives in
 `docs/decisions/decision-doc-self-review-checklist-977.md`
 ([#1063](https://github.com/dfadler/zombie-mermaid/issues/1063)).
