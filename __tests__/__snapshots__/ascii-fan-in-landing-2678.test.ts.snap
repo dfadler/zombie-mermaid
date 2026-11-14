@@ -235,9 +235,9 @@ exports[`fan-in landing cells (#2678) > colour-coded edges > BT: snapshots SVG a
      │                   │    
     Yes                 No    
      │                   │    
-     └────────┐┌─────────┘    
-              ││              
-              ╱╲              
+     └──────┐    ┌───────┘    
+            │    │            
+            │ ╱╲ │            
             ╱    ╲            
          < Decision >         
             ╲    ╱            
@@ -385,9 +385,9 @@ exports[`fan-in landing cells (#2678) > colour-coded edges > TD: snapshots SVG a
             ╱    ╲            
          < Decision >         
             ╲    ╱            
-              ╲╱              
-              ││              
-     ┌────────┘└─────────┐    
+            │ ╲╱ │            
+            │    │            
+     ┌──────┘    └───────┐    
      │                   │    
     Yes                 No    
      │                   │    
@@ -547,9 +547,9 @@ exports[`fan-in landing cells (#2678) > diamond fan-in > BT: snapshots SVG and A
          │                              │       
         Yes                            No       
          │                              │       
-         └──────────────┐┌──────────────┘       
-                        ││                      
-                        ╱╲                      
+         └────────────┐    ┌────────────┘       
+                      │    │                    
+                      │ ╱╲ │                    
                       ╱    ╲                    
                    ╱          ╲                 
                  < Is it sunny? >               
@@ -697,9 +697,9 @@ exports[`fan-in landing cells (#2678) > diamond fan-in > TD: snapshots SVG and A
                  < Is it sunny? >               
                    ╲          ╱                 
                       ╲    ╱                    
-                        ╲╱                      
-                        ││                      
-         ┌──────────────┘└──────────────┐       
+                      │ ╲╱ │                    
+                      │    │                    
+         ┌────────────┘    └────────────┐       
          │                              │       
         Yes                            No       
          │                              │       
