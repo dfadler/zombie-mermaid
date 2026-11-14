@@ -57,4 +57,4 @@ graders:
       source: file
       path: docs/decisions/edge-label-placement.md
     pattern: '^## Consequences\b(?:(?!^## )[\s\S])*?(?:\blabels?\b[^\n]{0,80}\b(?:after|following|on top of|over|above)\b[^\n]{0,60}\bnodes?\b|\bnodes?\b[^\n]{0,80}\b(?:before|first)\b[^\n]{0,60}\blabels?\b)'
-    flags: m
+    flags: mi
