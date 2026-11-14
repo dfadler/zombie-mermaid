@@ -54,6 +54,7 @@ import { renderKanbanAscii } from './kanban.ts'
 import { renderBlockAscii } from './block.ts'
 import { renderSankeyAscii } from './sankey.ts'
 import { renderRequirementAscii } from './requirement.ts'
+import { renderTreemapAscii } from './treemap.ts'
 
 /**
  * Small, closed set of ASCII-only extras not every type needs — `class`
@@ -140,4 +141,6 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderBlockAscii(text, config, colorMode, theme),
   requirement: (text, config, colorMode, theme, extras) =>
     renderRequirementAscii(text, config, colorMode, theme, extras),
+  treemap: (text, config, colorMode, theme) =>
+    renderTreemapAscii(text, config, colorMode, theme),
 }
