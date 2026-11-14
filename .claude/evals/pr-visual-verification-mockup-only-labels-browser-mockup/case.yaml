@@ -1,0 +1,36 @@
+# target sentence: "Mockup-only change (`.ascii-output` CSS, `ascii-html.ts` chrome): follow `verify-ascii-terminal`'s mockup branch and label the images \"browser mockup\"."
+# Natural phrasing, no skill names or trigger words in the prompt.
+# good-reply: ## Visual verification ```mermaid graph LR A --> B ``` Before and after images are labeled browser mockup, since only CSS changed and a real-terminal capture would show nothing.
+# bad-reply: ## Visual verification ```mermaid graph LR A --> B ``` ### ASCII (real terminal capture) | Before | After | ![before](URL)
+schema_version: '1.1'
+name: pr-visual-verification-mockup-only-labels-browser-mockup
+description: >
+  A CSS-only change to the ASCII panel mockup gets the section with the Mermaid source and images
+  labeled "browser mockup", not a real-terminal capture. expected_outcome: PASS when the reply has a
+  mermaid fence and the phrase "browser mockup"; FAIL if it asks for a real-terminal ASCII capture
+  as the PR image or omits the label.
+tags: [pr-visual-verification, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    I only changed the padding of `.ascii-output` in demo/styles.css, so the demo's terminal-style
+    panel looks tighter. The sample I checked is `graph LR; A --> B`. What should the before/after
+    images in the PR body look like, and how do I label them? Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?(?:pr-visual-verification|verify-ascii-terminal)"'
+  - name: labels_browser_mockup
+    type: regex
+    pattern: 'browser mockup'
+    flags: i
+  - name: source_block_present
+    type: regex
+    pattern: '```mermaid[\s\S]+?```'
+    flags: i

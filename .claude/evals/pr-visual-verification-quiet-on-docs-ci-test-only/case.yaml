@@ -1,0 +1,39 @@
+# target sentence: "Not required only for docs, CI, tooling, and test-only diffs. Then write `Visual verification: N/A: <reason tied to this diff>`"
+# near-miss: a screenshots question whose diff cannot change a render; expect an N/A line, no section.
+# Smoke tripwire: the bare model likely also answers N/A, so no delta is expected. no_section_built is a pure
+# negation (lint EVAL024 echo warning is intended); it sits beside the positive na_with_diff_reason.
+# good-reply: Visual verification: N/A: only the workflow, a decision doc and a test changed, no rendering code touched, so delete the section.
+# bad-reply: Don't write N/A here, add before/after images: ![before](URL) ![after](URL) under ### SVG and ### ASCII.
+schema_version: '1.1'
+name: pr-visual-verification-quiet-on-docs-ci-test-only
+description: >
+  A docs, CI and test-only diff gets an N/A line with a reason tied to the diff, not a section.
+  expected_outcome: PASS when the reply has an N/A line (at a line start) naming the workflow, docs
+  or test and no mermaid fence, image or SVG/ASCII heading; FAIL if it builds the section.
+  Regression guard, no delta expected.
+tags: [pr-visual-verification, trigger, quick, smoke]
+runs: 3
+
+execution:
+  prompt: |
+    Files changed in my PR vs main:
+
+      .github/workflows/pr-hygiene.yml
+      docs/decisions/layout-notes.md
+      packages/ascii-renderer/__tests__/box.test.ts
+
+    The test change adds a case for rounded corners that already rendered correctly. What do I
+    put for the screenshots part of the PR template? Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: na_with_diff_reason
+    type: regex
+    pattern: '(?:^|\n)[ \t>*-]*(?:Visual verification:?\s*)?N/A\b[^\n]{0,200}\b(?:workflows?|docs?|decision|tests?|CI)\b'
+    flags: i
+  - name: no_section_built
+    type: regex
+    pattern: '^(?![\s\S]*(?:```mermaid|~~~mermaid|!\[|#{2,4}[ \t]*(?:SVG|ASCII)\b|\|\s*\**Before))[\s\S]+'
+    flags: i

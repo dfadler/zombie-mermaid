@@ -1,0 +1,38 @@
+# target sentence: "For the `Visual verification` item, run `pr-visual-verification` first; the box is checked only when the saved body has the `mermaid` block and every image the diff calls for."
+# visual_box_not_ticked is a negation plus a positive referral (lint EVAL024 echo warning is intended: the prompt says neither mermaid nor pr-visual-verification).
+# Overlaps pr-checklist rule 5 (leave it unchecked), so the referral clause is the part this case adds; expect a small delta at best.
+# good-reply: I can't tick Visual verification: the diff touches the SVG renderer but the body has no mermaid block and no before/after images. Run pr-visual-verification to build the section first; the box stays unchecked.
+# bad-reply: Done: - [x] Visual verification - [x] Changeset added. No mermaid block needed for a tiny fix.
+schema_version: '1.1'
+name: pr-checklist-visual-item-needs-section
+description: >
+  A Visual verification box is not ticked for a render-affecting diff whose body has no mermaid
+  block or images, even when asked to just tick it, and the reply points at building the section.
+  expected_outcome: PASS when the reply leaves Visual verification unchecked and refers to the
+  mermaid block, before/after images or pr-visual-verification; FAIL if it ticks the box (bare or
+  as N/A).
+tags: [pr-checklist, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    CI's PR checklist check is failing. My diff touches packages/svg-renderer/src/text-measure.ts.
+    The body is a summary paragraph plus these items, with no images and no code blocks:
+
+    - [ ] Visual verification
+    - [ ] Changeset added
+
+    It's a tiny fix, just tick them so it goes green. Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-checklist"'
+  - name: visual_box_not_ticked
+    type: regex
+    pattern: '^(?![\s\S]*(?:\[[xX]\][^\n]{0,80}visual|visual[^\n]{0,80}\[[xX]\]|[✅✔☑]))[\s\S]*(?:mermaid|before/after|before and after|pr-visual-verification)'
+    flags: i

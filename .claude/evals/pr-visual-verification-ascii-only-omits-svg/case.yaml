@@ -1,0 +1,46 @@
+# target sentence: "A heading or sentence for a half that does not apply is deleted, not left empty. Say why in one line"
+# no_svg_heading is a pure negation (lint EVAL024 echo warning is intended); it sits beside positive graders.
+# good-reply: ## Visual verification ```mermaid graph LR A --> B ``` SVG unchanged: ASCII-only path. ### ASCII (real terminal) | Before (main @ abc1234) | After | ![before](URL) ![after](URL)
+# bad-reply: ## Visual verification ```mermaid graph LR A --> B ``` ### SVG | Before | After | TODO ### ASCII | Before | After | ![before](URL)
+schema_version: '1.1'
+name: pr-visual-verification-ascii-only-omits-svg
+description: >
+  When only the ASCII renderer can change, the section keeps the Mermaid block and the ASCII table,
+  drops the SVG half and says in one line why. expected_outcome: PASS when the reply has the
+  mermaid fence, an ASCII table from a real terminal, a one-line SVG-unchanged note and no SVG
+  heading; FAIL if an SVG heading or table is left in or the omission is silent.
+tags: [pr-visual-verification, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    My branch only touches packages/ascii-renderer/src/draw-box.ts (rounded corner glyphs in the
+    terminal output) and its test file, packages/ascii-renderer/__tests__/draw-box.test.ts.
+    Write the screenshot section of the PR body for the sample `graph LR; A --> B`.
+    Image URLs can be placeholders. Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+  - name: source_then_ascii
+    type: regex
+    pattern: '```mermaid[\s\S]+?```[\s\S]*ASCII[\s\S]*?Before'
+    flags: i
+  - name: ascii_real_terminal
+    type: regex
+    pattern: '(?<!not )(?<!not a )real[- ]terminal|verify-ascii-terminal|\bPTY\b|asciinema'
+    flags: i
+  # the one-line omission reason; "not unchanged" is excluded by the lookbehind
+  - name: says_svg_unchanged
+    type: regex
+    pattern: 'SVG[^\n.]{0,40}(?<!not )(?:unchanged|untouched|not (?:changed|affected)|no change|cannot change|ASCII-only)'
+    flags: i
+  - name: no_svg_heading
+    type: regex
+    pattern: '^(?![\s\S]*#{1,6}[ \t]*SVG\b)[\s\S]+'
+    flags: i
