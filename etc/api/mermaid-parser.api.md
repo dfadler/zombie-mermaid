@@ -160,10 +160,12 @@ export function architectureToGraph(diagram: ArchitectureDiagram): MermaidGraph;
 
 // @public (undocumented)
 export interface AxisTick {
+    fontSize?: number;
     label: string;
     labelX: number;
     // (undocumented)
     labelY: number;
+    rotate?: number;
     textAnchor: 'start' | 'middle' | 'end';
     tx: number;
     // (undocumented)
@@ -354,6 +356,22 @@ export interface ClassRelationship {
     toCardinality?: string;
     // (undocumented)
     type: RelationshipType;
+}
+
+// @public
+export interface DataLabel {
+    // (undocumented)
+    baseline: 'middle' | 'hanging' | 'auto';
+    // (undocumented)
+    fontSize: number;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    textAnchor: 'start' | 'middle' | 'end';
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
 }
 
 // @public (undocumented)
@@ -968,6 +986,7 @@ export interface PositionedAxis {
         x: number;
         y: number;
         rotate?: number;
+        fontSize?: number;
     };
 }
 
@@ -2185,6 +2204,7 @@ export interface PositionedTimelineNode {
 
 // @public (undocumented)
 export interface PositionedTitle {
+    fontSize?: number;
     // (undocumented)
     text: string;
     // (undocumented)
@@ -2197,6 +2217,7 @@ export interface PositionedTitle {
 export interface PositionedXYChart {
     bars: PositionedBar[];
     config?: XyChartInitConfig;
+    dataLabels?: DataLabel[];
     gridLines: GridLine[];
     // (undocumented)
     height: number;

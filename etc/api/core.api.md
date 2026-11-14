@@ -1128,6 +1128,10 @@ export function wrapToWidth(text: string, maxWidth: number, fontSize: number): s
 
 // @public
 export interface XyChartAxisInitConfig {
+    axisLineWidth?: number;
+    labelFontSize?: number;
+    labelPadding?: number;
+    labelRotation?: number;
     // (undocumented)
     showAxisLine?: boolean;
     // (undocumented)
@@ -1136,6 +1140,10 @@ export interface XyChartAxisInitConfig {
     showTick?: boolean;
     // (undocumented)
     showTitle?: boolean;
+    tickLength?: number;
+    tickWidth?: number;
+    titleFontSize?: number;
+    titlePadding?: number;
 }
 
 // @public
@@ -1144,8 +1152,13 @@ export interface XyChartInitConfig {
     chartOrientation?: 'vertical' | 'horizontal';
     // (undocumented)
     height?: number;
+    plotReservedSpacePercent?: number;
+    showDataLabel?: boolean;
+    showDataLabelOutsideBar?: boolean;
     // (undocumented)
     showTitle?: boolean;
+    titleFontSize?: number;
+    titlePadding?: number;
     // (undocumented)
     width?: number;
     // (undocumented)
