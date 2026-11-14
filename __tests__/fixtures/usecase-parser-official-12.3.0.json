@@ -610,11 +610,7 @@
         {
           "id": "S",
           "label": "S",
-          "members": [
-            "X",
-            "U1",
-            "U2"
-          ]
+          "members": ["X", "U1", "U2"]
         }
       ],
       "relationships": [
@@ -645,9 +641,7 @@
         {
           "id": "S",
           "label": "My System",
-          "members": [
-            "U"
-          ]
+          "members": ["U"]
         }
       ],
       "relationships": [],
@@ -671,9 +665,7 @@
         {
           "id": "My_Sys",
           "label": "My Sys",
-          "members": [
-            "U"
-          ]
+          "members": ["U"]
         }
       ],
       "relationships": [],
@@ -1193,10 +1185,7 @@
         {
           "id": "S",
           "label": "S",
-          "members": [
-            "A",
-            "B"
-          ]
+          "members": ["A", "B"]
         }
       ],
       "relationships": [],
@@ -1220,9 +1209,7 @@
         {
           "id": "S",
           "label": "S",
-          "members": [
-            "U"
-          ]
+          "members": ["U"]
         }
       ],
       "relationships": [],
@@ -1264,16 +1251,12 @@
         {
           "id": "S",
           "label": "S",
-          "members": [
-            "A"
-          ]
+          "members": ["A"]
         },
         {
           "id": "T",
           "label": "T",
-          "members": [
-            "B"
-          ]
+          "members": ["B"]
         }
       ],
       "relationships": [

@@ -15,7 +15,7 @@ describe('use case ASCII', () => {
     expect(out).toContain('/|\\')
     expect(out).toContain('/ \\')
     expect(out).toContain('Customer')
-    expect(out).toContain('╭') // the use case is a rounded box
+    expect(out).toContain('╭') // The use case is a rounded box
   })
 
   it('draws a boundary, the include label and a note', () => {
@@ -25,7 +25,7 @@ describe('use case ASCII', () => {
     expect(out).toContain('Shop')
     expect(out).toContain('«include»')
     expect(out).toContain('careful')
-    expect(out).toContain('┄') // dotted
+    expect(out).toContain('┄') // Dotted
   })
 
   it('ends a generalization in a hollow head', () => {

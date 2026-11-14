@@ -83,8 +83,8 @@ describe('use case oracle agreement (mermaid 12.3.0)', () => {
     const resized = base()
     resized.boxes.find((b) => b.id === 'Browse')!.width += 5
     resized.boxes.find((b) => b.id === 'Pay')!.cx += 5
-    resized.boxes.find((b) => b.id === 'Shop')!.width += 50 // a boundary's size is layout
-    resized.boxes.find((b) => b.id === 'Customer')!.width += 1 // within the actor tolerance
+    resized.boxes.find((b) => b.id === 'Shop')!.width += 50 // A boundary's size is layout
+    resized.boxes.find((b) => b.id === 'Customer')!.width += 1 // Within the actor tolerance
     const a = usecaseAgreement(base(), resized)
     expect(a.boxes).toBeCloseTo(6 / 7)
     expect(a.positions).toBeCloseTo(6 / 7)
@@ -105,7 +105,7 @@ describe('use case oracle agreement (mermaid 12.3.0)', () => {
     const a = usecaseAgreement(e, e)
     expect(a.boxes).toBeNull()
     expect(a.edges).toBeNull()
-    expect(worstUsecase(a)).toBe(0) // the frame
+    expect(worstUsecase(a)).toBe(0) // The frame
     expect(worstUsecase({ ...a, frame: null })).toBeNull()
   })
 

@@ -77,10 +77,10 @@ describe('use case SVG', () => {
 
   it('draws each shape', () => {
     expect(svg).toContain('data-shape="usecase-actor"')
-    expect(svg).toMatch(/<circle [^>]*r="12"/) // the stick figure's head
+    expect(svg).toMatch(/<circle [^>]*r="12"/) // The stick figure's head
     expect(svg).toContain('<ellipse')
     expect(svg).toContain('data-shape="usecase-rect"')
-    expect(svg).toContain('fill="#fff5ad"') // the note
+    expect(svg).toContain('fill="#fff5ad"') // The note
   })
 
   it('draws a boundary, include as a dotted «include» line, and a hollow generalization head', () => {
