@@ -202,6 +202,62 @@
       "verdict": "HOLDS: re-rendered with mermaid@12.3.0, 8 of 8 samples deep-equal the fixture (2026-11-08)"
     },
     {
+      "paths": ["__tests__/fixtures/ishikawa-official-12.3.0.json"],
+      "class": "a",
+      "source": "mermaid 12.3.0's own SVG for each Ishikawa sample and extra source, without its CSS (scripts/ishikawa-oracle.ts --write-fixture)",
+      "owner": "__tests__/ishikawa-agreement.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "HOLDS: 15 of 15 cases agree with this renderer. Not re-rendered with mermaid for this entry (#2679)"
+    },
+    {
+      "paths": ["__tests__/fixtures/packet-official-12.3.0.json"],
+      "class": "a",
+      "source": "mermaid 12.3.0's own SVG for each Packet sample and edge case, minus <style>",
+      "owner": "__tests__/packet-agreement.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "HOLDS: 40 of 40 cases agree with this renderer on geometry. Not re-rendered with mermaid for this entry (#2679)"
+    },
+    {
+      "paths": ["__tests__/fixtures/radar-official-12.3.0.json"],
+      "class": "a",
+      "source": "mermaid 12.3.0's own SVG for each Radar sample and extra source, without its CSS (scripts/radar-oracle.ts --write-fixture)",
+      "owner": "__tests__/radar-agreement.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "HOLDS: 22 of 22 cases agree with this renderer. Not re-rendered with mermaid for this entry (#2679)"
+    },
+    {
+      "paths": ["__tests__/fixtures/radar-parser-official-12.3.0.json"],
+      "class": "a",
+      "source": "mermaid 12.3.0's own radar parser and database output for each source (scripts/radar-parser-fixture.ts)",
+      "owner": "__tests__/radar-parser-agreement.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "HOLDS: 87 of 87 sources parse to the same model (or the same error). Not re-rendered with mermaid for this entry (#2679)"
+    },
+    {
+      "paths": ["__tests__/fixtures/usecase-official-12.3.0.json"],
+      "class": "a",
+      "source": "mermaid 12.3.0's own SVG for each Use Case sample, without its CSS (scripts/usecase-oracle.ts --write-fixture)",
+      "owner": "__tests__/usecase-agreement.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "HOLDS: 4 of 4 cases within the test's gates. Not re-rendered with mermaid for this entry (#2679)"
+    },
+    {
+      "paths": ["__tests__/fixtures/usecase-parser-official-12.3.0.json"],
+      "class": "a",
+      "source": "mermaid 12.3.0's own usecase-beta parser and database output for each source (scripts/usecase-parser-fixture.ts)",
+      "owner": "__tests__/usecase-parser-agreement.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "HOLDS: 117 sources checked; syntax mermaid accepts that parseUsecase rejects is listed in the test's UNSUPPORTED. Not re-rendered with mermaid for this entry (#2679)"
+    },
+    {
+      "paths": ["__tests__/fixtures/wardley-official-12.3.0.json"],
+      "class": "a",
+      "source": "mermaid 12.3.0's own SVG for each Wardley sample and extra source, without its CSS (scripts/wardley-oracle.ts --write-fixture)",
+      "owner": "__tests__/wardley-agreement.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "HOLDS: 34 of 34 cases agree with this renderer. Not re-rendered with mermaid for this entry (#2679)"
+    },
+    {
       "paths": [
         "packages/ascii-renderer/src/__tests__/__snapshots__/ascii-lr-compact-labeled-fanout-2561.test.ts.snap"
       ],

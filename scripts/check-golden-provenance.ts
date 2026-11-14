@@ -9,7 +9,7 @@ import { join } from 'node:path'
 const ROOT = join(import.meta.dirname, '..')
 
 const GOLDEN =
-  /(\.snap$|\/__[a-z-]*snapshots__\/|\/testdata\/|elk-layout\/__tests__\/fixtures\/.*\.expected\.json$|ascii-layout\/__tests__\/fixtures\/.*\.ascii\.txt$|c4-mermaid-reference\.json$|mindmap-official-.*\.json$)/
+  /(\.snap$|\/__[a-z-]*snapshots__\/|\/testdata\/|elk-layout\/__tests__\/fixtures\/.*\.expected\.json$|ascii-layout\/__tests__\/fixtures\/.*\.ascii\.txt$|c4-mermaid-reference\.json$|-official-.*\.json$)/
 
 interface Entry {
   paths: string[]
