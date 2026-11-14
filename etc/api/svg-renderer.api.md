@@ -15,6 +15,7 @@ import { ElkLabel } from '@zombie-mermaid/core';
 import { ElkNode } from '@zombie-mermaid/core';
 import { ErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { ErRenderOptions } from '@zombie-mermaid/core';
+import { EventModeling } from '@zombie-mermaid/mermaid-parser';
 import { FlowchartRenderOptions } from '@zombie-mermaid/core';
 import { GitGraph } from '@zombie-mermaid/mermaid-parser';
 import { Journey } from '@zombie-mermaid/mermaid-parser';
@@ -30,6 +31,7 @@ import { PieChart } from '@zombie-mermaid/mermaid-parser';
 import { Point } from '@zombie-mermaid/core';
 import { PositionedClassDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedErDiagram } from '@zombie-mermaid/mermaid-parser';
+import { PositionedEventModeling } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGitGraph } from '@zombie-mermaid/mermaid-parser';
 import { PositionedGraph } from '@zombie-mermaid/core';
 import { PositionedJourney } from '@zombie-mermaid/mermaid-parser';
@@ -198,6 +200,29 @@ export function estimateTextWidth(text: string, fontSize: number, fontWeight: nu
 export function evaluateCssColorValue(value: string, declarations: Record<string, string>): string;
 
 // @public
+export const EVENTMODELING: {
+    readonly swimlaneMinHeight: 70;
+    readonly swimlanePadding: 15;
+    readonly swimlaneGap: 10;
+    readonly boxPadding: 10;
+    readonly boxOverlap: 90;
+    readonly boxMinWidth: 80;
+    readonly boxMaxWidth: 450;
+    readonly boxMinHeight: 80;
+    readonly boxMaxHeight: 750;
+    readonly contentStartX: 250;
+    readonly textMaxWidth: 430;
+    readonly lineHeight: 19;
+    readonly viewBoxPadding: 30;
+    readonly labelUiAutomation: "UI/Automation";
+    readonly labelUiAutomationPrefix: "UI/A: ";
+    readonly labelCommandReadModel: "Command/Read Model";
+    readonly labelCommandReadModelPrefix: "C/RM: ";
+    readonly labelEvents: "Events";
+    readonly labelEventsPrefix: "Stream: ";
+};
+
+// @public
 export function extractEdgeLabelPosition(elkEdge: ElkExtendedEdge, offsetX?: number, offsetY?: number): Point | undefined;
 
 // @public
@@ -277,6 +302,9 @@ export function layoutClassDiagramSync(diagram: ClassDiagram, options?: ClassRen
 
 // @public
 export function layoutErDiagramSync(diagram: ErDiagram, options?: ErRenderOptions): PositionedErDiagram;
+
+// @public
+export function layoutEventModeling(diagram: EventModeling): PositionedEventModeling;
 
 // @public
 export function layoutFlowchartSync(rawGraph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
@@ -480,6 +508,9 @@ export function renderClassSvg(diagram: PositionedClassDiagram, colors: DiagramC
 
 // @public
 export function renderErSvg(diagram: PositionedErDiagram, colors: DiagramColors, font?: string, transparent?: boolean, fontSizes?: FontSizes, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderEventModelingSvg(d: PositionedEventModeling, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderGitGraphSvg(gg: PositionedGitGraph, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;

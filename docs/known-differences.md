@@ -956,6 +956,29 @@ wrapped line counts, priority bars and the drawing size agree on every gallery s
 - **Not drawn.** `::icon(...)` and `:::class` styling, as in Mermaid 12.3.0 (no icon font).
 - **ASCII.** Mermaid has no ASCII output; the stacked column blocks are this library's own.
 
+## Event modeling
+
+Checked against mermaid 12.3.0 with `pnpm run eventmodeling:oracle`: swimlane and box
+rectangles, lane labels, arrows and the drawing size agree on every gallery sample.
+
+- **Lanes per namespaced frame.** Mermaid 12.3.0 never finds an existing lane by namespace
+  (its lane records carry no namespace), so every frame of `Inv.A`, `Inv.B`, `Inv.C` gets
+  its own "Stream: Inv" lane. The SVG reproduces that; the ASCII output puts frames that
+  share a namespace in one lane, as Mermaid's documentation describes.
+- **Text widths.** Mermaid measures `<b>Name</b><br/><br/><code>data</code>` as literal
+  text in the browser (tags and `&nbsp;` included) and divides a box with data by three;
+  this library sums Trebuchet MS bold advances plus kerning (measured on macOS), so a box
+  can differ by a pixel on a machine without Trebuchet. Characters outside printable ASCII
+  are estimated.
+- **Colours.** The entity fills and strokes are Mermaid's defaults in every theme (blue
+  commands, orange events, green read models); the lane bands, labels and arrows follow the
+  theme. `themeVariables.em*` is not read.
+- **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; a multi-line `data` block
+  flows as one paragraph there and here.
+- **Not drawn.** `entity`, `note` and `gwt` parse and draw nothing, as in Mermaid 12.3.0;
+  data type prefixes (`json`, `md`, ...) get no special treatment, as there.
+- **ASCII.** Mermaid has no ASCII output; the lane-column layout is this library's own.
+
 ## User journeys
 
 Checked against mermaid 12.3.0 (`mermaid.render` in headless Chromium): viewBox, section

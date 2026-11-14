@@ -280,6 +280,11 @@
     "maxLines": 70
   },
   {
+    "file": "scripts/eventmodeling-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/eventmodeling-agreement.ts",
+    "maxLines": 54
+  },
+  {
     "file": "scripts/kanban-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the figures are unit-tested in scripts/lib/kanban-agreement.ts",
     "maxLines": 80

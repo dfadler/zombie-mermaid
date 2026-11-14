@@ -1781,16 +1781,72 @@ Bio-conversion  310.78
   ASCII mode).
 - Bars use the theme accent. A cycle throws "circular link", as the SVG does.
 
+## Event Modeling
+
+`eventmodeling` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/eventmodeling.html)
+and its renderer's layout, read from `mermaid@12.3.0` and `@mermaid-js/parser@2.0.1`.
+`pnpm run eventmodeling:oracle` compares the gallery samples lane by lane, box by box and
+arrow by arrow with `mermaid@12.3.0`.
+
+```mermaid
+eventmodeling
+tf 01 ui CartScreen
+tf 02 cmd AddItem { description: string }
+tf 03 evt ItemAdded
+tf 04 rmo CartItems
+tf 05 ui CartPage
+```
+
+Supported: `tf` / `timeframe` and `rf` / `resetframe` (a reset frame draws no arrow from the
+frame before it), a frame number of one to three digits, the entity types `ui`,
+`pcr` / `processor`, `cmd` / `command`, `rmo` / `readmodel` and `evt` / `event`, and a
+`Namespace.Name` identifier. `->> NN` points a frame at the named earlier frames instead of
+the nearest earlier frame of another swimlane. Data follows a frame as inline `{ ... }`,
+`"..."` or `'...'` (with an optional `` `json` `` type prefix) or as `[[Name]]` pointing at a
+`data Name { ... }` block. `entity`, `note` and `gwt` statements parse and, as in Mermaid
+12.3.0, draw nothing. As in Mermaid, `title`, `accTitle` and `accDescr` are syntax errors,
+keywords are lowercase, a repeated frame number is "Duplicate event modeling frame ID", and
+an unknown `->>` target, a source of the wrong kind or a missing `data` block is ignored
+without an error.
+
+The SVG uses Mermaid's geometry: boxes at least 80px (at most 450px wide), lanes 10px
+apart, boxes overlapping their predecessor's right edge, 19px per text line. Text widths are
+Trebuchet MS bold advances plus kerning, not a browser measurement. See
+[Known differences](known-differences.md#event-modeling).
+
+### ASCII Event Modeling
+
+Mermaid has no text mode for event models, and its swimlanes run left to right, so the ASCII
+output is this library's own design: lanes are columns and time runs down.
+
+```text
+UI/Automation      Command/Read Model
+
+┌─ ui ──────┐
+│ Cart      │
+└─────┬─────┘
+      │
+      │
+      │            ┌─ command ──────┐
+      └───────────▶│ Add            │
+                   └────────────────┘
+```
+
+- A box names its entity type in the top border; text wraps at 28 columns.
+- An arrow leaves the bottom of its source and turns into the side of its target; it runs
+  behind any box it passes.
+- Frames that share a namespace share one lane.
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
 
-| Type                                                                  | Header                                                                                                          |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Use case                                                              | `usecase-beta`                                                                                                  |
-| Treemap                                                               | `treemap-beta`                                                                                                  |
-| Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
-| Block                                                                 | `block-beta` (12.2.0 rejects it with an empty body; header name per upstream docs)                              |
+| Type                                                  | Header                                                                                         |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Use case                                              | `usecase-beta`                                                                                 |
+| Treemap                                               | `treemap-beta`                                                                                 |
+| Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta` |
+| Block                                                 | `block-beta` (12.2.0 rejects it with an empty body; header name per upstream docs)             |
 
 ## Accessibility
 

@@ -1,0 +1,32 @@
+eventmodeling
+rf 01 evt CartCreated
+rf 02 evt ItemAdded
+timeframe 03 readmodel CartView ->> 01 ->> 02
+timeframe 04 ui CartScreen
+tf 05 cmd Checkout
+---
+UI/Automation       Command/Read Model      Events
+
+                                            +- event -----+
+                                            | CartCreated |
+                                            +------+------+
+                                                   |
+                                                   |
+                                            +- event -----+
+                                            | ItemAdded   |
+                                            +------+------+
+                                                   |
+                                                   |
+                    +- read model ---+             |
+                    | CartView       |<------------+
+                    +--------+-------+
+                             |
+                             |
++- ui -------+               |
+| CartScreen |<--------------+
++------+-----+
+       |
+       |
+       |            +- command ------+
+       +----------->| Checkout       |
+                    +----------------+

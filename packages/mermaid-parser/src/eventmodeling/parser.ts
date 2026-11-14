@@ -64,7 +64,8 @@ const FRONT_MATTER = /^\s*---[\t ]*\r?\n(?:[\s\S]*?\r?\n)?---[\t ]*(?:\r?\n|$)/
 const DIRECTIVE = /%%\{[\s\S]*?\}%%/g
 const FRAME_KEYWORD = /(tf|timeframe|rf|resetframe)(?!\w)/y
 const FRAME_ID = /\d{1,3}(?!\d)/y
-const ENTITY_TYPE = /(ui|pcr|processor|cmd|command|rmo|readmodel|evt|event)(?!\w)/y
+const ENTITY_TYPE =
+  /(ui|pcr|processor|cmd|command|rmo|readmodel|evt|event)(?!\w)/y
 const IDENTIFIER = /[_a-zA-Z]\w*(?:\.[_a-zA-Z]\w*)*/y
 const NAME = /[_a-zA-Z]\w*/y
 const DATA_TYPE = /`(\w+)`/y
@@ -150,8 +151,7 @@ export function parseEventModeling(text: string): EventModeling {
       optionalDataType()
       dataInline = take(DATA_INLINE)
       if (dataInline === undefined) pos = save
-      if (seen.has(id))
-        fail(`Duplicate event modeling frame ID "${id}"`, at)
+      if (seen.has(id)) fail(`Duplicate event modeling frame ID "${id}"`, at)
       seen.add(id)
       const parts = identifier.split('.')
       const frame: EventModelingFrame = {

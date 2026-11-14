@@ -1,0 +1,39 @@
+eventmodeling
+tf 01 rmo Inventory.Stock
+tf 02 ui ProductPage
+tf 03 cmd AddItem { description: string }
+tf 04 evt ItemAdded [[AddItem01]]
+tf 05 pcr Pricing.Recalculate `json`{ "currency": "EUR" }
+
+data AddItem01 {
+  description: 'john'
+}
+---
+UI/Automation        UI/A: Pricing              Command/Read Model           C/RM: Inventory        Events
+
+                                                                             ┌─ read model ──┐
+                                                                             │ Stock         │
+                                                                             └───────┬───────┘
+                                                                                     │
+                                                                                     │
+┌─ ui ────────┐                                                                      │
+│ ProductPage │◀─────────────────────────────────────────────────────────────────────┘
+└──────┬──────┘
+       │
+       │
+       │                                        ┌─ command ───────────┐
+       │                                        │ AddItem             │
+       └───────────────────────────────────────▶│ description: string │
+                                                └──────────┬──────────┘
+                                                           │
+                                                           │
+                                                           │                                        ┌─ event ─────────────┐
+                                                           │                                        │ ItemAdded           │
+                                                           └───────────────────────────────────────▶│ description: 'john' │
+                                                                                                    └──────────┬──────────┘
+                                                                                                               │
+                                                                                                               │
+                     ┌─ processor ───────┐                                                                     │
+                     │ Recalculate       │                                                                     │
+                     │ "currency": "EUR" │◀────────────────────────────────────────────────────────────────────┘
+                     └───────────────────┘

@@ -20,7 +20,7 @@
 //                      └───────────▶ │ ItemAdded  │
 //                                    └────────────┘
 //
-//   - A lane is as wide as its widest box (text wraps at 28 columns); lanes
+//   - A lane is as wide as its widest box (text wraps at 28 columns, a longer word is cut); lanes
 //     are in the SVG's order: UI/processors, commands/read models, events,
 //     with a namespace's frames sharing one lane after the unnamed one.
 //   - An arrow leaves the bottom of its source, drops to the target's middle
@@ -54,17 +54,33 @@ const TYPE_LABEL = {
   event: 'event',
 } as const
 
-/** Greedy word wrap by display width; a word wider than the limit keeps its own line. */
+/** Cut a word wider than the box into pieces that fit. */
+function chop(word: string): string[] {
+  const pieces: string[] = []
+  let cur = ''
+  for (const ch of word) {
+    if (cur && displayWidth(cur + ch) > MAX_TEXT) {
+      pieces.push(cur)
+      cur = ''
+    }
+    cur += ch
+  }
+  return [...pieces, cur]
+}
+
+/** Greedy word wrap by display width; a word wider than the limit is cut. */
 function wrap(text: string): string[] {
   const out: string[] = []
   for (const line of text.split('\n')) {
     let cur = ''
     for (const word of line.split(/\s+/).filter(Boolean)) {
-      const next = cur ? `${cur} ${word}` : word
-      if (cur && displayWidth(next) > MAX_TEXT) {
-        out.push(cur)
-        cur = word
-      } else cur = next
+      for (const piece of chop(word)) {
+        const next = cur ? `${cur} ${piece}` : piece
+        if (cur && displayWidth(next) > MAX_TEXT) {
+          out.push(cur)
+          cur = piece
+        } else cur = next
+      }
     }
     out.push(cur)
   }
@@ -133,8 +149,26 @@ export function renderEventModelingAscii(
   if (em.frames.length === 0) return ''
   const ascii = config.useAscii
   const g = ascii
-    ? { h: '-', v: '|', tl: '+', tr: '+', bl: '+', br: '+', down: '+', right: '>' }
-    : { h: '─', v: '│', tl: '┌', tr: '┐', bl: '└', br: '┘', down: '┬', right: '▶' }
+    ? {
+        h: '-',
+        v: '|',
+        tl: '+',
+        tr: '+',
+        bl: '+',
+        br: '+',
+        down: '+',
+        right: '>',
+      }
+    : {
+        h: '─',
+        v: '│',
+        tl: '┌',
+        tr: '┐',
+        bl: '└',
+        br: '┘',
+        down: '┬',
+        right: '▶',
+      }
   const left = ascii ? '<' : '◀'
   const arrowDown = ascii ? 'v' : '▼'
 
@@ -156,7 +190,9 @@ export function renderEventModelingAscii(
   const lanes = [...laneKeys.entries()]
     .sort(
       ([, a], [, b]) =>
-        a.group - b.group || Number(a.named) - Number(b.named) || a.order - b.order,
+        a.group - b.group ||
+        Number(a.named) - Number(b.named) ||
+        a.order - b.order,
     )
     .map(([key, l]) => ({ key, label: l.label, x: 0, width: 0 }))
   const laneIndex = new Map(lanes.map((l, i) => [l.key, i]))
@@ -173,7 +209,15 @@ export function renderEventModelingAscii(
     )
     const lane = lanes[laneIndex.get(`${l.group}:${l.label}`)!]!
     lane.width = Math.max(lane.width, inner + 4)
-    return { f, name, data, tag, lane, top: 0, height: name.length + data.length + 2 }
+    return {
+      f,
+      name,
+      data,
+      tag,
+      lane,
+      top: 0,
+      height: name.length + data.length + 2,
+    }
   })
   for (const l of lanes) l.width = Math.max(l.width, displayWidth(l.label))
   let x = 0
@@ -192,9 +236,17 @@ export function renderEventModelingAscii(
 
   type Cell = { ch: string; role: 'line' | 'text' | 'head'; mask: number }
   const grid: Cell[][] = Array.from({ length: height }, () =>
-    Array.from({ length: width }, () => ({ ch: ' ', role: 'line', mask: 0 }) as Cell),
+    Array.from(
+      { length: width },
+      () => ({ ch: ' ', role: 'line', mask: 0 }) as Cell,
+    ),
   )
-  const put = (cx: number, cy: number, ch: string, role: Cell['role']): void => {
+  const put = (
+    cx: number,
+    cy: number,
+    ch: string,
+    role: Cell['role'],
+  ): void => {
     const cell = grid[cy]?.[cx]
     if (cell) {
       cell.ch = ch
@@ -202,7 +254,12 @@ export function renderEventModelingAscii(
       cell.mask = 0
     }
   }
-  const putText = (cx: number, cy: number, s: string, role: Cell['role']): void => {
+  const putText = (
+    cx: number,
+    cy: number,
+    s: string,
+    role: Cell['role'],
+  ): void => {
     let at = cx
     for (const ch of s) {
       put(at, cy, ch, role)
@@ -250,7 +307,8 @@ export function renderEventModelingAscii(
       const toRight = target.lane.x > source.lane.x
       mark(cs, ym, UP | (toRight ? RIGHT : LEFT))
       if (toRight) {
-        for (let c = cs + 1; c < target.lane.x - 1; c++) mark(c, ym, LEFT | RIGHT)
+        for (let c = cs + 1; c < target.lane.x - 1; c++)
+          mark(c, ym, LEFT | RIGHT)
         heads.push([target.lane.x - 1, ym, g.right])
       } else {
         const edge = target.lane.x + target.lane.width
@@ -269,7 +327,8 @@ export function renderEventModelingAscii(
     const tag = ` ${b.tag} `
     put(bx, b.top, g.tl, 'line')
     putText(bx + 1, b.top, g.h + tag, 'line')
-    for (let c = bx + 2 + displayWidth(tag); c < bx + w - 1; c++) put(c, b.top, g.h, 'line')
+    for (let c = bx + 2 + displayWidth(tag); c < bx + w - 1; c++)
+      put(c, b.top, g.h, 'line')
     put(bx + w - 1, b.top, g.tr, 'line')
     put(bx, bottom, g.bl, 'line')
     for (let c = bx + 1; c < bx + w - 1; c++) put(c, bottom, g.h, 'line')
@@ -287,13 +346,18 @@ export function renderEventModelingAscii(
   const paint = (s: string, role: Cell['role']): string =>
     colorizeText(
       s,
-      role === 'head' ? (theme.accent ?? theme.fg) : role === 'text' ? theme.fg : theme.line,
+      role === 'head'
+        ? (theme.accent ?? theme.fg)
+        : role === 'text'
+          ? theme.fg
+          : theme.line,
       colorMode,
     )
   return grid
     .map((row) => {
       let end = row.length
-      while (end > 0 && row[end - 1]!.ch === ' ' && row[end - 1]!.mask === 0) end--
+      while (end > 0 && row[end - 1]!.ch === ' ' && row[end - 1]!.mask === 0)
+        end--
       let out = ''
       let run = ''
       let runRole: Cell['role'] = 'line'

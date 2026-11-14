@@ -103,12 +103,11 @@ export function renderEventModelingSvg(
   for (const box of d.boxes) {
     const c = ENTITY_COLORS[box.frame.entityType]
     const lines = box.nameLines.length
-    const total = lines + (box.dataLines.length > 0 ? 1 + box.dataLines.length : 0)
+    const total =
+      lines + (box.dataLines.length > 0 ? 1 + box.dataLines.length : 0)
     // The text block is centred in the box, 10px inside its top and bottom.
-    const top =
-      box.y + 10 + (box.height - 20 - total * E.lineHeight) / 2
-    const baseline = (k: number): number =>
-      top + (k + 0.5) * E.lineHeight
+    const top = box.y + 10 + (box.height - 20 - total * E.lineHeight) / 2
+    const baseline = (k: number): number => top + (k + 0.5) * E.lineHeight
     const cx = box.x + box.width / 2
     let text = box.nameLines
       .map(

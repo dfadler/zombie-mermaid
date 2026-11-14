@@ -1,0 +1,48 @@
+eventmodeling
+tf 001 ui AVeryLongScreenNameThatKeepsGoingAndGoingWithoutAnySpacesAtAllSoItMustBreakSomewhereAroundHere
+tf 002 cmd Register { name: string, email: string, password: string, newsletter: boolean, referral: string }
+tf 003 evt Billing.Registered [[Details]]
+tf 004 evt Billing.Confirmed
+tf 005 rmo Accounts.View ->> 003 ->> 004
+
+data Details {
+  customer: 'Ada Lovelace'
+  plan: 'enterprise'
+  seats: 25
+}
+---
+UI/Automation                         Command/Read Model                    C/RM: Accounts         Stream: Billing
+
++- ui -------------------------+
+| AVeryLongScreenNameThatKeeps |
+| GoingAndGoingWithoutAnySpace |
+| sAtAllSoItMustBreakSomewhere |
+| AroundHere                   |
++---------------+--------------+
+                |
+                |
+                |                     +- command --------------------+
+                |                     | Register                     |
+                |                     | name: string, email: string, |
+                +-------------------->| password: string,            |
+                                      | newsletter: boolean,         |
+                                      | referral: string             |
+                                      +---------------+--------------+
+                                                      |
+                                                      |
+                                                      |                                            +- event ------------------+
+                                                      |                                            | Registered               |
+                                                      |                                            | customer: 'Ada Lovelace' |
+                                                      +------------------------------------------->| plan: 'enterprise'       |
+                                                      |                                            | seats: 25                |
+                                                      |                                            +-------------+------------+
+                                                      |                                                          |
+                                                      |                                                          |
+                                                      |                                            +- event ------------------+
+                                                      +------------------------------------------->| Confirmed                |
+                                                                                                   +-------------+------------+
+                                                                                                                 |
+                                                                                                                 |
+                                                                            +- read model --+                    |
+                                                                            | View          |<-------------------+
+                                                                            +---------------+
