@@ -1,11 +1,10 @@
 /**
  * #3103: an LR flowchart with a labelled edge into a decision threw
  * `TypeError: Cannot read properties of undefined (reading 'x')` from
- * `centredLabelPlacement`. `n3 -->|0| n1` is the third lane sibling of
- * `n0 -->|a| n1` and `n2 --> n1`'s group: `determinePath` re-routed it through
- * the ordinary search (the shared-lane split), and `determineLabelLine` then
- * skipped it as a lane sibling, so it reached label placement with no label
- * line. A lane sibling whose label line is unset now gets the ordinary search.
+ * `centredLabelPlacement` (a face-lane edge reached label placement with no
+ * label line; fixed in #3108). Pins the issue's exact source: every label is
+ * drawn on a rectangular canvas, and the SVG and ASCII goldens (the repo rule
+ * is one of each per case; #3108's test is a plain assertion).
  */
 import { describe, expect, it } from 'vitest'
 import { renderMermaidASCII } from '../packages/ascii-renderer/src/index.ts'
