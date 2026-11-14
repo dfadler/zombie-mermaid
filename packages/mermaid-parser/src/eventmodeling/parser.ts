@@ -146,10 +146,9 @@ export function parseEventModeling(text: string): EventModeling {
         dataRef = need(NAME, 'a data block name')
         if (!punct(']]')) fail(`Expected "]]", found "${near()}"`)
       }
-      let dataInline: string | undefined
       const save = pos
       optionalDataType()
-      dataInline = take(DATA_INLINE)
+      const dataInline = take(DATA_INLINE)
       if (dataInline === undefined) pos = save
       if (seen.has(id)) fail(`Duplicate event modeling frame ID "${id}"`, at)
       seen.add(id)
