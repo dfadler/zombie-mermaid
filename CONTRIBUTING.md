@@ -155,6 +155,12 @@ is listed under "Flaky Tests" in the Unit tests job summary, and the full report
 the known flakes) and fix or quarantine it; don't ignore a green run that lists one. To reproduce
 locally, see the `vitest:flaky-tests` skill, or `CI=true pnpm test`.
 
+Local runs are capped at 4 workers (`maxWorkers` in `config/vitest.config.ts`, #3093), so several
+worktrees running `pnpm test` at once do not oversubscribe the machine and time out layout tests.
+Set `VITEST_MAX_WORKERS=<n>` (or `--maxWorkers=<n>`) to override it, for example on an idle machine.
+CI keeps Vitest's default. A timeout that passes when the file is re-run alone usually means the
+machine was loaded: check `uptime` before suspecting the test.
+
 ### Testing scripts
 
 `scripts/**/*.ts` is in the coverage run and the `coverage:diff` gate, same 95%

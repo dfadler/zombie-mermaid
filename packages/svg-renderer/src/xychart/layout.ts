@@ -8,9 +8,14 @@ import type {
   GridLine,
   PlotArea,
   LegendItem,
+  DataLabel,
 } from '@zombie-mermaid/mermaid-parser'
 import { collapseFlatRange, niceTickValues } from '@zombie-mermaid/core'
-import type { XyChartRenderOptions } from '@zombie-mermaid/core'
+import type {
+  XyChartRenderOptions,
+  XyChartInitConfig,
+  XyChartAxisInitConfig,
+} from '@zombie-mermaid/core'
 import { estimateTextWidth } from '../styles.ts'
 
 // ============================================================================
@@ -41,6 +46,99 @@ const XY = {
   axisTitlePad: 30,
   tickLength: 4,
 } as const
+
+/** Height of a line of text at `fs` px, as mermaid 12.3.0 measures it (20px: 23, 30px: 35, 14px: 16). */
+const lineHeight = (fs: number) => Math.round(fs * 1.15)
+
+/**
+ * One axis' size keys. A key left unset leaves the fixed margins above as they
+ * are; a set one moves them by its difference from mermaid 12.3.0's default
+ * (label font 14, label padding 5, title font 16, title padding 5, tick 5,
+ * axis line 2; padding counts twice, once either side), as mermaid's measured
+ * layout does.
+ */
+function axisMetrics(c?: XyChartAxisInitConfig) {
+  const lfs = c?.labelFontSize ?? XY.axisLabelFontSize
+  const lpad = c?.labelPadding ?? 5
+  const tfs = c?.titleFontSize ?? XY.axisTitleFontSize
+  const tpad = c?.titlePadding ?? 5
+  const tick = c?.tickLength ?? XY.tickLength
+  const lineW = c?.axisLineWidth ?? 2
+  // Differences from mermaid's defaults, 0 for a key left unset.
+  const dLabel =
+    c?.labelFontSize === undefined ? 0 : lineHeight(lfs) - lineHeight(14)
+  const dTick = c?.tickLength === undefined ? 0 : tick - 5
+  const dTitle =
+    c?.titleFontSize === undefined ? 0 : lineHeight(tfs) - lineHeight(16)
+  // Distance from the axis line to the label's centre line.
+  const gap = 18 + (lpad - 5) + dTick + (lineW - 2) + dLabel / 2
+  return {
+    lfs,
+    lpad,
+    tfs,
+    tpad,
+    tick,
+    lineW,
+    rot: c?.labelRotation ?? 0,
+    gap,
+    /** Room beyond the default that the labels, ticks and axis line take across the axis. */
+    labelBand: 2 * (lpad - 5) + dTick + (lineW - 2) + dLabel,
+    /** Room beyond the default for label text wider than the default size's. */
+    dLabel,
+    /** Room an axis title takes. */
+    titleBand: XY.axisTitlePad + dTitle + 2 * (tpad - 5),
+    dTitle,
+  }
+}
+
+/** The chart title's metrics (mermaid: 20px, padding 10). */
+function titleMetrics(c?: XyChartInitConfig) {
+  const tfs = c?.titleFontSize ?? XY.titleFontSize
+  const tpad = c?.titlePadding ?? 10
+  const dTitle =
+    c?.titleFontSize === undefined ? 0 : lineHeight(tfs) - lineHeight(20)
+  return { tfs, tpad, band: XY.titleHeight + dTitle + 2 * (tpad - 10), dTitle }
+}
+
+/**
+ * `plotReservedSpacePercent`: the plot keeps that share of the canvas first
+ * and the title and axes take what is left in order; a part that does not fit
+ * is dropped, as in mermaid. Unset, nothing is dropped (the margins are ours).
+ */
+function budget(total: number, reserve: number | undefined) {
+  let left =
+    reserve === undefined
+      ? Infinity
+      : total - Math.floor((total * reserve) / 100)
+  return (need: number) => {
+    if (need > left) return false
+    left -= need
+    return true
+  }
+}
+
+/**
+ * Room for the widest of `labels` at `fs` px: the default-size width (at least
+ * `floor`), grown by what mermaid's text measure adds for a larger font.
+ */
+function grownWidth(labels: string[], fs: number, floor: number) {
+  const at = (size: number) =>
+    Math.max(
+      ...labels.map((l) => estimateTextWidth(l, size, XY.axisLabelFontWeight)),
+    )
+  const base = Math.max(at(XY.axisLabelFontSize), floor)
+  return base + MERMAID_TEXT_SCALE * (at(fs) - at(XY.axisLabelFontSize))
+}
+
+/** Width and height of the widest tick label, rotated by `deg`, as mermaid sizes the bottom axis. */
+function rotatedExtra(labelW: number, fs: number, deg: number) {
+  const a = (deg * Math.PI) / 180
+  const h = lineHeight(fs)
+  return Math.max(
+    0,
+    Math.abs(Math.sin(a) * labelW) + Math.abs(Math.cos(a) * h) - h,
+  )
+}
 
 /**
  * Mermaid measures axis labels in its own font, about 0.8 of our estimate
@@ -109,19 +207,16 @@ function buildCatAxis(
   chart: XYChart,
   extent: number,
   horizontal: boolean,
+  fontSize: number = XY.axisLabelFontSize,
 ): CatAxis {
   const range = chart.xAxis.categories ? undefined : chart.xAxis.range
   const half = (labels: string[]) =>
     horizontal
-      ? XY.axisLabelFontSize / 2
+      ? fontSize / 2
       : (MERMAID_TEXT_SCALE *
           Math.max(
             ...labels.map((l) =>
-              estimateTextWidth(
-                l,
-                XY.axisLabelFontSize,
-                XY.axisLabelFontWeight,
-              ),
+              estimateTextWidth(l, fontSize, XY.axisLabelFontWeight),
             ),
           )) /
         2
@@ -197,28 +292,50 @@ function layoutVertical(
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
   // Tick labels do not depend on the extent, so the margins come first.
-  const labelsOf = valueAxis(chart, 0, () => XY.axisLabelHeight).labels
-  const showXLabels = chart.config?.xAxis?.showLabel !== false
-  const showYLabels = chart.config?.yAxis?.showLabel !== false
-  const maxYLabelWidth = Math.max(
-    ...labelsOf.map((label) =>
-      estimateTextWidth(label, XY.axisLabelFontSize, XY.axisLabelFontWeight),
-    ),
-    XY.yLabelWidth,
-  )
-  const top = XY.padding + (hasTitle ? XY.titleHeight : 0) // No legend height: Mermaid draws none
+  const cm = titleMetrics(chart.config)
+  const xm = axisMetrics(chart.config?.xAxis) // The category axis, along the bottom
+  const ym = axisMetrics(chart.config?.yAxis) // The value axis, on the left
+  const yLabelH = lineHeight(ym.lfs)
+  const labelsOf = valueAxis(chart, 0, () => yLabelH).labels
+  const maxYLabelWidth = grownWidth(labelsOf, ym.lfs, XY.yLabelWidth)
+  // The widest category label, turned by `labelRotation` (the bottom axis only).
+  const catLabels0 = getCategoryLabels(chart, getDataCount(chart))
+  const xLabelW = chart.xAxis.categories
+    ? MERMAID_TEXT_SCALE *
+      Math.max(
+        ...catLabels0.map((l) =>
+          estimateTextWidth(l, xm.lfs, XY.axisLabelFontWeight),
+        ),
+      )
+    : 0
+  const rot = xm.rot
+  const xLabelBand =
+    XY.xLabelHeight + xm.labelBand + rotatedExtra(xLabelW, xm.lfs, rot)
+  const yLabelBand = maxYLabelWidth + ym.gap + (ym.lpad - 5)
+  // Mermaid hands out the room outside the plot in order: title, bottom axis, left axis.
+  const reserve = chart.config?.plotReservedSpacePercent
+  const takeH = budget(canvasH, reserve)
+  const takeW = budget(canvasW, reserve)
+  const showTitle = hasTitle && takeH(cm.band)
+  const showXLabels =
+    chart.config?.xAxis?.showLabel !== false && takeH(xLabelBand)
+  const showXTitle = hasXTitle && takeH(xm.titleBand)
+  const showYLabels =
+    chart.config?.yAxis?.showLabel !== false && takeW(yLabelBand)
+  const showYTitle = hasYTitle && takeW(ym.titleBand)
+  const top = XY.padding + (showTitle ? cm.band : 0) // No legend height: Mermaid draws none
   const bottom =
     XY.padding +
-    (showXLabels ? XY.xLabelHeight : 0) +
-    (hasXTitle ? XY.axisTitlePad : 0)
+    (showXLabels ? xLabelBand : 0) +
+    (showXTitle ? xm.titleBand : 0)
   const left =
     XY.padding +
-    (showYLabels ? maxYLabelWidth + XY.yLabelGap : 0) +
-    (hasYTitle ? XY.axisTitlePad : 0)
+    (showYLabels ? yLabelBand : 0) +
+    (showYTitle ? ym.titleBand : 0)
   const right = XY.padding
   const pw = Math.max(50, canvasW - left - right)
   const ph = Math.max(50, canvasH - top - bottom)
-  const va = valueAxis(chart, ph, () => XY.axisLabelHeight)
+  const va = valueAxis(chart, ph, () => yLabelH)
   const yTicks = va.ticks
   const yLabels = va.labels
   const plotW = pw
@@ -230,34 +347,45 @@ function layoutVertical(
 
   // Scales
   const dataCount = getDataCount(chart)
-  const cat = buildCatAxis(chart, plotW, false)
+  const cat = buildCatAxis(chart, plotW, false, xm.lfs)
   const xScale = (n: number, i: number) => left + cat.at(n, i)
   const yScale = (v: number) =>
     top + plotH - va.pad - va.frac(v) * (plotH - 2 * va.pad)
 
   // X-axis ticks
   const axisY = top + plotH
+  const rad = (rot * Math.PI) / 180
   const xTicks: AxisTick[] = cat.ticks.map((t) => ({
-    label: t.label,
+    label: showXLabels ? t.label : '',
     x: left + t.at,
     y: axisY,
     tx: left + t.at,
-    ty: axisY + XY.tickLength,
-    labelX: left + t.at,
-    labelY: axisY + 18,
+    ty: axisY + xm.tick,
+    // Turned labels sit where mermaid puts them: pivot on the top centre.
+    labelX: left + t.at + (rot ? (Math.sin(rad) * lineHeight(xm.lfs)) / 2 : 0),
+    labelY: rot
+      ? axisY +
+        xm.lpad +
+        xm.tick +
+        xm.lineW +
+        Math.abs((Math.sin(rad) * xLabelW) / 2)
+      : axisY + xm.gap,
     textAnchor: 'middle' as const,
+    ...(rot ? { rotate: rot } : {}),
+    ...(xm.lfs !== XY.axisLabelFontSize ? { fontSize: xm.lfs } : {}),
   }))
 
   // Y-axis ticks
   const yAxisTicks: AxisTick[] = yTicks.map((v, i) => ({
-    label: yLabels[i]!,
+    label: showYLabels ? yLabels[i]! : '',
     x: left,
     y: yScale(v),
-    tx: left - XY.tickLength,
+    tx: left - ym.tick,
     ty: yScale(v),
-    labelX: left - XY.yLabelGap,
+    labelX: left - (ym.gap - ym.dLabel / 2),
     labelY: yScale(v),
     textAnchor: 'end' as const,
+    ...(ym.lfs !== XY.axisLabelFontSize ? { fontSize: ym.lfs } : {}),
   }))
 
   // Grid lines (horizontal at each y tick)
@@ -305,12 +433,13 @@ function layoutVertical(
   const xAxisObj: PositionedAxis = {
     ticks: xTicks,
     line: xAxisLine,
-    ...(chart.xAxis.title
+    ...(showXTitle
       ? {
           title: {
-            text: chart.xAxis.title,
+            text: chart.xAxis.title!,
             x: left + plotW / 2,
-            y: totalH - XY.padding,
+            y: totalH - XY.padding - (xm.tpad - 5) - xm.dTitle / 2,
+            ...(xm.tfs !== XY.axisTitleFontSize ? { fontSize: xm.tfs } : {}),
           },
         }
       : {}),
@@ -318,21 +447,22 @@ function layoutVertical(
   const yAxisObj: PositionedAxis = {
     ticks: yAxisTicks,
     line: yAxisLine,
-    ...(chart.yAxis.title
+    ...(showYTitle
       ? {
           title: {
-            text: chart.yAxis.title,
-            x: XY.padding + 4,
+            text: chart.yAxis.title!,
+            x: XY.padding + 4 + (ym.tpad - 5) + ym.dTitle / 2,
             y: top + plotH / 2,
             rotate: -90,
+            ...(ym.tfs !== XY.axisTitleFontSize ? { fontSize: ym.tfs } : {}),
           },
         }
       : {}),
   }
 
   // Title
-  const titleObj = chart.title
-    ? { text: chart.title, x: totalW / 2, y: XY.padding + XY.titleFontSize }
+  const titleObj = showTitle
+    ? titlePosition(chart.title!, totalW, cm)
     : undefined
 
   return {
@@ -347,6 +477,7 @@ function layoutVertical(
     gridLines,
     legend,
     ...(chart.config && { config: chart.config }),
+    ...dataLabelsOf(chart, bars, true),
   }
 }
 
@@ -373,45 +504,59 @@ function layoutHorizontal(
     /* v8 ignore next */
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
+  const cm = titleMetrics(chart.config)
+  const cmx = axisMetrics(chart.config?.xAxis) // The category axis, on the left
+  const vm = axisMetrics(chart.config?.yAxis) // The value axis, along the top
   const valueLabelSize = (labels: string[]) =>
     MERMAID_TEXT_SCALE *
     Math.max(
       ...labels.map((l) =>
-        estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
+        estimateTextWidth(l, vm.lfs, XY.axisLabelFontWeight),
       ),
     )
   const valueLabels = valueAxis(chart, 0, valueLabelSize).labels
-  const showCatLabels = chart.config?.xAxis?.showLabel !== false
-  const showValueLabels = chart.config?.yAxis?.showLabel !== false
 
   // Compute category label widths for left margin
   const dataCount = getDataCount(chart)
   const catLabels = getCategoryLabels(chart, dataCount)
-  const maxCatLabelWidth = Math.max(
-    ...buildCatAxis(chart, 0, true).ticks.map(({ label: l }) =>
-      estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
-    ),
+  const maxCatLabelWidth = grownWidth(
+    buildCatAxis(chart, 0, true).ticks.map(({ label: l }) => l),
+    cmx.lfs,
     40,
   )
+  const catLabelBand = maxCatLabelWidth + cmx.gap + (cmx.lpad - 5)
+  const valueLabelBand = XY.xLabelHeight + vm.labelBand
+
+  // Mermaid hands out the room outside the plot in order: title, left axis, top axis.
+  const reserve = chart.config?.plotReservedSpacePercent
+  const takeH = budget(canvasH, reserve)
+  const takeW = budget(canvasW, reserve)
+  const showTitle = hasTitle && takeH(cm.band)
+  const showCatLabels =
+    chart.config?.xAxis?.showLabel !== false && takeW(catLabelBand)
+  const showXTitle = hasXTitle && takeW(cmx.titleBand)
+  const showValueLabels =
+    chart.config?.yAxis?.showLabel !== false && takeH(valueLabelBand)
+  const showYTitle = hasYTitle && takeH(vm.titleBand)
 
   // The value axis runs along the top, under the chart title, as in mermaid's `top-axis`.
   const top =
     XY.padding +
-    (hasTitle ? XY.titleHeight : 0) +
-    (hasYTitle ? XY.axisTitlePad : 0) +
-    (showValueLabels ? XY.xLabelHeight : 0)
+    (showTitle ? cm.band : 0) +
+    (showYTitle ? vm.titleBand : 0) +
+    (showValueLabels ? valueLabelBand : 0)
   const bottom = XY.padding
   const left =
     XY.padding +
-    (showCatLabels ? maxCatLabelWidth + XY.yLabelGap : 0) +
-    (hasXTitle ? XY.axisTitlePad : 0)
+    (showCatLabels ? catLabelBand : 0) +
+    (showXTitle ? cmx.titleBand : 0)
   // The last value label is centered on the plot's right edge, so reserve
   // half its width there (#2311).
   const right = Math.max(
     XY.padding,
     estimateTextWidth(
       valueLabels[valueLabels.length - 1]!,
-      XY.axisLabelFontSize,
+      vm.lfs,
       XY.axisLabelFontWeight,
     ) /
       2 +
@@ -421,7 +566,7 @@ function layoutHorizontal(
   const ph = Math.max(50, canvasH - top - bottom)
   const va = valueAxis(chart, pw, valueLabelSize)
   const valueTicks = va.ticks
-  const cat = buildCatAxis(chart, ph, true)
+  const cat = buildCatAxis(chart, ph, true, cmx.lfs)
 
   const plotW = pw
   const plotH = ph
@@ -439,26 +584,28 @@ function layoutHorizontal(
 
   // X-axis (top): value ticks
   const xTicks: AxisTick[] = valueTicks.map((v, i) => ({
-    label: valueLabels[i]!,
+    label: showValueLabels ? valueLabels[i]! : '',
     x: valueScale(v),
     y: top,
     tx: valueScale(v),
-    ty: top - XY.tickLength,
+    ty: top - vm.tick,
     labelX: valueScale(v),
-    labelY: top - 18,
+    labelY: top - vm.gap,
     textAnchor: 'middle' as const,
+    ...(vm.lfs !== XY.axisLabelFontSize ? { fontSize: vm.lfs } : {}),
   }))
 
   // Y-axis (left): category ticks
   const yTicks: AxisTick[] = cat.ticks.map(({ label, at }) => ({
-    label,
+    label: showCatLabels ? label : '',
     x: left,
     y: top + at,
-    tx: left - XY.tickLength,
+    tx: left - cmx.tick,
     ty: top + at,
-    labelX: left - XY.yLabelGap,
+    labelX: left - (cmx.gap - cmx.dLabel / 2),
     labelY: top + at,
     textAnchor: 'end' as const,
+    ...(cmx.lfs !== XY.axisLabelFontSize ? { fontSize: cmx.lfs } : {}),
   }))
 
   // Grid lines (vertical at each value tick)
@@ -549,15 +696,13 @@ function layoutHorizontal(
   const xAxisObj: PositionedAxis = {
     ticks: xTicks,
     line: xAxisLine,
-    ...(chart.yAxis.title
+    ...(showYTitle
       ? {
           title: {
-            text: chart.yAxis.title,
+            text: chart.yAxis.title!,
             x: left + plotW / 2,
-            y:
-              XY.padding +
-              (hasTitle ? XY.titleHeight : 0) +
-              XY.axisTitlePad / 2,
+            y: XY.padding + (showTitle ? cm.band : 0) + vm.titleBand / 2,
+            ...(vm.tfs !== XY.axisTitleFontSize ? { fontSize: vm.tfs } : {}),
           },
         }
       : {}),
@@ -565,20 +710,21 @@ function layoutHorizontal(
   const yAxisObj: PositionedAxis = {
     ticks: yTicks,
     line: yAxisLine,
-    ...(chart.xAxis.title
+    ...(showXTitle
       ? {
           title: {
-            text: chart.xAxis.title,
-            x: XY.padding + 4,
+            text: chart.xAxis.title!,
+            x: XY.padding + 4 + (cmx.tpad - 5) + cmx.dTitle / 2,
             y: top + plotH / 2,
             rotate: -90,
+            ...(cmx.tfs !== XY.axisTitleFontSize ? { fontSize: cmx.tfs } : {}),
           },
         }
       : {}),
   }
 
-  const titleObj = chart.title
-    ? { text: chart.title, x: totalW / 2, y: XY.padding + XY.titleFontSize }
+  const titleObj = showTitle
+    ? titlePosition(chart.title!, totalW, cm)
     : undefined
 
   const legend = seriesLabels(chart, colorMap)
@@ -596,11 +742,94 @@ function layoutHorizontal(
     gridLines,
     legend,
     ...(chart.config && { config: chart.config }),
+    ...dataLabelsOf(chart, bars, false),
   }
 }
 
 // ============================================================================
 // Helpers
+
+function titlePosition(
+  text: string,
+  totalW: number,
+  cm: ReturnType<typeof titleMetrics>,
+) {
+  return {
+    text,
+    x: totalW / 2,
+    // Baseline: the padding above the text, then its size (18px, 10px at the defaults).
+    y: XY.padding + (cm.tpad - 10) + cm.tfs + cm.dTitle / 2,
+    ...(cm.tfs !== XY.titleFontSize ? { fontSize: cm.tfs } : {}),
+  }
+}
+
+/**
+ * `showDataLabel`: each bar's value printed on it, sized and placed as
+ * mermaid 12.3.0 does (one font size for all the labels of a series, the
+ * largest that fits every bar). Mermaid reads the values from the FIRST series
+ * whichever series the bars belong to, so a line first gives bars its values.
+ */
+function dataLabelsOf(
+  chart: XYChart,
+  bars: PositionedBar[],
+  vertical: boolean,
+): { dataLabels?: DataLabel[] } {
+  if (!chart.config?.showDataLabel) return {}
+  const outside = chart.config.showDataLabelOutsideBar === true
+  const values = chart.series[0]?.data ?? []
+  const out: DataLabel[] = []
+  for (let si = 0; ; si++) {
+    const group = bars.filter((b) => b.seriesIndex === si)
+    if (group.length === 0) break
+    const items = group
+      .map((b, i) => ({
+        b,
+        text: values[i] === undefined ? '' : String(values[i]),
+      }))
+      .filter((it) => it.text !== '' && it.b.width > 0 && it.b.height > 0)
+    if (items.length === 0) continue
+    const size = Math.floor(
+      Math.min(
+        ...items.map(({ b, text }) => {
+          if (vertical) {
+            const fits = (fs: number) => {
+              const w = fs * text.length * 0.7
+              return w <= b.width && 10 + fs <= b.height
+            }
+            let fs = b.width / (text.length * 0.7)
+            while (!fits(fs) && fs > 0) fs -= 1
+            return fs
+          }
+          const fits = (fs: number) => fs * text.length * 0.7 <= b.width - 10
+          let fs = b.height * 0.7
+          while (!fits(fs) && fs > 0) fs -= 1
+          return fs
+        }),
+      ),
+    )
+    for (const { b, text } of items)
+      out.push(
+        vertical
+          ? {
+              x: b.x + b.width / 2,
+              y: outside ? b.y - 10 : b.y + 10,
+              text,
+              fontSize: size,
+              textAnchor: 'middle',
+              baseline: outside ? 'auto' : 'hanging',
+            }
+          : {
+              x: outside ? b.x + b.width + 10 : b.x + b.width - 10,
+              y: b.y + b.height / 2,
+              text,
+              fontSize: size,
+              textAnchor: outside ? 'start' : 'end',
+              baseline: 'middle',
+            },
+      )
+  }
+  return { dataLabels: out }
+}
 // ============================================================================
 
 function getDataCount(chart: XYChart): number {

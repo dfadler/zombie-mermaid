@@ -233,10 +233,12 @@ describe('opposite-direction edges between one node pair (#629)', () => {
   B --> D
   C --> D
   B -- x --> C
-  C -- y --> B`,
+  C -- y --> B
+  D --> D`,
       'TD',
     )
 
+    // The self-loop keeps D's fan-in on one trunk (#2678), so a bundle exists.
     const bundled = (graph.bundles ?? []).flatMap((b) => b.edges)
     expect(bundled.length).toBeGreaterThan(0)
     expect(bundled.filter((e) => e.parallelLane)).toEqual([])
