@@ -1,0 +1,13 @@
+ishikawa
+  Outage
+    Network
+    Database
+    Deploys
+---
+[ Deploys ]  [ Network ]
+      ╲            ╲
+       ╲            ╲       ┌────────┐
+────────┴────────────┴┬────►│ Outage │
+                     ╱      └────────┘
+                    ╱
+             [ Database ]

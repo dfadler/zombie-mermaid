@@ -40,6 +40,7 @@ export const DIAGRAM_TYPES = [
   'usecase',
   'block',
   'treemap',
+  'ishikawa',
   'wardley',
 ] as const
 
@@ -96,6 +97,8 @@ export function detectDiagramType(text: string): DiagramType {
   // Case-sensitive: Mermaid's detector is `/^\s*requirement(Diagram)?/`, its
   // grammar keyword `requirementDiagram\b`.
   if (/^requirementDiagram(?:\s|$)/.test(header)) return 'requirement'
+  // Case-insensitive: Mermaid's detector is `/^\s*ishikawa(-beta)?\b/i`.
+  if (/^ishikawa(?:-beta)?\b/i.test(header)) return 'ishikawa'
 
   // Case-sensitive: Mermaid's detector is `/^\s*usecase-beta(?:\s|$)/`.
   if (/^usecase-beta(?:\s|$)/.test(header)) return 'usecase'

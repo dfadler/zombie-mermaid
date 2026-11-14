@@ -64,6 +64,7 @@ import {
   parseTimeline,
   parseGitGraph,
   parsePacket,
+  parseIshikawa,
   parseRadar,
   parseJourney,
   parseKanban,
@@ -101,6 +102,7 @@ import type {
   GitGraph,
   PositionedGitGraph,
   Packet,
+  Ishikawa,
   Radar,
   PositionedRadar,
   Journey,
@@ -144,6 +146,9 @@ import { renderGitGraphSvg } from './gitgraph/renderer.ts'
 import { layoutPacket } from './packet/layout.ts'
 import type { PositionedPacket } from './packet/layout.ts'
 import { renderPacketSvg } from './packet/renderer.ts'
+import { layoutIshikawa } from './ishikawa/layout.ts'
+import type { PositionedIshikawa } from './ishikawa/layout.ts'
+import { renderIshikawaSvg } from './ishikawa/renderer.ts'
 import { layoutRadar } from './radar/layout.ts'
 import { renderRadarSvg } from './radar/renderer.ts'
 import { layoutKanban } from './kanban/layout.ts'
@@ -837,6 +842,30 @@ const treemapModule: DiagramModule<Treemap, PositionedTreemap> = {
 }
 
 /**
+ * Ishikawa diagrams parse from the raw `text` (`;` is not a statement
+ * separator), then lay out to Mermaid's fixed geometry. A diagram with no
+ * lines under its header has nothing to draw and lays out to `undefined`.
+ */
+const ishikawaModule: DiagramModule<Ishikawa, PositionedIshikawa | undefined> =
+  {
+    type: 'ishikawa',
+    parse: (_lines, text) => parseIshikawa(text),
+    layoutForSvg: (d) => layoutIshikawa(d),
+    renderSvg(positioned, ctx) {
+      return renderIshikawaSvg(
+        positioned,
+        ctx.colors,
+        ctx.font,
+        ctx.transparent,
+        ctx.embedSource,
+        ctx.title,
+        ctx.decorative,
+        ctx.emit,
+      )
+    },
+  }
+
+/**
  * Wardley maps parse from the raw `text` (`;` starts a link label), and every
  * element sits at a fixed percentage of the canvas, so there is no layout
  * step: the parsed map is what the renderer draws.
@@ -900,7 +929,8 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   sankey: sankeyModule,
   requirement: requirementModule,
   usecase: usecaseModule,
+  ishikawa: ishikawaModule,
+  wardley: wardleyModule,
   gitgraph: gitgraphModule,
   treemap: treemapModule,
-  wardley: wardleyModule,
 }

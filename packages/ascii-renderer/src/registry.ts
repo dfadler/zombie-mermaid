@@ -55,6 +55,7 @@ import { renderBlockAscii } from './block.ts'
 import { renderSankeyAscii } from './sankey.ts'
 import { renderRequirementAscii } from './requirement.ts'
 import { renderTreemapAscii } from './treemap.ts'
+import { renderIshikawaAscii } from './ishikawa.ts'
 import { renderWardleyAscii } from './wardley.ts'
 
 /**
@@ -144,6 +145,8 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderRequirementAscii(text, config, colorMode, theme, extras),
   treemap: (text, config, colorMode, theme) =>
     renderTreemapAscii(text, config, colorMode, theme),
+  ishikawa: (text, config, colorMode, theme) =>
+    renderIshikawaAscii(text, config, colorMode, theme),
   wardley: (text, config, colorMode, theme) =>
     renderWardleyAscii(text, config, colorMode, theme),
 }
