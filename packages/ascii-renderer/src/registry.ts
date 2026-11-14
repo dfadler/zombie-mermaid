@@ -48,6 +48,7 @@ import { renderTimelineAscii } from './timeline.ts'
 import { renderGitGraphAscii } from './gitgraph.ts'
 import { renderPacketAscii } from './packet.ts'
 import { renderRadarAscii } from './radar.ts'
+import { renderUsecaseAscii } from './usecase.ts'
 import { renderJourneyAscii } from './journey.ts'
 import { renderKanbanAscii } from './kanban.ts'
 import { renderSankeyAscii } from './sankey.ts'
@@ -126,6 +127,8 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderPacketAscii(text, config, colorMode, theme),
   radar: (text, config, colorMode, theme) =>
     renderRadarAscii(text, config, colorMode, theme),
+  usecase: (text, config, colorMode, theme, extras) =>
+    renderUsecaseAscii(text, config, colorMode, theme, extras),
   journey: (text, config, colorMode, theme) =>
     renderJourneyAscii(text, config, colorMode, theme),
   kanban: (text, config, colorMode, theme) =>

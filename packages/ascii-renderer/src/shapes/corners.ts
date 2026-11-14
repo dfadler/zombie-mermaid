@@ -48,6 +48,24 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     unicode: { tl: '╭', tr: '╮', bl: '╰', br: '╯' },
     ascii: { tl: '.', tr: '.', bl: "'", br: "'" },
   },
+  // Use case diagram shapes: the converter draws them as the nearest shape
+  // (ASCII_SHAPE), so these are plain-box fallbacks.
+  'usecase-actor': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+  'usecase-ellipse': {
+    unicode: { tl: '╭', tr: '╮', bl: '╰', br: '╯' },
+    ascii: { tl: '.', tr: '.', bl: "'", br: "'" },
+  },
+  'usecase-rect': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+  'usecase-note': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
   // Class diagram nodes (class-flow.ts) draw their own borders; these are the
   // plain-box fallback getCorners would return.
   'class-box': {

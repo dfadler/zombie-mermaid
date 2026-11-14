@@ -1084,6 +1084,18 @@ export const allForkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: `A → C` is one straight stroke along the row. After: it drops to the bottom border row, runs under `B`, and rises into `C`, as in mermaid 12.3.0.',
+    id: 'ascii-subgraph-self-loops-frame-direction',
+    title:
+      'ASCII: duplicate self-loops in a frame with its own direction drew one hook',
+    symptom:
+      'Two self-loops on a node inside a subgraph with its own `direction` drew a single hook out of the right face that crossed the frame’s bottom wall. mermaid@12.3.0 nests one hook per loop over the top of the node.',
+    source:
+      'flowchart TD\n  subgraph S\n    direction LR\n    a --> b\n    b --> b\n    b --> b\n  end',
+    fixCommit: '6e28ab48e',
+    pr: 3114,
+    render: 'ascii',
+    lookFor:
+      'Before: one hook leaves `b` to the right and sits on S’s bottom wall. After: two nested hooks run over the top of `b`, inside the frame, as in mermaid 12.3.0.',
   },
 ]
 

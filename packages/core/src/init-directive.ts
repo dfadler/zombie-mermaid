@@ -250,6 +250,22 @@ export interface XyChartAxisInitConfig {
   showTitle?: boolean
   showTick?: boolean
   showAxisLine?: boolean
+  /** Font size in px of the tick labels (mermaid default 14). */
+  labelFontSize?: number
+  /** Space in px around a tick label (mermaid default 5). */
+  labelPadding?: number
+  /** Font size in px of the axis title (mermaid default 16). */
+  titleFontSize?: number
+  /** Space in px around the axis title (mermaid default 5). */
+  titlePadding?: number
+  /** Tick length in px (mermaid default 5). */
+  tickLength?: number
+  /** Tick stroke width in px (mermaid default 2). */
+  tickWidth?: number
+  /** Axis line stroke width in px (mermaid default 2). */
+  axisLineWidth?: number
+  /** Rotation of the bottom axis' tick labels, -90 to 90 degrees (default 0). */
+  labelRotation?: number
 }
 
 /**
@@ -264,6 +280,16 @@ export interface XyChartInitConfig {
   height?: number
   showTitle?: boolean
   chartOrientation?: 'vertical' | 'horizontal'
+  /** Chart title font size in px (mermaid default 20). */
+  titleFontSize?: number
+  /** Space in px above and below the chart title (mermaid default 10). */
+  titlePadding?: number
+  /** Percent of the canvas the plot reserves before the axes and title claim room (mermaid default 70). */
+  plotReservedSpacePercent?: number
+  /** Print each bar's value on it. */
+  showDataLabel?: boolean
+  /** With `showDataLabel`, print the value beyond the bar's end instead of inside it. */
+  showDataLabelOutsideBar?: boolean
   xAxis?: XyChartAxisInitConfig
   yAxis?: XyChartAxisInitConfig
 }
@@ -275,11 +301,33 @@ const XY_AXIS_BOOLEAN_KEYS = [
   'showAxisLine',
 ] as const
 
+/** Numeric per-axis keys: a finite number within `[min, max]`, else dropped. */
+const XY_AXIS_NUMBER_KEYS = {
+  labelFontSize: [1, 200],
+  labelPadding: [0, 200],
+  titleFontSize: [1, 200],
+  titlePadding: [0, 200],
+  tickLength: [0, 200],
+  tickWidth: [0, 50],
+  axisLineWidth: [0, 50],
+  labelRotation: [-90, 90],
+} as const
+
+/** Numeric chart-level keys, as `XY_AXIS_NUMBER_KEYS`. */
+const XY_NUMBER_KEYS = {
+  titleFontSize: [1, 200],
+  titlePadding: [0, 200],
+  plotReservedSpacePercent: [1, 100],
+} as const
+
 const XY_HONOURED = new Set([
   'width',
   'height',
   'showTitle',
   'chartOrientation',
+  'showDataLabel',
+  'showDataLabelOutsideBar',
+  ...Object.keys(XY_NUMBER_KEYS),
 ])
 
 const PIE_LEGEND_POSITIONS = new Set([
@@ -688,6 +736,13 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         if (typeof v === 'number' && v >= 50 && v <= 1e5) xy[k] = v
       }
       if (typeof rec.showTitle === 'boolean') xy.showTitle = rec.showTitle
+      for (const k of ['showDataLabel', 'showDataLabelOutsideBar'] as const)
+        if (typeof rec[k] === 'boolean') xy[k] = rec[k]
+      for (const [k, [lo, hi]] of Object.entries(XY_NUMBER_KEYS)) {
+        const v = numeric(rec[k])
+        if (typeof v === 'number' && v >= lo && v <= hi)
+          xy[k as keyof typeof XY_NUMBER_KEYS] = v
+      }
       const o = rec.chartOrientation
       if (o === 'vertical' || o === 'horizontal') xy.chartOrientation = o
       for (const ax of ['xAxis', 'yAxis'] as const) {
@@ -697,6 +752,11 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         const out: XyChartAxisInitConfig = {}
         for (const k of XY_AXIS_BOOLEAN_KEYS)
           if (typeof ar[k] === 'boolean') out[k] = ar[k]
+        for (const [k, [lo, hi]] of Object.entries(XY_AXIS_NUMBER_KEYS)) {
+          const v = numeric(ar[k])
+          if (typeof v === 'number' && v >= lo && v <= hi)
+            out[k as keyof typeof XY_AXIS_NUMBER_KEYS] = v
+        }
         xy[ax] = out
       }
       config.xyChart = xy
@@ -704,7 +764,10 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         if (k === 'xAxis' || k === 'yAxis') {
           if (typeof v === 'object' && v !== null)
             for (const ak of Object.keys(v))
-              if (!(XY_AXIS_BOOLEAN_KEYS as readonly string[]).includes(ak))
+              if (
+                !(XY_AXIS_BOOLEAN_KEYS as readonly string[]).includes(ak) &&
+                !(ak in XY_AXIS_NUMBER_KEYS)
+              )
                 config.ignored.push(`xyChart.${k}.${ak}`)
         } else if (!XY_HONOURED.has(k)) config.ignored.push(`xyChart.${k}`)
       }

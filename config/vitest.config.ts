@@ -83,6 +83,16 @@ export default defineConfig({
     // time out each run. Per-test timeouts would be whack-a-mole; a test that
     // genuinely hangs still fails, just 15 s later. Slow tests keep their own.
     testTimeout: 20_000,
+    // Local runs use at most 4 workers (#3093). Vitest's default is every core
+    // but one per run, so N parallel worktrees (each running `pnpm test` or
+    // `pnpm run verify`) put N x ~11 CPU-bound ASCII/ELK workers on one machine:
+    // load average reached 80+ on 12 cores, which stretched a normally
+    // sub-second layout test past its timeout. CI runners are dedicated, so CI
+    // keeps the default. An explicit VITEST_MAX_WORKERS or `--maxWorkers` wins
+    // (e.g. `VITEST_MAX_WORKERS=8 pnpm test` on an otherwise idle machine).
+    ...(process.env.CI || process.env.VITEST_MAX_WORKERS
+      ? {}
+      : { maxWorkers: 4 }),
     // CI-only (#1838); local runs keep the default reporter and no retry.
     // - `github-actions`: annotations plus the job summary written to
     //   $GITHUB_STEP_SUMMARY, which lists every test that passed only after

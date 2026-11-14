@@ -1444,6 +1444,7 @@ function centredLabelPlacement(
               // A dense pair's return stroke runs right to left with its head
               // at the near end: leave that cell to the head.
               (edge.hasArrowEnd &&
+                drawingLine.length >= 2 &&
                 drawingLine[0]!.x > drawingLine[1]!.x &&
                 denseFacingPair(graph, edge)),
           ),

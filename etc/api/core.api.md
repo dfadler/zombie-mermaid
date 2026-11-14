@@ -209,7 +209,7 @@ export function describeIgnored(config: InitConfig): string[];
 export function detectDiagramType(text: string): DiagramType;
 
 // @public
-export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "gitgraph", "packet", "radar", "journey", "sankey", "requirement"];
+export const DIAGRAM_TYPES: readonly ["flowchart", "sequence", "class", "er", "xychart", "architecture", "c4", "pie", "quadrant", "mindmap", "gantt", "kanban", "timeline", "gitgraph", "packet", "radar", "journey", "sankey", "requirement", "usecase"];
 
 // @public
 export interface DiagramColors {
@@ -534,7 +534,7 @@ export interface MermaidEdge {
     // @deprecated
     acrossFlow?: boolean;
     animate?: boolean;
-    endMarker?: 'circle' | 'cross';
+    endMarker?: 'circle' | 'cross' | 'triangle';
     hasArrowEnd: boolean;
     hasArrowStart: boolean;
     id?: string;
@@ -542,7 +542,7 @@ export interface MermaidEdge {
     label?: string;
     // (undocumented)
     source: string;
-    startMarker?: 'circle' | 'cross';
+    startMarker?: 'circle' | 'cross' | 'triangle';
     // (undocumented)
     style: EdgeStyle;
     // (undocumented)
@@ -672,7 +672,7 @@ export interface NodeInteraction {
 }
 
 // @public (undocumented)
-export type NodeShape = 'rectangle' | 'rounded' | 'diamond' | 'stadium' | 'circle' | 'subroutine' | 'doublecircle' | 'hexagon' | 'cylinder' | 'asymmetric' | 'trapezoid' | 'trapezoid-alt' | 'parallelogram' | 'parallelogram-alt' | 'state-start' | 'state-end' | 'document' | 'stacked-document' | 'stacked-process' | 'card' | 'lined-process' | 'divided-process' | 'window-pane' | 'triangle' | 'flipped-triangle' | 'filled-circle' | 'junction' | 'crossed-circle' | 'fork-join' | 'notched-pentagon' | 'sloped-rectangle' | 'flag' | 'bow-tie-rectangle' | 'half-rounded-rectangle' | 'brace' | 'brace-right' | 'braces' | 'bolt' | 'cloud' | 'horizontal-cylinder' | 'tagged-rectangle' | 'small-circle' | 'fork-bar' | 'text' | 'anchor' | 'note';
+export type NodeShape = 'rectangle' | 'rounded' | 'diamond' | 'stadium' | 'circle' | 'subroutine' | 'doublecircle' | 'hexagon' | 'cylinder' | 'asymmetric' | 'trapezoid' | 'trapezoid-alt' | 'parallelogram' | 'parallelogram-alt' | 'state-start' | 'state-end' | 'document' | 'stacked-document' | 'stacked-process' | 'card' | 'lined-process' | 'divided-process' | 'window-pane' | 'triangle' | 'flipped-triangle' | 'filled-circle' | 'junction' | 'crossed-circle' | 'fork-join' | 'notched-pentagon' | 'sloped-rectangle' | 'flag' | 'bow-tie-rectangle' | 'half-rounded-rectangle' | 'brace' | 'brace-right' | 'braces' | 'bolt' | 'cloud' | 'horizontal-cylinder' | 'tagged-rectangle' | 'small-circle' | 'fork-bar' | 'text' | 'anchor' | 'note' | 'usecase-actor' | 'usecase-ellipse' | 'usecase-rect' | 'usecase-note';
 
 // @public
 export function normalizeBrTags(label: string): string;
@@ -725,7 +725,7 @@ export interface Point {
 export interface PositionedEdge {
     animate?: boolean;
     // (undocumented)
-    endMarker?: 'circle' | 'cross' | undefined;
+    endMarker?: 'circle' | 'cross' | 'triangle' | undefined;
     // (undocumented)
     hasArrowEnd: boolean;
     // (undocumented)
@@ -739,7 +739,7 @@ export interface PositionedEdge {
     points: Point[];
     // (undocumented)
     source: string;
-    startMarker?: 'circle' | 'cross' | undefined;
+    startMarker?: 'circle' | 'cross' | 'triangle' | undefined;
     // (undocumented)
     style: EdgeStyle;
     // (undocumented)
@@ -1128,6 +1128,10 @@ export function wrapToWidth(text: string, maxWidth: number, fontSize: number): s
 
 // @public
 export interface XyChartAxisInitConfig {
+    axisLineWidth?: number;
+    labelFontSize?: number;
+    labelPadding?: number;
+    labelRotation?: number;
     // (undocumented)
     showAxisLine?: boolean;
     // (undocumented)
@@ -1136,6 +1140,10 @@ export interface XyChartAxisInitConfig {
     showTick?: boolean;
     // (undocumented)
     showTitle?: boolean;
+    tickLength?: number;
+    tickWidth?: number;
+    titleFontSize?: number;
+    titlePadding?: number;
 }
 
 // @public
@@ -1144,8 +1152,13 @@ export interface XyChartInitConfig {
     chartOrientation?: 'vertical' | 'horizontal';
     // (undocumented)
     height?: number;
+    plotReservedSpacePercent?: number;
+    showDataLabel?: boolean;
+    showDataLabelOutsideBar?: boolean;
     // (undocumented)
     showTitle?: boolean;
+    titleFontSize?: number;
+    titlePadding?: number;
     // (undocumented)
     width?: number;
     // (undocumented)

@@ -78,6 +78,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   gitgraph: 'GitGraph',
   packet: 'Packet',
   radar: 'Radar',
+  usecase: 'Use Case',
   journey: 'User Journey',
   kanban: 'Kanban',
   sankey: 'Sankey',

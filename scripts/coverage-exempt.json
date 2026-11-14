@@ -408,5 +408,20 @@
     "file": "scripts/ascii-topology.ts",
     "reason": "thin CLI: runs on import and prints; all logic is in scripts/lib/ascii-topology.ts (tested by __tests__/ascii-topology.test.ts)",
     "maxLines": 60
+  },
+  {
+    "file": "scripts/usecase-oracle.ts",
+    "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the comparison is unit-tested in scripts/lib/usecase-agreement.ts",
+    "maxLines": 70
+  },
+  {
+    "file": "scripts/lib/usecase-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from scripts/usecase-oracle.ts",
+    "maxLines": 80
+  },
+  {
+    "file": "scripts/usecase-parser-fixture.ts",
+    "reason": "dev/QA tooling CLI: runs on import and drives real mermaid.js in Chromium; its output is the committed fixture __tests__/fixtures/usecase-parser-official-12.3.0.json, checked by __tests__/usecase-parser-agreement.test.ts",
+    "maxLines": 70
   }
 ]
