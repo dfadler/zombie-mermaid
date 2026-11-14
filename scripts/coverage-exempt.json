@@ -405,6 +405,11 @@
     "maxLines": 150
   },
   {
+    "file": "scripts/gallery-verdicts.ts",
+    "reason": "audit harness: needs headless Chromium and real mermaid, so it only runs as a CLI (rerun command in its header, #2678)",
+    "maxLines": 150
+  },
+  {
     "file": "scripts/ascii-topology.ts",
     "reason": "thin CLI: runs on import and prints; all logic is in scripts/lib/ascii-topology.ts (tested by __tests__/ascii-topology.test.ts)",
     "maxLines": 60
