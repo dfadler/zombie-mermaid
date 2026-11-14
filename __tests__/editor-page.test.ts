@@ -82,6 +82,7 @@ const TYPE_LABELS: Record<DiagramType, string> = {
   kanban: 'Kanban',
   sankey: 'Sankey',
   requirement: 'Requirement',
+  treemap: 'Treemap',
 }
 
 describe('EditorPage meta description', () => {

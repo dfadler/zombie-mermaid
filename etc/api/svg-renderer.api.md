@@ -43,6 +43,7 @@ import { PositionedRequirementDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedSankey } from '@zombie-mermaid/mermaid-parser';
 import { PositionedSequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { PositionedTimeline } from '@zombie-mermaid/mermaid-parser';
+import { PositionedTreemap } from '@zombie-mermaid/mermaid-parser';
 import { PositionedXYChart } from '@zombie-mermaid/mermaid-parser';
 import { QuadrantChart } from '@zombie-mermaid/mermaid-parser';
 import { Radar } from '@zombie-mermaid/mermaid-parser';
@@ -53,6 +54,7 @@ import { SequenceDiagram } from '@zombie-mermaid/mermaid-parser';
 import { SequenceRenderOptions } from '@zombie-mermaid/core';
 import { SvgEmitOptions } from '@zombie-mermaid/core';
 import { Timeline } from '@zombie-mermaid/mermaid-parser';
+import { Treemap } from '@zombie-mermaid/mermaid-parser';
 import { XYChart } from '@zombie-mermaid/mermaid-parser';
 import { XyChartRenderOptions } from '@zombie-mermaid/core';
 
@@ -323,6 +325,9 @@ export function layoutSequenceDiagram(input: SequenceDiagram, options?: Sequence
 export function layoutTimeline(tl: Timeline): PositionedTimeline;
 
 // @public
+export function layoutTreemap(treemap: Treemap): PositionedTreemap;
+
+// @public
 export function layoutXYChart(chart: XYChart, _options?: XyChartRenderOptions): PositionedXYChart;
 
 // @public
@@ -533,6 +538,9 @@ export function renderSvg(graph: PositionedGraph, colors: DiagramColors, font?: 
 export function renderTimelineSvg(tl: PositionedTimeline, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
+export function renderTreemapSvg(tm: PositionedTreemap, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
 export function renderXYChartSvg(chart: PositionedXYChart, colors: DiagramColors, font?: string, transparent?: boolean, interactive?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public (undocumented)
@@ -627,6 +635,21 @@ export const TIMELINE: {
 
 // @public
 export function timelineTextWidth(text: string, size?: number, bold?: boolean): number;
+
+// @public
+export const TREEMAP: {
+    readonly width: 1000;
+    readonly height: 400;
+    readonly padding: 10;
+    readonly sectionHeader: 25;
+    readonly sectionPadding: 10;
+    readonly diagramPadding: 8;
+    readonly titleHeight: 30;
+    readonly titleFontSize: 14;
+    readonly sectionLabelFontSize: 12;
+    readonly sectionValueFontSize: 10;
+    readonly colorSlots: 13;
+};
 
 // @public
 export function validateMermaid(text: string): void;

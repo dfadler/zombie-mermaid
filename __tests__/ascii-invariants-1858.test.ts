@@ -21,13 +21,13 @@ import {
 /** Sample title -> issue tracking the renderer bug (unicode charset). */
 const KNOWN: Record<string, string> = {}
 
-/** Rules a diagram kind does not promise (pie/xychart/quadrant/gantt/mindmap/timeline/kanban/journey/packet/sankey are ragged by design). */
+/** Rules a diagram kind does not promise (pie/xychart/quadrant/gantt/mindmap/timeline/kanban/journey/packet/sankey/treemap are ragged by design). */
 function skipFor(source: string): Rule[] {
   // A packet is a table of boxes sharing borders: the graph rules for connectors
   // beside node text do not apply.
   if (/^\s*packet/m.test(source)) return ['equal-width', 'arms', 'node-text']
   if (
-    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|journey|radar-beta|gitGraph|sankey)/m.test(
+    /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|journey|radar-beta|gitGraph|sankey|treemap)/m.test(
       source,
     )
   )

@@ -423,6 +423,9 @@ export function formatD3Time(ms: number, fmt: string): string;
 export function formatDayjs(ms: number, fmt: string): string;
 
 // @public
+export function formatTreemapValue(v: number): string;
+
+// @public
 export interface GanttChart {
     axisFormat: string;
     dateFormat: string;
@@ -871,6 +874,9 @@ export function parseSequenceDiagram(lines: Statement[], text?: string): Sequenc
 
 // @public
 export function parseTimeline(text: string): Timeline;
+
+// @public
+export function parseTreemap(text: string): Treemap;
 
 // @public
 export function parseXYChart(lines: Statement[], config?: XyChartInitConfig): XYChart;
@@ -2173,6 +2179,85 @@ export interface PositionedTitle {
     y: number;
 }
 
+// @public
+export interface PositionedTreemap {
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    leaves: PositionedTreemapLeaf[];
+    offsetX: number;
+    // (undocumented)
+    offsetY: number;
+    // (undocumented)
+    sections: PositionedTreemapSection[];
+    // (undocumented)
+    title?: {
+        text: string;
+        x: number;
+        y: number;
+    };
+    treeOffsetY: number;
+    // (undocumented)
+    width: number;
+}
+
+// @public
+export interface PositionedTreemapLabel {
+    // (undocumented)
+    fontSize: number;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedTreemapLeaf {
+    // (undocumented)
+    color: number;
+    // (undocumented)
+    height: number;
+    label?: PositionedTreemapLabel;
+    // (undocumented)
+    name: string;
+    // (undocumented)
+    styles: TreemapStyle[];
+    // (undocumented)
+    value: number;
+    valueLabel?: PositionedTreemapLabel;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public
+export interface PositionedTreemapSection {
+    color: number;
+    // (undocumented)
+    depth: number;
+    // (undocumented)
+    height: number;
+    label: PositionedTreemapLabel;
+    // (undocumented)
+    name: string;
+    // (undocumented)
+    styles: TreemapStyle[];
+    // (undocumented)
+    value: number;
+    valueLabel?: PositionedTreemapLabel;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
 // @public (undocumented)
 export interface PositionedXYChart {
     bars: PositionedBar[];
@@ -2381,6 +2466,31 @@ export function timeTicks(t0: number, t1: number, custom?: TickInterval, weekday
 export function toBlockType(value: string): Block['type'];
 
 export { toDirection }
+
+// @public
+export interface Treemap {
+    roots: TreemapNode[];
+    // (undocumented)
+    title?: string;
+}
+
+// @public
+export interface TreemapNode {
+    children?: TreemapNode[];
+    classSelector?: string;
+    // (undocumented)
+    name: string;
+    styles: TreemapStyle[];
+    value?: number;
+}
+
+// @public
+export interface TreemapStyle {
+    // (undocumented)
+    key: string;
+    // (undocumented)
+    value: string;
+}
 
 // @public
 export function weekdayName(ms: number): string;

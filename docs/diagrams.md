@@ -1781,6 +1781,62 @@ Bio-conversion  310.78
   ASCII mode).
 - Bars use the theme accent. A cycle throws "circular link", as the SVG does.
 
+## Treemap diagrams
+
+`treemap-beta` (or `treemap`) follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/treemap.html)
+and its renderer's layout, which is [d3-hierarchy](https://d3js.org/d3-hierarchy/treemap)'s
+squarified treemap. Checked against `mermaid@12.3.0` (read from its source and rendered headless).
+
+```mermaid
+treemap-beta
+"Products"
+    "Electronics"
+        "Phones": 800
+        "Laptops": 600
+    "Clothing"
+        "Men": 300
+        "Women": 400
+"Services": 200
+```
+
+Supported: indented rows (a quoted name alone is a section, `"Name": value` a leaf; `,` also
+separates and a value may hold commas, `1,500.5`), single or double quotes, `title`,
+`classDef name styles;` with `:::name` after a section's name or a leaf's value, and `%%`
+comments. As in Mermaid, a depth is the length of the blank run before a name, a leaf never
+holds children, siblings sort by value (largest first), a section's value is the sum of its
+leaves, a section with no children is a leaf of value 0, and a bare word, `;`, a negative value
+or an indented trailing comment is a parse error. A `classDef` applies `fill`, `stroke` and
+`stroke-width` to the cell and `color` to its text; other properties and the `treemap` init
+keys (`padding`, `nodeWidth`, `nodeHeight`, `showValues`, `valueFormat`, `diagramPadding`) are
+not read yet, so the canvas is always Mermaid's default 1000 x 400. See
+[Known differences](known-differences.md#treemap-diagrams).
+
+The SVG ports d3's layout (same squarify, padding and rounding, so cells land on the same
+pixels) and Mermaid's drawing: a header and body per section, then the leaf cells, with labels
+fitted by shrinking the font and dropping what does not fit. `pnpm run treemap:oracle` compares
+cell positions, shown labels and the viewBox with real mermaid.js.
+
+### ASCII treemap diagrams
+
+Mermaid has no text mode for treemaps and nested rectangles sized by area do not survive a
+character grid, so the ASCII output is this library's own design: the tree as an indented
+list, largest first, each row with its total and a bar for its share of the whole treemap.
+
+```text
+Products        2,100  ██████████████████
+├─ Electronics  1,400  ████████████
+│  ├─ Phones      800  ██████▏
+│  └─ Laptops     600  █████
+└─ Clothing       700  ██████
+   ├─ Women       400  ███
+   └─ Men         300  ██▏
+Services          200  █▏
+```
+
+- A bar is the node's share of the grand total across 20 cells, and a positive value always
+  gets at least a thin bar (`▏`, `|` in ASCII mode); a zero value gets none.
+- A `title` is centred above the list; `accTitle` and `accDescr` are not printed.
+
 ## Unsupported upstream diagram types
 
 These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
@@ -1788,7 +1844,6 @@ These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI rej
 | Type                                                                  | Header                                                                                                          |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Use case                                                              | `usecase-beta`                                                                                                  |
-| Treemap                                                               | `treemap-beta`                                                                                                  |
 | Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
 | Block                                                                 | `block-beta` (12.2.0 rejects it with an empty body; header name per upstream docs)                              |
 
