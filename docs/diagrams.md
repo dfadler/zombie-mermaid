@@ -1816,25 +1816,28 @@ Trebuchet MS bold advances plus kerning, not a browser measurement. See
 
 ### ASCII Event Modeling
 
-Mermaid has no text mode for event models, and its swimlanes run left to right, so the ASCII
-output is this library's own design: lanes are columns and time runs down.
+Mermaid has no text mode for event models, so the ASCII output is this library's own, but it
+keeps the form of Mermaid's drawing: swimlanes are horizontal bands named in the left margin,
+time runs left to right, and each frame is a box in its lane with its entity type in the top
+border. Mermaid overlaps neighbouring boxes; a character grid cannot, so each frame takes the
+next column.
 
 ```text
-UI/Automation      Command/Read Model
-
-┌─ ui ──────┐
-│ Cart      │
-└─────┬─────┘
-      │
-      │
-      │            ┌─ command ──────┐
-      └───────────▶│ Add            │
-                   └────────────────┘
+UI/Automation        ┌─ ui ──┐
+                     │ Cart  ├───────────┐
+                     └───────┘           │
+                                         │
+─────────────────────────────────────────│───────
+                                         ▼
+Command/Read Model                ┌─ command ──┐
+                                  │ Add        │
+                                  └────────────┘
 ```
 
-- A box names its entity type in the top border; text wraps at 28 columns.
-- An arrow leaves the bottom of its source and turns into the side of its target; it runs
-  behind any box it passes.
+- An arrow leaves the right side of its source and turns down (or up) into the top (or
+  bottom) of its target; in one lane it runs into the target's left side. It runs behind any
+  box it passes.
+- Text wraps at 24 columns; data is listed under the name.
 - Frames that share a namespace share one lane.
 
 ## Use case diagrams

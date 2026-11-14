@@ -977,7 +977,7 @@ rectangles, lane labels, arrows and the drawing size agree on every gallery samp
   flows as one paragraph there and here.
 - **Not drawn.** `entity`, `note` and `gwt` parse and draw nothing, as in Mermaid 12.3.0;
   data type prefixes (`json`, `md`, ...) get no special treatment, as there.
-- **ASCII.** Mermaid has no ASCII output; the lane-column layout is this library's own.
+- **ASCII.** Mermaid has no ASCII output; the horizontal lane bands are this library's own, with one column per frame instead of Mermaid's overlap.
 
 ## User journeys
 

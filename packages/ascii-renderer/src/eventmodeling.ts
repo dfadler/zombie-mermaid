@@ -2,31 +2,30 @@
 // ASCII renderer — Event modeling
 //
 // Mermaid has no text mode for event models, so there is no reference output
-// to match. The SVG runs time left to right across wide swimlanes, which at
-// terminal widths would run off the screen after a handful of frames, so this
-// turns it a quarter: swimlanes are columns, time runs down, every frame is a
-// box in its lane's column with its entity type named in the top border:
+// to match; this keeps the form of its drawing. Swimlanes are horizontal bands
+// with their name in the left margin, time runs left to right, and every frame
+// is a box in its lane with its entity type named in the top border, one
+// column after the frame before it (Mermaid overlaps neighbours; a character
+// grid cannot):
 //
-//   UI/Automation     Command/Read Model      Events
-//   ┌─ ui ───────┐
-//   │ CartUI     │
-//   └─────┬──────┘
-//         │
-//         │      ┌─ command ──┐
-//         └────▶ │ AddItem    │
-//                └─────┬──────┘
-//                      │
-//                      │             ┌─ event ────┐
-//                      └───────────▶ │ ItemAdded  │
-//                                    └────────────┘
+//   UI/Automation        ┌─ ui ──┐
+//                        │ Cart  ├───────────┐
+//                        └───────┘           │
+//                                            │
+//   ─────────────────────────────────────────│───────
+//                                            ▼
+//   Command/Read Model            ┌─ command ──┐
+//                                 │ Add        │
+//                                 └────────────┘
 //
-//   - A lane is as wide as its widest box (text wraps at 28 columns, a longer word is cut); lanes
-//     are in the SVG's order: UI/processors, commands/read models, events,
-//     with a namespace's frames sharing one lane after the unnamed one.
-//   - An arrow leaves the bottom of its source, drops to the target's middle
-//     row and turns into the target's side (straight down into the top
-//     for a frame in the same lane). It runs behind any box it passes.
-//   - Data (inline or a `[[Name]]` block) is listed under the name.
+//   - Lanes are in the SVG's order: UI/processors, commands/read models,
+//     events; a namespace's frames share one lane after the unnamed one.
+//   - An arrow leaves the right side of its source, runs along to the middle of
+//     its target and turns down (or up) into the target's top (or bottom). In
+//     the same lane it runs straight into the target's left side. It runs behind
+//     any box it passes.
+//   - Text wraps at 24 columns (a longer word is cut); data (inline or a
+//     `[[Name]]` block) is listed under the name.
 //   - Headings are painted in the theme accent, frames and arrows in the line
 //     colour. Widths are display widths.
 // ============================================================================
@@ -41,10 +40,9 @@ import { colorizeText } from './ansi.ts'
 import { displayWidth } from './display-width.ts'
 
 /** Text inside a box wraps at this many columns. */
-const MAX_TEXT = 28
-/** Blank columns between lanes, and blank rows between boxes. */
-const LANE_GAP = 6
-const ROW_GAP = 1
+const MAX_TEXT = 24
+/** Blank columns between boxes. */
+const GAP = 4
 
 const TYPE_LABEL = {
   ui: 'ui',
@@ -139,6 +137,13 @@ const ASCII_GLYPH = (mask: number): string =>
       ? '-'
       : '|'
 
+type Role = 'line' | 'text' | 'head' | 'rule'
+interface Cell {
+  ch: string
+  role: Role
+  mask: number
+}
+
 export function renderEventModelingAscii(
   text: string,
   config: AsciiConfig,
@@ -156,8 +161,10 @@ export function renderEventModelingAscii(
         tr: '+',
         bl: '+',
         br: '+',
-        down: '+',
+        out: '+',
         right: '>',
+        down: 'v',
+        up: '^',
       }
     : {
         h: '─',
@@ -166,13 +173,14 @@ export function renderEventModelingAscii(
         tr: '┐',
         bl: '└',
         br: '┘',
-        down: '┬',
+        out: '├',
         right: '▶',
+        down: '▼',
+        up: '▲',
       }
-  const left = ascii ? '<' : '◀'
-  const arrowDown = ascii ? 'v' : '▼'
 
-  // Lanes, left to right.
+  // Lanes, top to bottom: UI group, then command/read model, then events; the
+  // unnamed lane of a group before its namespaced ones.
   const laneKeys = new Map<
     string,
     { group: number; label: string; named: boolean; order: number }
@@ -194,7 +202,7 @@ export function renderEventModelingAscii(
         Number(a.named) - Number(b.named) ||
         a.order - b.order,
     )
-    .map(([key, l]) => ({ key, label: l.label, x: 0, width: 0 }))
+    .map(([key, l]) => ({ key, label: l.label, y: 0, height: 0 }))
   const laneIndex = new Map(lanes.map((l, i) => [l.key, i]))
 
   const boxes = em.frames.map((f) => {
@@ -208,45 +216,34 @@ export function renderEventModelingAscii(
       displayWidth(tag) + 3,
     )
     const lane = lanes[laneIndex.get(`${l.group}:${l.label}`)!]!
-    lane.width = Math.max(lane.width, inner + 4)
-    return {
-      f,
-      name,
-      data,
-      tag,
-      lane,
-      top: 0,
-      height: name.length + data.length + 2,
-    }
+    const height = name.length + data.length + 2
+    lane.height = Math.max(lane.height, height)
+    return { f, name, data, tag, lane, x: 0, width: inner + 4, height }
   })
-  for (const l of lanes) l.width = Math.max(l.width, displayWidth(l.label))
-  let x = 0
+
+  // Lanes are bands: a rule above each, a blank row above and below the boxes
+  // for the arrows' heads.
+  const gutter = Math.max(...lanes.map((l) => displayWidth(l.label))) + 3
+  let y = 0
   for (const l of lanes) {
-    l.x = x
-    x += l.width + LANE_GAP
+    l.y = y
+    y += l.height + 3
   }
-
-  let y = 2
+  let x = gutter
   for (const b of boxes) {
-    b.top = y
-    y += b.height + ROW_GAP + 1
+    b.x = x
+    x += b.width + GAP
   }
-  const height = y - ROW_GAP - 1
-  const width = x - LANE_GAP
+  const width = x - GAP + 1
+  const height = y
 
-  type Cell = { ch: string; role: 'line' | 'text' | 'head'; mask: number }
   const grid: Cell[][] = Array.from({ length: height }, () =>
     Array.from(
       { length: width },
       () => ({ ch: ' ', role: 'line', mask: 0 }) as Cell,
     ),
   )
-  const put = (
-    cx: number,
-    cy: number,
-    ch: string,
-    role: Cell['role'],
-  ): void => {
+  const put = (cx: number, cy: number, ch: string, role: Role): void => {
     const cell = grid[cy]?.[cx]
     if (cell) {
       cell.ch = ch
@@ -254,31 +251,34 @@ export function renderEventModelingAscii(
       cell.mask = 0
     }
   }
-  const putText = (
-    cx: number,
-    cy: number,
-    s: string,
-    role: Cell['role'],
-  ): void => {
+  const putText = (cx: number, cy: number, s: string, role: Role): void => {
     let at = cx
     for (const ch of s) {
       put(at, cy, ch, role)
       // A wide character takes two cells; the second is blanked.
-      const w = displayWidth(ch)
-      for (let k = 1; k < w; k++) put(at + k, cy, '', role)
-      at += w
+      for (let k = 1; k < displayWidth(ch); k++) put(at + k, cy, '', role)
+      at += displayWidth(ch)
     }
   }
   const mark = (cx: number, cy: number, mask: number): void => {
     const cell = grid[cy]?.[cx]
-    if (cell && cell.ch === ' ') cell.mask |= mask
+    if (!cell) return
+    if (cell.role === 'rule') {
+      cell.ch = ' '
+      cell.role = 'line'
+    }
+    if (cell.ch === ' ') cell.mask |= mask
   }
 
-  for (const l of lanes) putText(l.x, 0, l.label, 'head')
-
-  // Arrows first (boxes are drawn over them), then boxes, then arrowheads.
+  // Rules between lanes, and the lane names in the left margin.
+  lanes.forEach((l, i) => {
+    if (i > 0) for (let c = 0; c < width; c++) put(c, l.y - 1, g.h, 'rule')
+    putText(0, l.y + 1, l.label, 'head')
+  })
+  const top = (b: (typeof boxes)[number]): number => b.lane.y + 1
   const heads: Array<[number, number, string]> = []
   const exits: Array<[number, number]> = []
+
   em.frames.forEach((f, i) => {
     const target = boxes[i]!
     const sources = f.sources.length
@@ -294,56 +294,66 @@ export function renderEventModelingAscii(
       const si = em.frames.findIndex((s) => s.id === id)
       if (si < 0 || si >= i) continue
       const source = boxes[si]!
-      const cs = source.lane.x + Math.floor(source.lane.width / 2)
-      const from = source.top + source.height
-      exits.push([cs, from - 1])
+      const row = top(source) + 1
+      const right = source.x + source.width - 1
+      exits.push([right, row])
       if (source.lane === target.lane) {
-        for (let r = from; r < target.top - 1; r++) mark(cs, r, UP | DOWN)
-        heads.push([cs, target.top - 1, arrowDown])
+        const trow = top(target) + 1
+        const turn = right + 2
+        // Along, then to the target's row if it differs, then into its left side.
+        for (let c = right + 1; c < target.x - 1; c++)
+          mark(c, row, LEFT | RIGHT)
+        if (trow !== row) {
+          mark(turn, row, LEFT | (trow > row ? DOWN : UP))
+          for (let r = Math.min(row, trow) + 1; r < Math.max(row, trow); r++)
+            mark(turn, r, UP | DOWN)
+          mark(turn, trow, (trow > row ? UP : DOWN) | RIGHT)
+        }
+        heads.push([target.x - 1, trow, g.right])
         continue
       }
-      const ym = target.top + Math.floor(target.height / 2)
-      for (let r = from; r < ym; r++) mark(cs, r, UP | DOWN)
-      const toRight = target.lane.x > source.lane.x
-      mark(cs, ym, UP | (toRight ? RIGHT : LEFT))
-      if (toRight) {
-        for (let c = cs + 1; c < target.lane.x - 1; c++)
-          mark(c, ym, LEFT | RIGHT)
-        heads.push([target.lane.x - 1, ym, g.right])
+      const cx = target.x + Math.floor(target.width / 2)
+      const down = target.lane.y > source.lane.y
+      for (let c = right + 1; c < cx; c++) mark(c, row, LEFT | RIGHT)
+      mark(cx, row, LEFT | (down ? DOWN : UP))
+      if (down) {
+        for (let r = row + 1; r < top(target) - 1; r++) mark(cx, r, UP | DOWN)
+        heads.push([cx, top(target) - 1, g.down])
       } else {
-        const edge = target.lane.x + target.lane.width
-        for (let c = cs - 1; c > edge; c--) mark(c, ym, LEFT | RIGHT)
-        heads.push([edge, ym, left])
+        const bottom = top(target) + target.height - 1
+        for (let r = row - 1; r > bottom + 1; r--) mark(cx, r, UP | DOWN)
+        heads.push([cx, bottom + 1, g.up])
       }
     }
   })
 
   for (const b of boxes) {
-    const bx = b.lane.x
-    const w = b.lane.width
-    const bottom = b.top + b.height - 1
-    for (let r = b.top; r <= bottom; r++)
-      for (let c = bx; c < bx + w; c++) put(c, r, ' ', 'text')
+    const t = top(b)
+    const w = b.width
+    const bottom = t + b.height - 1
+    for (let r = t; r <= bottom; r++)
+      for (let c = b.x; c < b.x + w; c++) put(c, r, ' ', 'text')
     const tag = ` ${b.tag} `
-    put(bx, b.top, g.tl, 'line')
-    putText(bx + 1, b.top, g.h + tag, 'line')
-    for (let c = bx + 2 + displayWidth(tag); c < bx + w - 1; c++)
-      put(c, b.top, g.h, 'line')
-    put(bx + w - 1, b.top, g.tr, 'line')
-    put(bx, bottom, g.bl, 'line')
-    for (let c = bx + 1; c < bx + w - 1; c++) put(c, bottom, g.h, 'line')
-    put(bx + w - 1, bottom, g.br, 'line')
-    for (let r = b.top + 1; r < bottom; r++) {
-      put(bx, r, g.v, 'line')
-      put(bx + w - 1, r, g.v, 'line')
+    put(b.x, t, g.tl, 'line')
+    putText(b.x + 1, t, g.h + tag, 'line')
+    for (let c = b.x + 2 + displayWidth(tag); c < b.x + w - 1; c++)
+      put(c, t, g.h, 'line')
+    put(b.x + w - 1, t, g.tr, 'line')
+    put(b.x, bottom, g.bl, 'line')
+    for (let c = b.x + 1; c < b.x + w - 1; c++) put(c, bottom, g.h, 'line')
+    put(b.x + w - 1, bottom, g.br, 'line')
+    for (let r = t + 1; r < bottom; r++) {
+      put(b.x, r, g.v, 'line')
+      put(b.x + w - 1, r, g.v, 'line')
     }
-    const lines = [...b.name, ...b.data]
-    lines.forEach((l, k) => putText(bx + 2, b.top + 1 + k, l, 'text'))
+    ;[...b.name, ...b.data].forEach((l, k) =>
+      putText(b.x + 2, t + 1 + k, l, 'text'),
+    )
   }
-  for (const [cx, cy] of exits) put(cx, cy, g.down, 'line')
+  for (const [cx, cy] of exits) put(cx, cy, g.out, 'line')
   for (const [cx, cy, ch] of heads) put(cx, cy, ch, 'line')
 
-  const paint = (s: string, role: Cell['role']): string =>
+  const paint = (s: string, role: Role): string =>
     colorizeText(
       s,
       role === 'head'
@@ -360,7 +370,7 @@ export function renderEventModelingAscii(
         end--
       let out = ''
       let run = ''
-      let runRole: Cell['role'] = 'line'
+      let runRole: Role = 'line'
       for (const cell of row.slice(0, end)) {
         const blank = cell.mask === 0 && cell.ch === ' '
         const ch =
@@ -369,7 +379,7 @@ export function renderEventModelingAscii(
               ? ASCII_GLYPH(cell.mask)
               : (UNI_GLYPH[cell.mask] ?? '│')
             : cell.ch
-        const role: Cell['role'] = cell.mask !== 0 ? 'line' : cell.role
+        const role: Role = cell.mask !== 0 ? 'line' : cell.role
         if (!blank && role !== runRole) {
           if (run !== '') out += paint(run, runRole)
           run = ''
@@ -380,4 +390,6 @@ export function renderEventModelingAscii(
       return out + (run === '' ? '' : paint(run, runRole))
     })
     .join('\n')
+    .replace(/^\s*\n/, '')
+    .replace(/\s+$/, '')
 }
