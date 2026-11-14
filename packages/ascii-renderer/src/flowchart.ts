@@ -200,8 +200,10 @@ function flipRegion(
     flipRoleCanvasVertically(roles)
     if (links) flipLinkCanvasVertically(links)
   }
-  // Node boxes inside the region moved with it; keep their rects in step.
-  for (const r of graph.nodeRects!) {
+  // Node boxes and label text inside the region moved with it; keep their
+  // rects in step (a later whole-canvas flip mirrors by them, #3053).
+  /* v8 ignore next -- labelRects is set whenever labels are drawn */
+  for (const r of [...graph.nodeRects!, ...(graph.labelRects ?? [])]) {
     if (!(r.x0 >= minX && r.x1 <= maxX && r.y0 >= minY && r.y1 <= maxY))
       continue
     const { x0, x1, y0, y1 } = r
