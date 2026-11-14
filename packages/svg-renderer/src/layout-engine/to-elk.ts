@@ -31,6 +31,7 @@ import {
 } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
 import { wrapFlowchartLabel } from './wrap-label.ts'
+import { isUsecaseShape, usecaseNodeSize } from '../usecase/shapes.ts'
 import {
   findBackEdgeIndexes,
   subgraphFeedbackEdges,
@@ -394,6 +395,7 @@ export function estimateNodeSize(
 ): { width: number; height: number } {
   // An architecture icon tile is Mermaid's fixed 80px square; its label hangs below.
   if (icon !== undefined) return { width: TILE, height: TILE }
+  if (isUsecaseShape(shape)) return usecaseNodeSize(shape, label)
   // mermaid@12.3.0 flowchart labels take a 1.5 line height (24px at 16px) and
   // 12px of vertical padding, so a one-line rect is 48px (#2931), and wrap at
   // 120px (#2932).
@@ -758,22 +760,14 @@ export function mermaidToElk(
             : {}),
         }
       : {}),
-    // 70 under mermaid@12.3.0's pipeline (50 before nodes had the 120px minimum width, #2717): its wider edge-label boxes need more
-    // room for the parallel runs than 12.2.0's did (Five, Six and Nine Cluster
-    // Exit Siblings all match 12.3.0 at 70; 60 fails Five and Six).
-    // Flowcharts without subgraphs need none of this once nodes have mermaid's
-    // 120px minimum width (#2717): the target already sits ~14px off the source.
+    // Subgraph flowcharts with a labelled parallel run: 70, because mermaid@12.3.0's
+    // wider edge-label boxes need more room than 12.2.0's (Five, Six and Nine Cluster
+    // Exit Siblings match at 70; 60 fails Five and Six). Without it Nine drops to 67%
+    // horizontal on the layout oracle (#2934).
     ...(hasLabelledParallelRun(graph) &&
-    ((usesMermaidElkPipeline(graph) && graph.subgraphs.length > 0) ||
-      isStateGraph(graph) ||
-      opts.legacyNodeSizes)
-      ? {
-          'elk.spacing.edgeEdge': usesMermaidElkPipeline(graph)
-            ? opts.legacyNodeSizes
-              ? '50'
-              : '70'
-            : '40',
-        }
+    usesMermaidElkPipeline(graph) &&
+    graph.subgraphs.length > 0
+      ? { 'elk.spacing.edgeEdge': '70' }
       : {}),
     'elk.layered.wrapping.strategy': 'OFF',
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)

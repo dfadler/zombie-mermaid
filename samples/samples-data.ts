@@ -4057,6 +4057,88 @@ sankey-beta
 "Sales, EMEA",Other,10
 "Region ""North""",Total,30`,
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  USE CASE (parity with mermaid 12.3.0, #2819)
+  //  Header usecase-beta. Unsupported syntax (metadata, stereotypes, classes,
+  //  json nodes, circle/cross arrows, edge ids) is filed under #2819.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Use Case: Basic',
+    category: 'Use Case',
+    gallery: true,
+    description:
+      'Actors drawn as stick figures, use cases as ellipses inside a system boundary, and a note on one of them.',
+    source: `usecase-beta
+    actor Admin
+    actor Customer
+    systemBoundary Shop
+        Browse
+        Checkout
+        Pay[Pay by card]
+    end
+    Customer --> Browse
+    Customer --> Checkout
+    Checkout ..> : include Pay
+    Admin --"manages"--> Browse
+    note for Checkout "needs login"`,
+  },
+  {
+    title: 'Use Case: Relationships',
+    category: 'Use Case',
+    description:
+      'Association lines with and without arrowheads and labels, include and extend dependencies, and generalization between actors.',
+    source: `usecase-beta
+    actor User
+    actor Admin
+    Admin --|> User
+    systemBoundary Library
+        Search(Search catalogue)
+        Borrow(Borrow a book)
+        Reserve
+        Renew
+        Fine(Pay a fine)
+    end
+    User -- Search
+    User --> Borrow
+    Borrow ..> : include Reserve
+    Renew ..> : extend Borrow
+    Admin <-- Fine
+    Borrow -- late return --> Fine`,
+  },
+  {
+    title: 'Use Case: Top To Bottom',
+    category: 'Use Case',
+    description:
+      'direction TB lays the diagram out downward; Name[label] draws a rectangular use case and a quoted name keeps its spaces.',
+    source: `usecase-beta
+    direction TB
+    actor "Support agent"
+    actor Customer(Customer)
+    systemBoundary "Help desk"
+        Open[Open a ticket]
+        Reply(Reply to a ticket)
+        Close
+    end
+    Customer --> Open
+    "Support agent" --> Reply
+    "Support agent" --> Close
+    Reply ..> : include Close`,
+  },
+  {
+    title: 'Use Case: Notes',
+    category: 'Use Case',
+    description:
+      'note for attaches a note to an actor or a use case with a dotted line.',
+    source: `usecase-beta
+    actor Guest
+    Book
+    Cancel(Cancel a booking)
+    Guest --> Book
+    Book ..> : include Cancel
+    note for Guest "May be anonymous"`,
+  },
   // ══════════════════════════════════════════════════════════════════════════
   //  ISHIKAWA (FISHBONE) DIAGRAMS
   //  Each source has an ASCII golden of the same shape under
