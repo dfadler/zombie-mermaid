@@ -28,7 +28,7 @@ graders:
   - name: raw_output_collapsed
     type: regex
     target: last_message
-    pattern: '<details>\s*<summary>[^<]*</summary>\s*\S[\s\S]*?</details>'
+    pattern: '<details>\s*<summary>[^<]*</summary>[\s\S]*?(?:\b\d+(?:\.\d+)?\s*(?:ms|s)\b|paste|placeholder|<raw)[\s\S]*?</details>'
     flags: i
   - name: script_permalink
     type: regex
