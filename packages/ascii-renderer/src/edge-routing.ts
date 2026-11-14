@@ -727,13 +727,16 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   // gets the entry once PR #2090 lands.
   // #2645: a dense facing pair gives each edge a row of its own on the faces.
   for (const e of graph.edges) {
-    if (!denseFacingPair(graph, e) || e.from.index > e.to.index) continue
-    const n = graph.edges.filter(
+    if (!denseFacingPair(graph, e)) continue
+    const pair = graph.edges.filter(
       (o) =>
         o.from !== o.to &&
         (o.from === e.from || o.to === e.from) &&
         (o.from === e.to || o.to === e.to),
-    ).length
+    )
+    // Once per pair, by its first edge (all of them may run from the later node).
+    if (pair[0] !== e) continue
+    const n = pair.length
     const at = requireGridCoord(e.from).y + 1
     graph.rowHeight.set(at, Math.max(graph.rowHeight.get(at) ?? 0, n + 1))
   }
@@ -1219,39 +1222,60 @@ function buildParallelLanePath(
     const gutterTravelHasWidth = horizontalDeparture
       ? fromGutter.x !== toGutter.x
       : fromGutter.y !== toGutter.y
+    // The gutter jog runs toward the target's side: a lane past both ends
+    // doubles back along its own row, and the reversal draws as a stray `+`.
+    // Only when another edge of the node already heads that way (its own
+    // branch there would share the row).
+    const crowded = (axis: 'x' | 'y', sign: number): boolean =>
+      graph.edges.some(
+        (e) =>
+          e !== edge &&
+          e.from === edge.from &&
+          e.to !== edge.to &&
+          e.to !== edge.from &&
+          Math.sign(
+            requireGridCoord(e.to)[axis] - requireGridCoord(edge.from)[axis],
+          ) === sign,
+      )
+    const gMain =
+      fromAttach.y +
+      (toAttach.y < fromAttach.y && crowded('y', 1) ? -offset : offset)
+    const gCross =
+      fromAttach.x +
+      (toAttach.x < fromAttach.x && crowded('x', 1) ? -offset : offset)
     const gutterLabelSegment: [GridCoord, GridCoord] = horizontalDeparture
       ? gutterTravelHasWidth
         ? [
-            { x: fromGutter.x, y: laneMain },
-            { x: toGutter.x, y: laneMain },
+            { x: fromGutter.x, y: gMain },
+            { x: toGutter.x, y: gMain },
           ]
         : [
-            { x: fromGutter.x, y: laneMain },
-            { x: fromGutter.x, y: laneMain },
+            { x: fromGutter.x, y: gMain },
+            { x: fromGutter.x, y: gMain },
           ]
       : gutterTravelHasWidth
         ? [
-            { x: laneCross, y: fromGutter.y },
-            { x: laneCross, y: toGutter.y },
+            { x: gCross, y: fromGutter.y },
+            { x: gCross, y: toGutter.y },
           ]
         : [
-            { x: laneCross, y: fromGutter.y },
-            { x: laneCross, y: fromGutter.y },
+            { x: gCross, y: fromGutter.y },
+            { x: gCross, y: fromGutter.y },
           ]
     const gutterCandidate = horizontalDeparture
       ? lanePath([
           fromAttach,
           fromGutter,
-          { x: fromGutter.x, y: laneMain },
-          { x: toGutter.x, y: laneMain },
+          { x: fromGutter.x, y: gMain },
+          { x: toGutter.x, y: gMain },
           toGutter,
           toAttach,
         ])
       : lanePath([
           fromAttach,
           fromGutter,
-          { x: laneCross, y: fromGutter.y },
-          { x: laneCross, y: toGutter.y },
+          { x: gCross, y: fromGutter.y },
+          { x: gCross, y: toGutter.y },
           toGutter,
           toAttach,
         ])

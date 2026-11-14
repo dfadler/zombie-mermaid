@@ -485,6 +485,46 @@
       "owner": "__tests__/ascii-elk-hinted-crashes-3146.test.ts",
       "mermaid": "12.3.0",
       "verdict": "mermaid 12.3.0 (headless, scripts/lib/real-mermaid.ts) draws every node, edge and label of both sources (6 and 5 edges, the G0/G1 frames, the loops); these snapshots pin this renderer only, and its n0 loop in the first source is a long detour where mermaid's is a small hook"
+    },
+    {
+      "paths": [
+        "__tests__/__snapshots__/ascii-parallel-lane-reversal.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-parallel-lane-reversal.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "mermaid 12.3.0 draws the four labelled edges (VW, 38, Fp, Zq) as four separate strokes; the ASCII snapshots draw the same four with no stray +, checked by the test's assertions; the snapshots pin this renderer's output only"
+    },
+    {
+      "paths": [
+        "__tests__/__snapshots__/ascii-decision-pair-three-edges.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-decision-pair-three-edges.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "mermaid 12.3.0 draws the three edges between two decisions on three rows, the reciprocal's on top (checked in LR and RL); the ASCII snapshots draw the same order, checked by the test; the snapshots pin this renderer's output only"
+    },
+    {
+      "paths": [
+        "__tests__/__snapshots__/ascii-dense-pair-reverse-edges.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-dense-pair-reverse-edges.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "mermaid 12.3.0 draws four strokes between the two rounded boxes; the ASCII snapshots draw all four with both labels, checked by the test; the snapshots pin this renderer's output only"
+    },
+    {
+      "paths": [
+        "__tests__/__snapshots__/ascii-decision-pair-four-edges.test.ts.snap"
+      ],
+      "class": "b",
+      "source": "this renderer's own output, accepted once when the test was written",
+      "owner": "__tests__/ascii-decision-pair-four-edges.test.ts",
+      "mermaid": "12.3.0",
+      "verdict": "mermaid 12.3.0 draws four strokes between two decisions; the ASCII snapshots draw four rows with both labels, checked by the test; the snapshots pin this renderer's output only"
     }
   ]
 }
