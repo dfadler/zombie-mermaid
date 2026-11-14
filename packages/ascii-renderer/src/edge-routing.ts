@@ -741,7 +741,10 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   // puts on those faces, so lengthen the nodes' side faces to hold them.
   const hints = graph.edgeHints
   for (const e of hints ? graph.edges : []) {
+    // A frame with its own direction keeps hints for its loops only (#3053):
+    // an edge ELK did not hint has no faces to make room for.
     if (
+      !hints!.has(e) ||
       e.parallelLane?.index !== 0 ||
       !(farGroup(graph, e) || e.clusterSource || overflowsFace(graph, e))
     )
@@ -2332,9 +2335,11 @@ function flowFanOut(
   if (graph.edges.some((o) => o.from === edge.to && o.to === edge.from)) {
     return false
   }
-  if (getNodeSubgraph(graph, edge.from) || getNodeSubgraph(graph, edge.to)) {
-    return false
-  }
+  // #2660: a TD fan-out inside one subgraph fans like any other; LR and an edge
+  // crossing a subgraph border keep their own routing.
+  const sgFrom = getNodeSubgraph(graph, edge.from)
+  const sgTo = getNodeSubgraph(graph, edge.to)
+  if ((sgFrom || sgTo) && (lr || sgFrom !== sgTo)) return false
   const out = graph.edges.filter((o) => o.from === edge.from)
   // A self-loop or a reciprocal edge at the source keeps the routing it was
   // laid out with (#2025-#2030, #1349).
