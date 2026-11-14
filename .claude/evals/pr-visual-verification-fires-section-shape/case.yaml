@@ -47,5 +47,5 @@ graders:
     flags: i
   - name: base_sha_label
     type: regex
-    pattern: 'main\s*@\s*(?:[0-9a-f]{7,40}|<?sha>?)'
+    pattern: 'main\s*@\s*`?(?:[0-9a-f]{7,40}|<[^>\n]*sha[^>\n]*>)'
     flags: i

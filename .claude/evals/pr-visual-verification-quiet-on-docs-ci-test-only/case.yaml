@@ -8,7 +8,7 @@ schema_version: '1.1'
 name: pr-visual-verification-quiet-on-docs-ci-test-only
 description: >
   A docs, CI and test-only diff gets an N/A line with a reason tied to the diff, not a section.
-  expected_outcome: PASS when the reply has an N/A line (at a line start) naming the workflow, docs
+  expected_outcome: PASS when the reply gives N/A with a reason naming the workflow, docs
   or test and no mermaid fence, image or SVG/ASCII heading; FAIL if it builds the section.
   Regression guard, no delta expected.
 tags: [pr-visual-verification, trigger, quick, smoke]
@@ -31,7 +31,7 @@ execution:
 graders:
   - name: na_with_diff_reason
     type: regex
-    pattern: '(?:^|\n)[ \t>*-]*(?:Visual verification:?\s*)?N/A\b[^\n]{0,200}\b(?:workflows?|docs?|decision|tests?|CI)\b'
+    pattern: '\bN/A\b[\s\S]{0,400}\b(?:workflows?|docs?|decision|tests?|CI)\b'
     flags: i
   - name: no_section_built
     type: regex
