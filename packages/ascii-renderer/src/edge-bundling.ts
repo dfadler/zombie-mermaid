@@ -39,7 +39,8 @@ import { routeEdge } from './pathfinder.ts'
  * Analyze graph edges and create bundles for parallel links.
  *
  * Groups edges by:
- * - Fan-in: Multiple edges sharing the same target (A & B --> C)
+ * - Fan-in: Multiple edges sharing the same target (A & B --> C), only where
+ *   they cannot land one by one (`landsStrokeByStroke`)
  * - Fan-out: Multiple edges sharing the same source (A --> B & C)
  *
  * Only creates bundles when:
@@ -59,24 +60,22 @@ export function analyzeEdgeBundles(graph: AsciiGraph): EdgeBundle[] {
   const bundles: EdgeBundle[] = []
   const bundledEdges = new Set<AsciiEdge>()
 
-  // Group edges by target (fan-in candidates)
+  // Mermaid draws every edge into a node on its own end cell with its own
+  // arrowhead, so a fan-in lands stroke by stroke (`separateFanIns`,
+  // port-offsets.ts) and shares one trunk only where it cannot (#2678): see
+  // `landsStrokeByStroke`.
   const edgesByTarget = new Map<AsciiNode, AsciiEdge[]>()
   for (const edge of graph.edges) {
-    // Skip self-loops
     if (edge.from === edge.to) continue
-
     const existing = edgesByTarget.get(edge.to) ?? []
     existing.push(edge)
     edgesByTarget.set(edge.to, existing)
   }
-
-  // Create fan-in bundles
   for (const [target, edges] of edgesByTarget) {
     if (edges.length < 2) continue
     if (!canBundle(edges, graph)) continue
-
-    // Check if all edges are already bundled
     if (edges.some((e) => bundledEdges.has(e))) continue
+    if (landsStrokeByStroke(graph, target, edges.length)) continue
 
     const bundle: EdgeBundle = {
       type: 'fan-in',
@@ -88,13 +87,10 @@ export function analyzeEdgeBundles(graph: AsciiGraph): EdgeBundle[] {
       junctionDir: Middle,
       sharedNodeDir: Middle,
     }
-
-    // Mark edges as bundled
     for (const edge of edges) {
       edge.bundle = bundle
       bundledEdges.add(edge)
     }
-
     bundles.push(bundle)
   }
 
@@ -136,6 +132,46 @@ export function analyzeEdgeBundles(graph: AsciiGraph): EdgeBundle[] {
   }
 
   return bundles
+}
+
+/**
+ * Whether `n` edges into `node` each get a landing cell of their own on its
+ * top face: the box is wide enough for `n` strokes a stroke spacing apart (2n-1
+ * interior cells) and no self-loop of the node holds the face (#2678). A node
+ * that fails keeps one shared trunk and arrowhead, as the grid always drew it:
+ * a character cell is the limit, not mermaid.
+ */
+function landsStrokeByStroke(
+  graph: AsciiGraph,
+  node: AsciiNode,
+  n: number,
+): boolean {
+  const c = requireGridCoord(node)
+  const width = [0, 1, 2].reduce(
+    (w, i) => w + (graph.columnWidth.get(c.x + i) ?? 0),
+    0,
+  )
+  return (
+    width - 2 >= 2 * n - 1 &&
+    !graph.edges.some((e) => e.from === node && e.to === node)
+  )
+}
+
+/**
+ * Whether `edge` is one of several unlabeled edges into its target that land
+ * stroke by stroke (TD): the group `canBundle` accepts, on a node that has room
+ * (#2678). Such an edge leaves its source by the flow face and enters by the
+ * top face, as its bundle's edges did.
+ */
+export function isStrokeFanIn(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  if (graph.config.graphDirection !== 'TD' || edge.from === edge.to)
+    return false
+  const group = graph.edges.filter((e) => e.to === edge.to && e.from !== e.to)
+  return (
+    group.length > 1 &&
+    canBundle(group, graph) &&
+    landsStrokeByStroke(graph, edge.to, group.length)
+  )
 }
 
 /**

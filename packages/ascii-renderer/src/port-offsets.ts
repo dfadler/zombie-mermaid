@@ -269,7 +269,10 @@ function attachesAt(
       drawing[pos - dc.x + 1]?.[geo.border],
     ]
     const inner = next.find((c) => c === '╲' || c === '╱')
+    // A fork/join bar is solid along its whole width.
+    const bar = run.node.shape === 'fork-join' && (ch === '█' || ch === '#')
     return (
+      bar ||
       ch === '─' ||
       ch === '-' ||
       ch === '╲' ||

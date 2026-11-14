@@ -46,9 +46,11 @@ const FAN_OUT_TD = `flowchart TD
   C[Source] --> A[One]
   C --> B[Two]`
 
+// Narrow target: three strokes cannot land one by one, so the fan-in bundles.
 const FAN_IN_TD = `flowchart TD
-  A[One] --> C[Target]
-  B[Two] --> C`
+  A --> C
+  B --> C
+  D --> C`
 
 describe('routeBundledEdges (TD, via the real layout pipeline)', () => {
   it('pins the fan-out junction and per-target paths', () => {

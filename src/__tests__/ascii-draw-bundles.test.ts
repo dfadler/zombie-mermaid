@@ -59,26 +59,31 @@ function nonSpaceChars(canvas: string[][]): string {
   return found.map((f) => f[2]).join('')
 }
 
+// Three strokes need five interior cells on the target: "C" has three, so the
+// fan-in keeps one trunk (#2678, `landsStrokeByStroke`).
 const FAN_IN = `flowchart TD
-  A[One] --> C[Target]
-  B[Two] --> C`
+  A --> C
+  B --> C
+  D --> C`
 
 // A plain fan-in centers its target between the sources, so the grid has no
 // spare columns beside the junction. The hand-built trunk paths below step a
 // column to either side of it; a source that feeds a second node keeps the
 // target under the first source (#1339), leaving that room.
 const FAN_IN_BESIDE = `flowchart TD
-  A[One] --> C[Target]
-  B[Two] --> C
-  B --> D[Other]`
+  A --> C
+  B --> C
+  D --> C
+  B --> E[Other]`
 
 const FAN_OUT = `flowchart TD
   C[Source] --> A[One]
   C --> B[Two]`
 
 const BIDIRECTIONAL_FAN_IN = `flowchart TD
-  A[One] <--> C[Target]
-  B[Two] <--> C`
+  A <--> C
+  B <--> C
+  D <--> C`
 
 const BIDIRECTIONAL_FAN_OUT = `flowchart TD
   C[Source] <--> A[One]
@@ -91,18 +96,17 @@ const MIXED_FAN_OUT = `flowchart TD
 describe('draw-bundles: rendered fan-in/fan-out diagrams', () => {
   it('draws a fan-in bundle with a T-junction and single arrowhead (unicode)', () => {
     const out = renderMermaidASCII(FAN_IN, { useAscii: false })
-    // The two sources join in one trunk whose T-junction sits over the
+    // The three sources join in one trunk whose crossing sits over the
     // (centered) target.
-    expect(out).toContain('└───────┬──────┘')
+    expect(out).toContain('└─────────┼─────────┘')
     expect(out).toContain('▼')
     expect(out.match(/▼/g)).toHaveLength(1)
   })
 
   it('draws a fan-in bundle box-start and junction in ASCII charset', () => {
     const out = renderMermaidASCII(FAN_IN, { useAscii: true })
-    expect(out).toContain('+-------+------+')
-    expect(out).toContain('+--+--+')
-    expect(out).toContain('+--------+')
+    expect(out).toContain('+---------+---------+')
+    expect(out).toContain('+-+-+')
     expect(out).toContain('v')
   })
 
@@ -123,7 +127,7 @@ describe('draw-bundles: rendered fan-in/fan-out diagrams', () => {
     const out = renderMermaidASCII(BIDIRECTIONAL_FAN_IN, { useAscii: false })
     // One end arrowhead at the shared target, plus one start arrowhead per source.
     expect(out.match(/▼/g)).toHaveLength(1)
-    expect(out.match(/▲/g)).toHaveLength(2)
+    expect(out.match(/▲/g)).toHaveLength(3)
   })
 
   it('draws a single shared start arrowhead for a bidirectional fan-out bundle', () => {

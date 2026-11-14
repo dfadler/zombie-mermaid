@@ -30,7 +30,11 @@ import {
 } from './types.ts'
 import type { AsciiFace } from './layout-hints.ts'
 import { routeEdge, mergePath } from './pathfinder.ts'
-import { canBundle, crowdedTopFaceEnds } from './edge-bundling.ts'
+import {
+  canBundle,
+  crowdedTopFaceEnds,
+  isStrokeFanIn,
+} from './edge-bundling.ts'
 import {
   getNodeSubgraph,
   gridToDrawingCoord,
@@ -2364,6 +2368,14 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   const flowFan = leavesFlowFace(graph, edge, effectiveDir)
   if (flowFan) {
     ;[preferredDir, preferredOppositeDir] = [Down, Up]
+  }
+  // An unlabeled edge of a fan-in leaves its source by the bottom and enters by
+  // the top: mermaid ends each on a cell of its own (`separateFanIns`), where a
+  // side-face L would share one trunk and one arrowhead with its siblings
+  // (#2678).
+  if (effectiveDir === 'TD' && isStrokeFanIn(graph, edge)) {
+    ;[preferredDir, preferredOppositeDir] = [Down, Up]
+    ;[alternativeDir, alternativeOppositeDir] = [Down, Up]
   }
   const rightFan = leavesRightFace(graph, edge, effectiveDir)
   if (rightFan) {

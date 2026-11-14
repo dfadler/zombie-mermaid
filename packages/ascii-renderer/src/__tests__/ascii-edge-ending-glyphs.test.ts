@@ -141,18 +141,17 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
     expect(result).not.toMatch(/[►◄▲▼◢◣◤◥↖↗↘↙]/)
   })
 
-  // A mixed fan-in (one edge --o, another plain -->) has no single correct
-  // glyph for the shared arrowhead, so it falls back to the plain
-  // directional arrowhead rather than guessing.
-  it('falls back to a plain arrowhead for a fan-in bundle with mismatched markers', () => {
+  // A mixed fan-in lands each edge on its own cell, so each keeps its own
+  // marker (#2678): no shared arrowhead to guess a glyph for.
+  it('draws each edge its own marker in a fan-in with mismatched markers', () => {
     const result = renderMermaidASCII(`
       graph TD
         E --o C
         F --x C
     `)
-    expect(result).not.toContain('●')
-    expect(result).not.toContain('✕')
-    expect(result).toContain('▼')
+    expect(result).toContain('●')
+    expect(result).toContain('✕')
+    expect(result).not.toContain('▼')
   })
 })
 
