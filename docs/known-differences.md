@@ -909,6 +909,36 @@ labels, custom sizes), measured with a throwaway script, not yet a checked-in or
   connected); only the headless mermaid builds above were compared.
 - **ASCII.** Mermaid has no ASCII output; the flow list above is this library's own.
 
+## Treemap diagrams
+
+Checked against mermaid 12.3.0: section and leaf positions and sizes and the viewBox agree to
+0.01px on the gallery samples, and the labels that are shown agree except where a label is fitted
+one pixel off (see Label fitting), measured with `pnpm run treemap:oracle`. mermaid.live and
+GitHub: not checked on this run (no signed-in browser tool connected); only the headless mermaid
+build above was compared.
+
+- **Palette.** Sections use mermaid's default-theme `cScale1..12` hues on a light background and
+  the theme accent with its series shades on a dark one; mermaid draws the same pastels on any
+  background. Text is `var(--_text)`; mermaid picks black or white per slot.
+- **Label fitting.** Fitting measures with Trebuchet MS advances, as mermaid's headless render does
+  on a machine that has the font. A label can still land one font size off (`Kotlin` 12 here, 13
+  there), and bold section labels are measured as regular, so a truncation can differ by a letter.
+  Non-ASCII text falls back to the library's Inter estimate.
+- **Font.** Text is drawn in the render's font (Inter by default), not mermaid's stack, and there
+  is no `clip-path` on labels: fitting already keeps them inside their cell.
+- **`classDef`.** Only `fill`, `stroke`, `stroke-width` (cells) and `color` (text) are applied, and a
+  colour with `url()` or markup is ignored. Mermaid copies every property to the cell with
+  `!important`. An unknown `:::class` does nothing, as there.
+- **Init keys.** `padding`, `nodeWidth`, `nodeHeight`, `showValues`, `valueFormat` and
+  `diagramPadding` are not read: the canvas is 1000 x 400, values are written with d3's `,` format
+  (12 significant digits), and 8px surround the drawing.
+- **Values.** A value such as `.` or `_` reads as `NaN` in mermaid and draws garbage; here it is a
+  parse error. Mermaid's grammar also has a "single root" check that its renderer does not apply, so
+  several top-level rows are accepted, as there.
+- **Accessibility.** `accTitle` / `accDescr` give the SVG its name and description; the `title` line is
+  drawn, not used as the name. `useMaxWidth` is ignored: the SVG carries a fixed `width` and `height`.
+- **ASCII.** Mermaid has no ASCII output; the tree list above is this library's own.
+
 ## Timelines
 
 Checked against mermaid 12.3.0 with `pnpm run timeline:oracle` (12.2.0, the pin, renders
