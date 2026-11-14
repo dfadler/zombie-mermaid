@@ -1325,12 +1325,13 @@ function bypassDip(
   edge: AsciiEdge,
 ): GridCoord[] | undefined {
   if (!edge.ownPorts) return undefined
-  const a = edge.from.gridCoord
-  const c = edge.to.gridCoord
-  if (!a || !c || a.y !== c.y || c.x - a.x <= 4) return undefined
-  const aside = graph.sidesteps?.find((s) => s.anchor === edge.from)?.node
-  const b = aside?.gridCoord
-  if (!b || b.y === a.y) return undefined
+  const a = requireGridCoord(edge.from)
+  const c = requireGridCoord(edge.to)
+  if (a.y !== c.y || c.x - a.x <= 4) return undefined
+  // `ownPorts` is only set by `sidestepSkippedNodes`, which records the node.
+  const b = requireGridCoord(
+    graph.sidesteps!.find((s) => s.anchor === edge.from)!.node,
+  )
   // The border row on the side away from the skipped node.
   const row = b.y < a.y ? a.y + 2 : a.y
   return [
