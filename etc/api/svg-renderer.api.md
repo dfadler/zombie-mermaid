@@ -17,6 +17,7 @@ import { ErDiagram } from '@zombie-mermaid/mermaid-parser';
 import { ErRenderOptions } from '@zombie-mermaid/core';
 import { FlowchartRenderOptions } from '@zombie-mermaid/core';
 import { GitGraph } from '@zombie-mermaid/mermaid-parser';
+import { Ishikawa } from '@zombie-mermaid/mermaid-parser';
 import { Journey } from '@zombie-mermaid/mermaid-parser';
 import { Kanban } from '@zombie-mermaid/mermaid-parser';
 import { LayoutCache } from '@zombie-mermaid/core';
@@ -240,6 +241,18 @@ export function hasLabelBelowIcon(a: {
 // @public
 export const INLINE_CENTERED_EDGE_LABEL: LayoutOptions;
 
+// @public
+export const ISHIKAWA: {
+    readonly fontSize: 16;
+    readonly headFontSize: 14;
+    readonly spineLength: 250;
+    readonly boneStub: 30;
+    readonly boneBase: 60;
+    readonly bonePerChild: 5;
+    readonly padding: 20;
+    readonly angle: number;
+};
+
 // @public (undocumented)
 export const JOURNEY: {
     readonly width: 150;
@@ -286,6 +299,9 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph;
 
 // @public
 export function layoutGraphSync(graph: MermaidGraph, options?: FlowchartLayoutOptions): PositionedGraph;
+
+// @public
+export function layoutIshikawa(d: Ishikawa): PositionedIshikawa | undefined;
 
 // @public (undocumented)
 export function layoutJourney(journey: Journey): PositionedJourney;
@@ -383,6 +399,37 @@ export function pieColorValue(index: number, accent: string | undefined, bg: str
 
 // @public
 export function pointsToPath(points: Point[], curve?: CurveStyle): string;
+
+// @public (undocumented)
+export interface PositionedIshikawa {
+    // (undocumented)
+    head: {
+        d: string;
+        x: number;
+        y: number;
+        lines: string[];
+        textX: number;
+        textY: number;
+    };
+    // (undocumented)
+    height: number;
+    items: Array<{
+        kind: 'line';
+        line: IshikawaLine;
+    } | {
+        kind: 'box';
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    } | {
+        kind: 'text';
+        text: IshikawaText;
+    }>;
+    spine: IshikawaLine;
+    // (undocumented)
+    width: number;
+}
 
 // @public (undocumented)
 export interface PositionedPacket {
@@ -483,6 +530,9 @@ export function renderErSvg(diagram: PositionedErDiagram, colors: DiagramColors,
 
 // @public
 export function renderGitGraphSvg(gg: PositionedGitGraph, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
+
+// @public
+export function renderIshikawaSvg(p: PositionedIshikawa | undefined, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
 
 // @public
 export function renderJourneySvg(j: PositionedJourney, colors: DiagramColors, font?: string, transparent?: boolean, embedSource?: string, title?: string, decorative?: boolean, emit?: SvgEmitOptions): string;
@@ -633,6 +683,9 @@ export function validateMermaid(text: string): void;
 
 // @public
 export function withDataSrc(svgTag: string, source: string | undefined): string;
+
+// @public
+export function wrapIshikawaText(text: string, maxChars: number): string;
 
 // @public
 export function wrapLegendLabel(person: string, max?: number): string[];

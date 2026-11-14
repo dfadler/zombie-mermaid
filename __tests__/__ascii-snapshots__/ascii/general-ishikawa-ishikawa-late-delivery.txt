@@ -1,0 +1,8 @@
+                                                                  [ People ]
+    [ Method ]                      [ Machine ]     Training -----------\
+Planning -\                Build servers -\         ` No onboarding doc -\
+           \                               \        Turnover -------------\    +---------------+
+------------+-------+-----------------------+-+-----------------+----------+-->| Late delivery |
+Remote time zones -/       Supplier ---------/      Approval --/               +---------------+
+                  /        ` Slow shipping -/       Handoffs -/
+          [ Environment ]            [ Materials ]      [ Process ]

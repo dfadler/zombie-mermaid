@@ -1,0 +1,7 @@
+                                                 [ Product ]
+Missing integrations with the tools teams already use ─╲       ┌──────────────────────┐
+Slow onboarding ────────────────────────────────────────╲      │ Customer churn rises │
+──────────────────────┬──────────────────────────────────┴────►│ every quarter        │
+Long response times ─╱                                         └──────────────────────┘
+                    ╱
+              [ Support ]

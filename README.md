@@ -86,7 +86,7 @@ the SVG renderer at all (see [ASCII Output](#ascii-output)).
 
 ## Features
 
-- **20 diagram types** — Flowcharts (including State), Sequence, Class, ER, XY Charts (bar, line, combined), Architecture, C4, Pie, Quadrant charts, Gantt charts, Mindmaps, Timelines, Requirement diagrams, Kanban boards, User Journeys, Radar charts, Packets, Git graphs, Sankey diagrams, and Use case diagrams
+- **21 diagram types** — Flowcharts (including State), Sequence, Class, ER, XY Charts (bar, line, combined), Architecture, C4, Pie, Quadrant charts, Gantt charts, Mindmaps, Timelines, Requirement diagrams, Kanban boards, User Journeys, Radar charts, Packets, Git graphs, Sankey diagrams, Use case diagrams, and Ishikawa (fishbone) diagrams
 - **Dual output** — SVG for rich UIs, ASCII/Unicode for terminals
 - **Synchronous rendering** — No async, no flash. Works with React `useMemo()`
 - **15 built-in themes** — And dead simple to add your own

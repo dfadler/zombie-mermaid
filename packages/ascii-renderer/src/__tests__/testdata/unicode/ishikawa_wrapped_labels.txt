@@ -1,0 +1,15 @@
+ishikawa
+  Customer churn rises<br>every quarter
+    Product
+      Missing integrations with the tools teams already use
+      Slow<br/>onboarding
+    Support
+      Long response times
+---
+                                                 [ Product ]
+Missing integrations with the tools teams already use ─╲       ┌──────────────────────┐
+Slow onboarding ────────────────────────────────────────╲      │ Customer churn rises │
+──────────────────────┬──────────────────────────────────┴────►│ every quarter        │
+Long response times ─╱                                         └──────────────────────┘
+                    ╱
+              [ Support ]
