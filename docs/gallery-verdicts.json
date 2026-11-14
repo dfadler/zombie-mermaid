@@ -1,0 +1,1847 @@
+{
+  "mermaidVersion": "12.3.0",
+  "level": "label-level: every word mermaid draws (numbers excluded) appears in our SVG and in our ASCII; structure, geometry and palette not compared (#2617)",
+  "counts": {
+    "total": 365,
+    "match": 360,
+    "differs": 4,
+    "not-renderable": 1
+  },
+  "rows": [
+    {
+      "id": "general-1",
+      "title": "Simple Flow",
+      "verdict": "match"
+    },
+    {
+      "id": "general-2",
+      "title": "Original Node Shapes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-3",
+      "title": "Subroutine and Hexagon Shapes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-4",
+      "title": "Cylinder and Trapezoid Shapes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-5",
+      "title": "Twelve Core Flowchart Shapes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-6",
+      "title": "All Edge Styles",
+      "verdict": "match"
+    },
+    {
+      "id": "general-7",
+      "title": "No-Arrow Edges",
+      "verdict": "match"
+    },
+    {
+      "id": "general-8",
+      "title": "Text-Embedded Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "general-9",
+      "title": "Bidirectional Arrows",
+      "verdict": "match"
+    },
+    {
+      "id": "general-10",
+      "title": "Parallel Links (&)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-11",
+      "title": "Chained Edges",
+      "verdict": "match"
+    },
+    {
+      "id": "general-12",
+      "title": "linkStyle: Color-Coded Edges",
+      "verdict": "match"
+    },
+    {
+      "id": "general-13",
+      "title": "linkStyle: Default + Override",
+      "verdict": "match"
+    },
+    {
+      "id": "general-14",
+      "title": "Direction: Left-Right (LR)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-15",
+      "title": "Direction: Bottom-Top (BT)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-16",
+      "title": "Subgraphs",
+      "verdict": "match"
+    },
+    {
+      "id": "general-17",
+      "title": "Nested Subgraphs",
+      "verdict": "match"
+    },
+    {
+      "id": "general-18",
+      "title": "Subgraph Direction Override",
+      "verdict": "match"
+    },
+    {
+      "id": "general-19",
+      "title": "::: Class Shorthand",
+      "verdict": "match"
+    },
+    {
+      "id": "general-20",
+      "title": "Inline Style Overrides",
+      "verdict": "match"
+    },
+    {
+      "id": "general-21",
+      "title": "CI/CD Pipeline",
+      "verdict": "match"
+    },
+    {
+      "id": "general-22",
+      "title": "System Architecture",
+      "verdict": "match"
+    },
+    {
+      "id": "general-23",
+      "title": "Decision Tree",
+      "verdict": "match"
+    },
+    {
+      "id": "general-24",
+      "title": "Git Branching Workflow",
+      "verdict": "match"
+    },
+    {
+      "id": "general-25",
+      "title": "Interactivity: Links and Tooltips",
+      "verdict": "match"
+    },
+    {
+      "id": "general-26",
+      "title": "Interactivity: Curved Edges",
+      "verdict": "match"
+    },
+    {
+      "id": "general-27",
+      "title": "Interactivity: Step Routing",
+      "verdict": "match"
+    },
+    {
+      "id": "general-28",
+      "title": "Interactivity: Animated Edge",
+      "verdict": "match"
+    },
+    {
+      "id": "general-29",
+      "title": "State: Basic State Diagram",
+      "verdict": "match"
+    },
+    {
+      "id": "general-30",
+      "title": "State: Composite States",
+      "verdict": "match"
+    },
+    {
+      "id": "general-31",
+      "title": "State: Connection Lifecycle",
+      "verdict": "match"
+    },
+    {
+      "id": "general-32",
+      "title": "State: CJK State Names",
+      "verdict": "match"
+    },
+    {
+      "id": "general-33",
+      "title": "Sequence: Basic Messages",
+      "verdict": "match"
+    },
+    {
+      "id": "general-34",
+      "title": "Sequence: Participant Aliases",
+      "verdict": "match"
+    },
+    {
+      "id": "general-35",
+      "title": "Sequence: Actor Stick Figures",
+      "verdict": "match"
+    },
+    {
+      "id": "general-36",
+      "title": "Sequence: Arrow Types",
+      "verdict": "match"
+    },
+    {
+      "id": "general-37",
+      "title": "Sequence: Activation Boxes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-38",
+      "title": "Sequence: Self-Messages",
+      "verdict": "match"
+    },
+    {
+      "id": "general-39",
+      "title": "Sequence: Loop Block",
+      "verdict": "match"
+    },
+    {
+      "id": "general-40",
+      "title": "Sequence: Alt/Else Block",
+      "verdict": "match"
+    },
+    {
+      "id": "general-41",
+      "title": "Sequence: Opt Block",
+      "verdict": "match"
+    },
+    {
+      "id": "general-42",
+      "title": "Sequence: Par Block",
+      "verdict": "match"
+    },
+    {
+      "id": "general-43",
+      "title": "Sequence: Critical Block",
+      "verdict": "match"
+    },
+    {
+      "id": "general-44",
+      "title": "Sequence: Notes (Right/Left/Over)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-45",
+      "title": "Sequence: OAuth 2.0 Flow",
+      "verdict": "match"
+    },
+    {
+      "id": "general-46",
+      "title": "Sequence: Database Transaction",
+      "verdict": "match"
+    },
+    {
+      "id": "general-47",
+      "title": "Sequence: Microservice Orchestration",
+      "verdict": "match"
+    },
+    {
+      "id": "general-48",
+      "title": "Sequence: Self-Messages with Notes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-49",
+      "title": "Class: Basic Class",
+      "verdict": "match"
+    },
+    {
+      "id": "general-50",
+      "title": "Class: Visibility Markers",
+      "verdict": "match"
+    },
+    {
+      "id": "general-51",
+      "title": "Class: Interface Annotation",
+      "verdict": "match"
+    },
+    {
+      "id": "general-52",
+      "title": "Class: Abstract Annotation",
+      "verdict": "match"
+    },
+    {
+      "id": "general-53",
+      "title": "Class: Enum Annotation",
+      "verdict": "match"
+    },
+    {
+      "id": "general-54",
+      "title": "Class: Inheritance (<|--)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-55",
+      "title": "Class: Composition (*--)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-56",
+      "title": "Class: Aggregation",
+      "verdict": "match"
+    },
+    {
+      "id": "general-57",
+      "title": "Class: Association (-->)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-58",
+      "title": "Class: Dependency (..>)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-59",
+      "title": "Class: Realization (..|>)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-60",
+      "title": "Class: All 6 Relationship Types",
+      "verdict": "match"
+    },
+    {
+      "id": "general-61",
+      "title": "Class: Relationship Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "general-62",
+      "title": "Class: Design Pattern — Observer",
+      "verdict": "match"
+    },
+    {
+      "id": "general-63",
+      "title": "Class: MVC Architecture",
+      "verdict": "match"
+    },
+    {
+      "id": "general-64",
+      "title": "Class: Full Hierarchy",
+      "verdict": "match"
+    },
+    {
+      "id": "general-65",
+      "title": "ER: Basic Relationship",
+      "verdict": "match"
+    },
+    {
+      "id": "general-66",
+      "title": "ER: Entity with Attributes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-67",
+      "title": "ER: Attribute Keys (PK, FK, UK)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-68",
+      "title": "ER: Exactly One to Exactly One (||--||)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-69",
+      "title": "ER: Exactly One to Zero-or-Many",
+      "verdict": "match"
+    },
+    {
+      "id": "general-70",
+      "title": "ER: Zero-or-One to One-or-Many",
+      "verdict": "match"
+    },
+    {
+      "id": "general-71",
+      "title": "ER: One-or-More to Zero-or-Many",
+      "verdict": "match"
+    },
+    {
+      "id": "general-72",
+      "title": "ER: All Cardinality Types",
+      "verdict": "match"
+    },
+    {
+      "id": "general-73",
+      "title": "ER: Identifying (Solid) Relationship",
+      "verdict": "match"
+    },
+    {
+      "id": "general-74",
+      "title": "ER: Non-Identifying (Dashed) Relationship",
+      "verdict": "match"
+    },
+    {
+      "id": "general-75",
+      "title": "ER: Mixed Identifying & Non-Identifying",
+      "verdict": "match"
+    },
+    {
+      "id": "general-76",
+      "title": "ER: E-Commerce Schema",
+      "verdict": "match"
+    },
+    {
+      "id": "general-77",
+      "title": "ER: Blog Platform Schema",
+      "verdict": "match"
+    },
+    {
+      "id": "general-78",
+      "title": "ER: School Management Schema",
+      "verdict": "match"
+    },
+    {
+      "id": "general-79",
+      "title": "XY: Simple Bar Chart",
+      "verdict": "match"
+    },
+    {
+      "id": "general-80",
+      "title": "XY: Line Chart",
+      "verdict": "match"
+    },
+    {
+      "id": "general-81",
+      "title": "XY: Bar and Line Overlay",
+      "verdict": "match"
+    },
+    {
+      "id": "general-82",
+      "title": "XY: Horizontal Bars",
+      "verdict": "match"
+    },
+    {
+      "id": "general-83",
+      "title": "XY: Multiple Bar Series",
+      "verdict": "match"
+    },
+    {
+      "id": "general-84",
+      "title": "XY: Dual Lines",
+      "verdict": "match"
+    },
+    {
+      "id": "general-85",
+      "title": "XY: Numeric X-Axis",
+      "verdict": "match"
+    },
+    {
+      "id": "general-86",
+      "title": "XY: 12-Month Dataset",
+      "verdict": "match"
+    },
+    {
+      "id": "general-87",
+      "title": "XY: Horizontal Combined",
+      "verdict": "match"
+    },
+    {
+      "id": "general-88",
+      "title": "XY: Sprint Burndown",
+      "verdict": "match"
+    },
+    {
+      "id": "general-89",
+      "title": "Sequence: Alt/Else Long Label With Uninvolved Participant",
+      "verdict": "match"
+    },
+    {
+      "id": "general-90",
+      "title": "Sequence: Create/Destroy Participants",
+      "verdict": "match"
+    },
+    {
+      "id": "general-91",
+      "title": "C4: System Context",
+      "verdict": "match"
+    },
+    {
+      "id": "general-92",
+      "title": "C4: Container With Boundary And BiRel",
+      "verdict": "match"
+    },
+    {
+      "id": "general-93",
+      "title": "C4: Nested Boundaries Component",
+      "verdict": "match"
+    },
+    {
+      "id": "general-94",
+      "title": "Architecture: Services And Edge Sides",
+      "verdict": "match"
+    },
+    {
+      "id": "general-95",
+      "title": "Architecture: Nested Groups And Junction",
+      "verdict": "match"
+    },
+    {
+      "id": "general-96",
+      "title": "Architecture: Group-To-Group Edges",
+      "verdict": "match"
+    },
+    {
+      "id": "general-97",
+      "title": "Pie: Basic",
+      "verdict": "match"
+    },
+    {
+      "id": "general-98",
+      "title": "Pie: showData",
+      "verdict": "match"
+    },
+    {
+      "id": "general-99",
+      "title": "Pie: Many Slices",
+      "verdict": "match"
+    },
+    {
+      "id": "general-100",
+      "title": "Pie: Tiny Slices",
+      "verdict": "match"
+    },
+    {
+      "id": "general-101",
+      "title": "Pie: Single Slice",
+      "verdict": "match"
+    },
+    {
+      "id": "general-102",
+      "title": "Pie: Dark Theme",
+      "verdict": "match"
+    },
+    {
+      "id": "general-103",
+      "title": "Pie: Empty",
+      "verdict": "match"
+    },
+    {
+      "id": "general-104",
+      "title": "Pie: Empty With Title",
+      "verdict": "match"
+    },
+    {
+      "id": "general-105",
+      "title": "Pie: All Zero",
+      "verdict": "match"
+    },
+    {
+      "id": "general-106",
+      "title": "Pie: Tall Legend",
+      "verdict": "match"
+    },
+    {
+      "id": "general-107",
+      "title": "Pie: Wide Characters",
+      "verdict": "match"
+    },
+    {
+      "id": "general-108",
+      "title": "Pie: Long Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "general-109",
+      "title": "Pie: showData Decimals",
+      "verdict": "match"
+    },
+    {
+      "id": "general-110",
+      "title": "Pie: Two Even Slices",
+      "verdict": "match"
+    },
+    {
+      "id": "general-111",
+      "title": "Pie: Accessibility Only",
+      "verdict": "match"
+    },
+    {
+      "id": "general-112",
+      "title": "Pie: Label Edge Cases",
+      "verdict": "differs",
+      "asciiMissing": ["lt;&amp;&gt"],
+      "note": "the known pie entity false positive of the word check (dfadler/zombie-mermaid#3069)"
+    },
+    {
+      "id": "general-113",
+      "title": "Pie: Percentage Boundaries",
+      "verdict": "match"
+    },
+    {
+      "id": "general-114",
+      "title": "Pie: Custom Accent",
+      "verdict": "match"
+    },
+    {
+      "id": "general-115",
+      "title": "Pie: More Slices Than Bar Cells",
+      "verdict": "match"
+    },
+    {
+      "id": "general-116",
+      "title": "Labeled Fan-In (LR)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-117",
+      "title": "Direction: Right-Left (RL)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-118",
+      "title": "Nested Subgraphs (RL)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-119",
+      "title": "Nested Subgraphs (BT)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-120",
+      "title": "Edges Into and Out of Subgraphs",
+      "verdict": "match"
+    },
+    {
+      "id": "general-121",
+      "title": "Vertical Edge Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "general-122",
+      "title": "Flowchart: CJK Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "general-123",
+      "title": "Sequence: CJK Participants",
+      "verdict": "match"
+    },
+    {
+      "id": "general-124",
+      "title": "Sequence: Span Labels Across Lifelines",
+      "verdict": "match"
+    },
+    {
+      "id": "general-125",
+      "title": "Class: Namespaces",
+      "verdict": "match"
+    },
+    {
+      "id": "general-126",
+      "title": "State: Choice, Fork and Join",
+      "verdict": "match"
+    },
+    {
+      "id": "general-127",
+      "title": "State: Notes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-128",
+      "title": "State: Concurrent Regions",
+      "verdict": "match"
+    },
+    {
+      "id": "general-129",
+      "title": "Pie: Donut Hole",
+      "verdict": "match"
+    },
+    {
+      "id": "general-130",
+      "title": "ER: Word-Form Cardinalities and .- / -. Lines",
+      "verdict": "match"
+    },
+    {
+      "id": "general-131",
+      "title": "Flowchart: Three Parallel Edges (TD)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-132",
+      "title": "Flowchart: Three Parallel Edges Plus Reciprocal (TD)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-133",
+      "title": "Pie: Text Position",
+      "verdict": "match"
+    },
+    {
+      "id": "general-134",
+      "title": "Flowchart: Four Parallel Edges (TD)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-135",
+      "title": "Flowchart: Five Cluster Exit Siblings (TD)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-136",
+      "title": "Pie: Legend Left",
+      "verdict": "match"
+    },
+    {
+      "id": "general-137",
+      "title": "Pie: Legend Top",
+      "verdict": "match"
+    },
+    {
+      "id": "general-138",
+      "title": "Pie: Legend Bottom",
+      "verdict": "match"
+    },
+    {
+      "id": "general-139",
+      "title": "Pie: Legend Center",
+      "verdict": "match"
+    },
+    {
+      "id": "general-140",
+      "title": "Pie: Highlight Slice",
+      "verdict": "match"
+    },
+    {
+      "id": "general-141",
+      "title": "Fan-Out Under Half-Column Parent",
+      "verdict": "match"
+    },
+    {
+      "id": "general-142",
+      "title": "LR Fan-In With Bypass Edge",
+      "verdict": "match"
+    },
+    {
+      "id": "general-143",
+      "title": "Sequence: Participant Types",
+      "verdict": "match"
+    },
+    {
+      "id": "general-144",
+      "title": "Duplicate Self-Loops",
+      "verdict": "match"
+    },
+    {
+      "id": "general-145",
+      "title": "Reciprocal and Duplicate Edges RL",
+      "verdict": "match"
+    },
+    {
+      "id": "general-146",
+      "title": "Decision Self-Loop with Duplicate Edges",
+      "verdict": "match"
+    },
+    {
+      "id": "general-147",
+      "title": "LR Bypass Edge In A Chain",
+      "verdict": "match"
+    },
+    {
+      "id": "general-148",
+      "title": "Flowchart: Five Parallel Edges (TD)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-149",
+      "title": "Flowchart: Five Parallel Edges with Reciprocals (LR)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-150",
+      "title": "Flowchart: Six Cluster Exit Siblings (TD)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-151",
+      "title": "ER: Remaining Cardinality Spellings",
+      "verdict": "match"
+    },
+    {
+      "id": "general-152",
+      "title": "Flowchart: Parallel Edges with Back Edges (TD)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-153",
+      "title": "Flowchart: Cluster Exit Siblings with No Other Exit (TD)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-154",
+      "title": "Flowchart: Nine Cluster Exit Siblings (TD)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-155",
+      "title": "Flowchart: Self-Loop with In and Out Neighbours (TD)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-156",
+      "title": "Flowchart: Self-Loop with In and Out Neighbours (LR)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-157",
+      "title": "Flowchart: Dense Duplicate Edges (TD)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-158",
+      "title": "Flowchart: Dense Duplicate Edges (LR)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-159",
+      "title": "ER: Multiple Keys per Attribute",
+      "verdict": "match"
+    },
+    {
+      "id": "general-160",
+      "title": "ER: Style, classDef and Class",
+      "verdict": "match"
+    },
+    {
+      "id": "general-161",
+      "title": "Class: classDiagram-v2 Header",
+      "verdict": "match"
+    },
+    {
+      "id": "general-162",
+      "title": "Class: Bidirectional Relationships",
+      "verdict": "match"
+    },
+    {
+      "id": "general-163",
+      "title": "Class: Lollipop Interface",
+      "verdict": "match"
+    },
+    {
+      "id": "general-164",
+      "title": "Class: Backtick Class Names",
+      "verdict": "match"
+    },
+    {
+      "id": "general-165",
+      "title": "Class: Mixed Newly Accepted Syntax",
+      "verdict": "match"
+    },
+    {
+      "id": "general-166",
+      "title": "ER: Crossing Edges and Edge Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "general-167",
+      "title": "ER: Attribute Comments",
+      "verdict": "match"
+    },
+    {
+      "id": "general-168",
+      "title": "Class: Relationship Cardinalities",
+      "verdict": "match"
+    },
+    {
+      "id": "general-169",
+      "title": "Class: Cardinalities on Every Relationship Kind",
+      "verdict": "match"
+    },
+    {
+      "id": "general-170",
+      "title": "Class: Cardinalities with Shared Ends",
+      "verdict": "match"
+    },
+    {
+      "id": "general-171",
+      "title": "Class: Direction LR",
+      "verdict": "match"
+    },
+    {
+      "id": "general-172",
+      "title": "Class: Direction BT",
+      "verdict": "match"
+    },
+    {
+      "id": "general-173",
+      "title": "Class: Direction RL with Namespaces",
+      "verdict": "match"
+    },
+    {
+      "id": "general-174",
+      "title": "Class: Two Namespaces with Cross Edges",
+      "verdict": "match"
+    },
+    {
+      "id": "general-175",
+      "title": "Quadrant: Basic",
+      "verdict": "match"
+    },
+    {
+      "id": "general-176",
+      "title": "Quadrant: Empty",
+      "verdict": "match"
+    },
+    {
+      "id": "general-177",
+      "title": "Quadrant: Labels Without Points",
+      "verdict": "match"
+    },
+    {
+      "id": "general-178",
+      "title": "Quadrant: One-Sided Axes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-179",
+      "title": "Quadrant: Point Styles",
+      "verdict": "match"
+    },
+    {
+      "id": "general-180",
+      "title": "Quadrant: Crowded Points",
+      "verdict": "match"
+    },
+    {
+      "id": "general-181",
+      "title": "Quadrant: Wide Characters",
+      "verdict": "match"
+    },
+    {
+      "id": "general-182",
+      "title": "Parallelogram Shapes (LR)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-183",
+      "title": "Parallelogram Shapes (RL)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-184",
+      "title": "Parallelogram Shapes (BT)",
+      "verdict": "match"
+    },
+    {
+      "id": "general-185",
+      "title": "Sequence: Nested Blocks With Notes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-186",
+      "title": "Sequence: Long Block Tab And Divider Labels",
+      "verdict": "differs",
+      "svgMissing": ["pneumonoultramicroscopicsilic"],
+      "asciiMissing": ["ovolcanoconiosis_extra"],
+      "note": "a word wider than the frame is split with a hyphen at a different point than mermaid, by design (#2773)"
+    },
+    {
+      "id": "general-187",
+      "title": "Sequence: Multi-line Note In Block",
+      "verdict": "match"
+    },
+    {
+      "id": "general-188",
+      "title": "Cloud, Horizontal Cylinder, Tag and Fork Shapes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-189",
+      "title": "Gantt: Basic",
+      "verdict": "match"
+    },
+    {
+      "id": "general-190",
+      "title": "Gantt: Statuses, Milestone and Weekends",
+      "verdict": "match"
+    },
+    {
+      "id": "general-191",
+      "title": "Gantt: Hourly Axis",
+      "verdict": "match"
+    },
+    {
+      "id": "general-192",
+      "title": "Gantt: Vertical Marker and Tick Interval",
+      "verdict": "match"
+    },
+    {
+      "id": "general-193",
+      "title": "Gantt: Weekday Excludes and Click",
+      "verdict": "match"
+    },
+    {
+      "id": "general-194",
+      "title": "Gantt: Many Sections",
+      "verdict": "match"
+    },
+    {
+      "id": "general-195",
+      "title": "Gantt: Wide Characters and Empty Sections",
+      "verdict": "match"
+    },
+    {
+      "id": "general-196",
+      "title": "Gantt: Top Axis",
+      "verdict": "not-renderable",
+      "note": "mermaid 12.3.0 throws in headless Chromium, so there is nothing to compare (dfadler/zombie-mermaid#3069)"
+    },
+    {
+      "id": "general-197",
+      "title": "Gantt: Title Only",
+      "verdict": "match"
+    },
+    {
+      "id": "general-198",
+      "title": "Class: Dotted Lollipop Interface",
+      "verdict": "match"
+    },
+    {
+      "id": "general-199",
+      "title": "Mindmap: Basic",
+      "verdict": "match"
+    },
+    {
+      "id": "general-200",
+      "title": "Mindmap: Shapes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-201",
+      "title": "Mindmap: Markdown and Line Breaks",
+      "verdict": "match"
+    },
+    {
+      "id": "general-202",
+      "title": "Mindmap: Deep Nesting",
+      "verdict": "match"
+    },
+    {
+      "id": "general-203",
+      "title": "Mindmap: Many Branches",
+      "verdict": "match"
+    },
+    {
+      "id": "general-204",
+      "title": "Mindmap: Uneven Indentation",
+      "verdict": "match"
+    },
+    {
+      "id": "general-205",
+      "title": "Mindmap: Icons, Classes and Comments",
+      "verdict": "match"
+    },
+    {
+      "id": "general-206",
+      "title": "Mindmap: Wide Characters",
+      "verdict": "match"
+    },
+    {
+      "id": "general-207",
+      "title": "Timeline: Basic",
+      "verdict": "match"
+    },
+    {
+      "id": "general-208",
+      "title": "Timeline: Sections",
+      "verdict": "match"
+    },
+    {
+      "id": "general-209",
+      "title": "Timeline: Long Text",
+      "verdict": "match"
+    },
+    {
+      "id": "general-210",
+      "title": "Timeline: Comments And Gaps",
+      "verdict": "match"
+    },
+    {
+      "id": "general-211",
+      "title": "Timeline: Vertical",
+      "verdict": "match"
+    },
+    {
+      "id": "general-212",
+      "title": "Timeline: Empty",
+      "verdict": "match"
+    },
+    {
+      "id": "general-213",
+      "title": "Pie: Wide Legend",
+      "verdict": "match"
+    },
+    {
+      "id": "general-214",
+      "title": "Requirement: Basic",
+      "verdict": "match"
+    },
+    {
+      "id": "general-215",
+      "title": "Requirement: Kinds And Relationships",
+      "verdict": "match"
+    },
+    {
+      "id": "general-216",
+      "title": "Requirement: Direction And Traceability",
+      "verdict": "match"
+    },
+    {
+      "id": "general-217",
+      "title": "Requirement: Styling",
+      "verdict": "match"
+    },
+    {
+      "id": "general-218",
+      "title": "Requirement: Bare Boxes",
+      "verdict": "match"
+    },
+    {
+      "id": "general-219",
+      "title": "Requirement: Empty",
+      "verdict": "match"
+    },
+    {
+      "id": "general-220",
+      "title": "Kanban: Basic",
+      "verdict": "match"
+    },
+    {
+      "id": "general-221",
+      "title": "Kanban: Priorities",
+      "verdict": "match"
+    },
+    {
+      "id": "general-222",
+      "title": "Kanban: Ticket Links And Width",
+      "verdict": "match"
+    },
+    {
+      "id": "general-223",
+      "title": "Kanban: Empty Columns And Markdown",
+      "verdict": "match"
+    },
+    {
+      "id": "general-224",
+      "title": "Journey: Basic",
+      "verdict": "match"
+    },
+    {
+      "id": "general-225",
+      "title": "Journey: Many Actors",
+      "verdict": "match"
+    },
+    {
+      "id": "general-226",
+      "title": "Journey: Long Text",
+      "verdict": "match"
+    },
+    {
+      "id": "general-227",
+      "title": "Journey: No Section",
+      "verdict": "match"
+    },
+    {
+      "id": "general-228",
+      "title": "Journey: Scores",
+      "verdict": "match"
+    },
+    {
+      "id": "general-229",
+      "title": "Journey: Repeated Sections",
+      "verdict": "match"
+    },
+    {
+      "id": "general-230",
+      "title": "Journey: Empty",
+      "verdict": "match"
+    },
+    {
+      "id": "general-231",
+      "title": "Radar: Basic",
+      "verdict": "match"
+    },
+    {
+      "id": "general-232",
+      "title": "Radar: Polygon Graticule",
+      "verdict": "match"
+    },
+    {
+      "id": "general-233",
+      "title": "Radar: Detailed Entries",
+      "verdict": "match"
+    },
+    {
+      "id": "general-234",
+      "title": "Radar: Min, Max and Ticks",
+      "verdict": "match"
+    },
+    {
+      "id": "general-235",
+      "title": "Radar: Many Curves",
+      "verdict": "match"
+    },
+    {
+      "id": "general-236",
+      "title": "Radar: Wide Characters",
+      "verdict": "match"
+    },
+    {
+      "id": "general-237",
+      "title": "Packet: Basic",
+      "verdict": "differs",
+      "asciiMissing": ["URG", "ACK"],
+      "note": "packet ASCII truncates narrow field labels (terminal adaptation, dfadler/zombie-mermaid#3069)"
+    },
+    {
+      "id": "general-238",
+      "title": "Packet: Bit Counts",
+      "verdict": "match"
+    },
+    {
+      "id": "general-239",
+      "title": "Packet: Fields Across Rows",
+      "verdict": "match"
+    },
+    {
+      "id": "general-240",
+      "title": "Packet: Descending Bit Order",
+      "verdict": "match"
+    },
+    {
+      "id": "general-241",
+      "title": "Packet: Narrow Rows Without Bit Numbers",
+      "verdict": "match"
+    },
+    {
+      "id": "general-242",
+      "title": "Packet: Comments And Escapes",
+      "verdict": "differs",
+      "asciiMissing": ["quotes"],
+      "note": "packet ASCII truncates narrow field labels (terminal adaptation, dfadler/zombie-mermaid#3069)"
+    },
+    {
+      "id": "general-243",
+      "title": "Packet: Empty",
+      "verdict": "match"
+    },
+    {
+      "id": "general-244",
+      "title": "GitGraph: Basic",
+      "verdict": "match"
+    },
+    {
+      "id": "general-245",
+      "title": "GitGraph: Commit Types And Tags",
+      "verdict": "match"
+    },
+    {
+      "id": "general-246",
+      "title": "GitGraph: Cherry Pick",
+      "verdict": "match"
+    },
+    {
+      "id": "general-247",
+      "title": "GitGraph: Top To Bottom",
+      "verdict": "match"
+    },
+    {
+      "id": "general-248",
+      "title": "GitGraph: Bottom To Top",
+      "verdict": "match"
+    },
+    {
+      "id": "general-249",
+      "title": "GitGraph: Config And Branch Order",
+      "verdict": "match"
+    },
+    {
+      "id": "general-250",
+      "title": "GitGraph: Parallel Commits",
+      "verdict": "match"
+    },
+    {
+      "id": "general-251",
+      "title": "GitGraph: Hidden Branches And Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "general-252",
+      "title": "GitGraph: Empty",
+      "verdict": "match"
+    },
+    {
+      "id": "general-253",
+      "title": "Sankey: Basic",
+      "verdict": "match"
+    },
+    {
+      "id": "general-254",
+      "title": "Sankey: Multiple Stages",
+      "verdict": "match"
+    },
+    {
+      "id": "general-255",
+      "title": "Sankey: Link Colour Source",
+      "verdict": "match"
+    },
+    {
+      "id": "general-256",
+      "title": "Sankey: Node Alignment Left",
+      "verdict": "match"
+    },
+    {
+      "id": "general-257",
+      "title": "Sankey: Outlined Labels And Units",
+      "verdict": "match"
+    },
+    {
+      "id": "general-258",
+      "title": "Sankey: Quoted Names",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-0",
+      "title": "Simple Bar Chart",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-1",
+      "title": "Five-Category Bars",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-2",
+      "title": "Descending Values",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-3",
+      "title": "Single Bar",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-4",
+      "title": "Eight-Category Bars",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-5",
+      "title": "Small Values",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-6",
+      "title": "Uniform Values",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-7",
+      "title": "Wide Range",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-8",
+      "title": "Ten-Category Bars",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-9",
+      "title": "Bars With Y-Axis Range",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-10",
+      "title": "Simple Line Chart",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-11",
+      "title": "Upward Trend",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-12",
+      "title": "Downward Trend",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-13",
+      "title": "Oscillating Values",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-14",
+      "title": "Large Scale Line",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-15",
+      "title": "Flat Line",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-16",
+      "title": "Spike Pattern",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-17",
+      "title": "V-Shape Recovery",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-18",
+      "title": "Step Pattern",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-19",
+      "title": "Two Lines",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-20",
+      "title": "Bar and Line Overlay",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-21",
+      "title": "Bar with Trend Line",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-22",
+      "title": "Bar with Target Line",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-23",
+      "title": "Revenue and Profit",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-24",
+      "title": "Dual Dataset Overlay",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-25",
+      "title": "Costs vs Revenue",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-26",
+      "title": "Bar with Two Lines",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-27",
+      "title": "Stacked Context",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-28",
+      "title": "Cumulative Line Over Bars",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-29",
+      "title": "Conversion Funnel",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-30",
+      "title": "Categorical X-Axis",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-31",
+      "title": "Numeric X-Axis Range",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-32",
+      "title": "Y-Axis with Label and Range",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-33",
+      "title": "Y-Axis Range Without Label",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-34",
+      "title": "X-Axis with Title",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-35",
+      "title": "Both Axes Titled",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-36",
+      "title": "Long Category Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-37",
+      "title": "Many Short Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-38",
+      "title": "Wide Y-Axis Range",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-39",
+      "title": "Narrow Y-Axis Range",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-40",
+      "title": "Auto-Range Y-Axis",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-41",
+      "title": "Year Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-42",
+      "title": "Percentage Y-Axis",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-43",
+      "title": "Numeric X-Axis with Bars",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-44",
+      "title": "Mixed Short and Long Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-45",
+      "title": "Horizontal Bar Chart",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-46",
+      "title": "Horizontal with Y-Axis",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-47",
+      "title": "Horizontal Line Chart",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-48",
+      "title": "Horizontal Combined",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-49",
+      "title": "Horizontal Ranking",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-50",
+      "title": "Horizontal Small Values",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-51",
+      "title": "Horizontal Two Bars",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-52",
+      "title": "Horizontal Wide Range",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-53",
+      "title": "Horizontal with Two Lines",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-54",
+      "title": "Horizontal Long Labels",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-55",
+      "title": "No Title",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-56",
+      "title": "Short Title",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-57",
+      "title": "Long Title",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-58",
+      "title": "Title with Numbers",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-59",
+      "title": "Title with Special Characters",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-60",
+      "title": "Title with Ampersand",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-61",
+      "title": "Title with Hyphen",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-62",
+      "title": "Minimal Chart",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-63",
+      "title": "Full Specification",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-64",
+      "title": "Title with Colon",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-65",
+      "title": "12-Month Dataset",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-66",
+      "title": "26-Point Alphabet",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-67",
+      "title": "Dense Weekly Data",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-68",
+      "title": "Multiple Series Large",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-69",
+      "title": "Two Bars Twelve Months",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-70",
+      "title": "High Frequency Data",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-71",
+      "title": "Large Values Dataset",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-72",
+      "title": "Three Lines Large",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-73",
+      "title": "Quarterly Four Years",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-74",
+      "title": "Dense Bars and Line",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-75",
+      "title": "Single Data Point",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-76",
+      "title": "All Zeros",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-77",
+      "title": "Very Large Numbers",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-78",
+      "title": "Very Small Numbers",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-79",
+      "title": "Two Data Points",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-80",
+      "title": "Single Value Repeated",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-81",
+      "title": "Extreme Outlier",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-82",
+      "title": "Descending to Zero",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-83",
+      "title": "Ascending from Zero",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-84",
+      "title": "Alternating High Low",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-85",
+      "title": "Monthly Revenue Report",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-86",
+      "title": "Cumulative Registered Users",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-87",
+      "title": "Temperature Over the Year",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-88",
+      "title": "Stock Price Trend",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-89",
+      "title": "Survey Results",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-90",
+      "title": "API Response Time",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-91",
+      "title": "Website Analytics",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-92",
+      "title": "Sprint Burndown",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-93",
+      "title": "Marketing Funnel",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-94",
+      "title": "Server Error Rates",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-95",
+      "title": "Employee Growth",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-96",
+      "title": "Monthly Churn Rate",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-97",
+      "title": "A/B Test Results",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-98",
+      "title": "Cloud Cost Breakdown",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-99",
+      "title": "Release Frequency",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-100",
+      "title": "Init Config: Horizontal, No Titles",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-101",
+      "title": "Init Config: Size and Bare Axes",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-102",
+      "title": "Mixed-Sign Bars",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-103",
+      "title": "Negative Bars, Horizontal",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-104",
+      "title": "Init Config: Horizontal Bare Axes",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-105",
+      "title": "Init Config: Linear X, Axis Line Off",
+      "verdict": "match"
+    },
+    {
+      "id": "xychart-106",
+      "title": "Init Config: Labels Off, Titles Kept",
+      "verdict": "match"
+    }
+  ]
+}
