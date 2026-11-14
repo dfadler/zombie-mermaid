@@ -54,6 +54,7 @@ describe('list_diagram_types', () => {
       sankey: 'sankey-beta\nA,B,1',
       requirement: 'requirementDiagram\nrequirement r {\n}',
       block: 'block-beta\ncolumns 2\na b',
+      usecase: 'usecase-beta\nactor A\nA --> B',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
     for (const type of DIAGRAM_TYPES) {

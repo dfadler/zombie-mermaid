@@ -1781,6 +1781,49 @@ Bio-conversion  310.78
   ASCII mode).
 - Bars use the theme accent. A cycle throws "circular link", as the SVG does.
 
+## Use case diagrams
+
+`usecase-beta` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/useCaseDiagram.html).
+Mermaid 12.3.0 detects only the `usecase-beta` header (`usecase` and `useCaseDiagram` are not
+diagrams there either). `pnpm run usecase:oracle` renders the gallery samples in
+`mermaid@12.3.0`: node sizes and text and every relationship (order, label, dotted or solid,
+which boxes it joins) agree. Box positions and the drawing size are reported, not gated:
+Mermaid lays the diagram out with dagre and this library with ELK. The parser is checked
+against Mermaid's own on 117 sources (`pnpm run usecase:parser-fixture` rebuilds the record).
+
+```mermaid
+usecase-beta
+    actor Admin
+    actor Customer
+    systemBoundary Shop
+        Browse
+        Checkout
+        Pay[Pay by card]
+    end
+    Customer --> Browse
+    Customer --> Checkout
+    Checkout ..> : include Pay
+    Admin --"manages"--> Browse
+    note for Checkout "needs login"
+```
+
+Supported: `actor` lists (`actor A, B(Label), "Quoted name"`), use cases (`Name`, `Name(label)`
+as an ellipse, `Name[label]` as a rectangle, a quoted name), `systemBoundary Name(title) … end`
+holding actors and use cases, `direction`, associations (`-->`, `<--`, `--`, with a label as
+`-- text -->` or `--"text"-->`), `..> : include` and `..> : extend` between use cases, `--|>`
+generalization between two actors or two use cases, `note for Id "text"`, `%%` comment lines and
+`accTitle`/`accDescr` (the accessible name is not drawn). As in Mermaid a statement is one
+line, a name that is both an actor and a use case is an error, and a boundary cannot nest.
+
+Not supported yet, each an error saying so: `@{ ... }` metadata (actor `type`/`icon`/`business`,
+use case `business`), `<<stereotype>>`, `:::class`, `classDef`/`class`/`style`, `json` nodes,
+`--o`/`--x` markers, `id@` edge ids and markdown strings (tracked in
+[#3131](https://github.com/dfadler/zombie-mermaid/issues/3131)). The SVG
+uses this library's theme colours, not Mermaid's purple and yellow.
+
+ASCII draws an actor as a box holding a three-line stick figure over its name, a use case as
+a rounded box, a boundary as a titled frame and a generalization head as `▷`.
+
 ## Block diagrams
 
 `block` and `block-beta` follow [Mermaid's syntax](https://mermaid.ai/open-source/syntax/block.html)
@@ -1836,11 +1879,10 @@ and a `block ... end` group is a larger box around its cells.
 
 ## Unsupported upstream diagram types
 
-These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Use case diagrams (added in Mermaid 12.0.0) are out of scope for now: upstream still gates them behind `usecase-beta` (plain `usecase` is not detected) and there is no demand here yet. Support is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
+These Mermaid diagram types are not rendered; `renderMermaidSVG` and the CLI reject them with "Invalid mermaid header". Checked against `mermaid@12.2.0` (npm `latest`, 2026-10-13) by parsing each header with `mermaid.parse`. Support for these is tracked in [#2085](https://github.com/dfadler/zombie-mermaid/issues/2085).
 
 | Type                                                                  | Header                                                                                                          |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Use case                                                              | `usecase-beta`                                                                                                  |
 | Treemap                                                               | `treemap-beta`                                                                                                  |
 | Tree view, Venn, Wardley, Ishikawa, Cynefin, Railroad, Event modeling | `treeView-beta`, `venn-beta`, `wardley-beta`, `ishikawa-beta`, `cynefin-beta`, `railroad-beta`, `eventmodeling` |
 
