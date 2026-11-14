@@ -82,7 +82,7 @@ const ACCEPTED: Array<[string, string, boolean]> = [
   ['dot in a name', H + 'component Foo.Bar [0.5,0.5]', false],
   ['digit-led word after a space', H + 'component Foo 2 [0.5,0.5]', false],
   ['tabs', H + '\tcomponent\tA\t[0.5,\t0.5]', true],
-  ['CRLF', H.replace('\n', '\r\n') + 'component A [0.5,0.5]', true],
+  ['CRLF', 'wardley-beta\r\ncomponent A [0.5,0.5]', true],
   ['comment on the header', 'wardley-beta %% c\ncomponent A [0.5,0.5]', true],
   ['title on the header line', 'wardley-beta title X', true],
   ['colon after the header', 'wardley-beta:\ncomponent A [0.5,0.5]', false],

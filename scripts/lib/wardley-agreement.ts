@@ -117,12 +117,28 @@ const unescape = (s: string): string =>
     .replace(/&#39;/g, "'")
     .replace(/&amp;/g, '&')
 
+/** `s` without each `open` ... `close` block (the definitions and CSS, which carry no drawing). */
+function dropBlocks(s: string, open: string, close: string): string {
+  let out = ''
+  let at = 0
+  for (;;) {
+    const from = s.indexOf(open, at)
+    if (from < 0) return out + s.slice(at)
+    const to = s.indexOf(close, from)
+    out += s.slice(at, from)
+    if (to < 0) return out
+    at = to + close.length
+  }
+}
+
 /** Read the drawing elements, in document order, from an official or our SVG. */
 export function parseWardleySvg(svg: string): WardleySvg {
   const viewBox = /viewBox="([^"]*)"/.exec(svg)?.[1] ?? ''
-  const body = svg
-    .replace(/<defs>[\s\S]*?<\/defs>/g, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/g, '')
+  const body = dropBlocks(
+    dropBlocks(svg, '<defs', '</defs>'),
+    '<style',
+    '</style>',
+  )
   const elements: WardleyElement[] = []
   const groups: string[] = []
   for (const m of body.matchAll(
