@@ -407,7 +407,7 @@
   {
     "file": "scripts/gallery-verdicts.ts",
     "reason": "audit harness: needs headless Chromium and real mermaid, so it only runs as a CLI (rerun command in its header, #2678)",
-    "maxLines": 150
+    "maxLines": 175
   },
   {
     "file": "scripts/ascii-topology.ts",

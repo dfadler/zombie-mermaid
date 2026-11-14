@@ -939,9 +939,13 @@
       "id": "general-186",
       "title": "Sequence: Long Block Tab And Divider Labels",
       "verdict": "differs",
-      "svgMissing": ["pneumonoultramicroscopicsilic"],
-      "asciiMissing": ["ovolcanoconiosis_extra"],
-      "note": "a word wider than the frame is split with a hyphen at a different point than mermaid, by design (#2773)"
+      "svgMissing": ["pneumonoultramicroscopicsilic", "ovolcanoconiosis_extra"],
+      "asciiMissing": [
+        "Antidisestablishmentarianism",
+        "pneumonoultramicroscopicsilic",
+        "ovolcanoconiosis_extra"
+      ],
+      "note": "a word wider than the frame is split with a hyphen at a different point than mermaid, by design (dfadler/zombie-mermaid#2773)"
     },
     {
       "id": "general-187",

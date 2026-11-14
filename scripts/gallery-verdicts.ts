@@ -8,10 +8,10 @@
  *   pnpm exec tsx scripts/gallery-verdicts.ts [--write]   (--write updates docs/gallery-verdicts.json)
  */
 import { readFile, writeFile } from 'node:fs/promises'
-import { renderMermaidASCII } from '../src/index.ts'
+import { resolve } from 'node:path'
+import { renderMermaidASCII, renderMermaidSVG } from '../src/index.ts'
 import { samples } from '../samples/samples-data.ts'
 import { xychartSamples } from '../samples/xychart-samples-data.ts'
-import { ourLabels } from './lib/samples-oracle-facts.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
 
 const decode = (t: string) =>
@@ -26,6 +26,8 @@ const words = (t: string) =>
     .split(/[\s]+/)
     .map((w) => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''))
     .filter((w) => w && !/^[\d.,%$-]+$/.test(w))
+// Box-drawing, blocks and arrows touch labels in ASCII (`─other─`): they separate words.
+const unbox = (t: string) => t.replace(/[\u2500-\u259F\u25A0-\u25FF]/g, ' ')
 const mermaidWords = (svg: string) =>
   [...svg.matchAll(/<(text|span|p)\b[^>]*>([\s\S]*?)<\/\1>/g)].flatMap((m) =>
     words(m[2].split(/<[^>]*>/).join(' ')),
@@ -44,19 +46,41 @@ const cases = [
 ].filter((c) => !c.hero)
 
 // Why a non-match is not a new defect (checked against open and closed issues when this was written).
-const KNOWN: Record<string, string> = {
-  'general-112':
-    'the known pie entity false positive of the word check (dfadler/zombie-mermaid#3069)',
-  'general-186':
-    'a word wider than the frame is split with a hyphen at a different point than mermaid, by design (#2773)',
-  'general-196':
-    'mermaid 12.3.0 throws in headless Chromium, so there is nothing to compare (dfadler/zombie-mermaid#3069)',
-  'general-237':
-    'packet ASCII truncates narrow field labels (terminal adaptation, dfadler/zombie-mermaid#3069)',
-  'general-242':
-    'packet ASCII truncates narrow field labels (terminal adaptation, dfadler/zombie-mermaid#3069)',
+// `expect` is the exact `verdict|svg missing|ascii missing` signature recorded for it: a row that
+// differs in any other way (another word, another failure) is a new difference and fails the run.
+const KNOWN: Record<string, { expect: string; note: string }> = {
+  'general-112': {
+    expect: 'differs||lt;&amp;&gt',
+    note: 'the known pie entity false positive of the word check (dfadler/zombie-mermaid#3069)',
+  },
+  'general-186': {
+    expect:
+      'differs|pneumonoultramicroscopicsilic,ovolcanoconiosis_extra|Antidisestablishmentarianism,pneumonoultramicroscopicsilic,ovolcanoconiosis_extra',
+    note: 'a word wider than the frame is split with a hyphen at a different point than mermaid, by design (dfadler/zombie-mermaid#2773)',
+  },
+  'general-196': {
+    expect: 'not-renderable||',
+    note: 'mermaid 12.3.0 throws in headless Chromium, so there is nothing to compare (dfadler/zombie-mermaid#3069)',
+  },
+  'general-237': {
+    expect: 'differs||URG,ACK',
+    note: 'packet ASCII truncates narrow field labels (terminal adaptation, dfadler/zombie-mermaid#3069)',
+  },
+  'general-242': {
+    expect: 'differs||quotes',
+    note: 'packet ASCII truncates narrow field labels (terminal adaptation, dfadler/zombie-mermaid#3069)',
+  },
 }
-const session = await startRealMermaid()
+const sig = (r: Record<string, unknown>) =>
+  [
+    r.verdict,
+    [r.svgMissing ?? []].flat().join(','),
+    [r.asciiMissing ?? []].flat().join(','),
+  ].join('|')
+// Always audit the installed build the version label comes from, whatever $MERMAID_DIST says.
+const session = await startRealMermaid(
+  resolve('node_modules/mermaid/dist/mermaid.min.js'),
+)
 const rows: Record<string, unknown>[] = []
 try {
   for (const { s, id } of cases) {
@@ -80,16 +104,24 @@ try {
       continue
     }
     const want = [...new Set(mermaidWords(svg))]
-    const ourSvg = ourLabels(s.source, opts)
-    const svgText = Array.isArray(ourSvg)
-      ? words(ourSvg.join(' ')).join(' ')
-      : null
+    // Tags become spaces: a wrapped label is several `<tspan>`s, one word each.
+    let svgText: Set<string> | null = null
+    try {
+      svgText = new Set(
+        [
+          ...renderMermaidSVG(s.source, opts as never).matchAll(
+            /<text\b[^>]*>([\s\S]*?)<\/text>/g,
+          ),
+        ].flatMap((m) => words(m[1].split(/<[^>]*>/).join(' '))),
+      )
+    } catch {}
     let ascii: string | null = null
     try {
       ascii = renderMermaidASCII(s.source, opts as never)
     } catch {}
-    const missing = (hay: string | null) =>
-      hay === null ? ['<render failed>'] : want.filter((w) => !hay.includes(w))
+    // Whole-word membership, so `APIGateway` cannot stand in for a missing `API`.
+    const missing = (hay: Set<string> | null) =>
+      hay === null ? ['<render failed>'] : want.filter((w) => !hay.has(w))
     const svgMiss = missing(svgText)
     // Also read the ASCII down its columns: xychart prints the y-axis title vertically.
     const lines = ascii?.split('\n') ?? []
@@ -100,23 +132,26 @@ try {
     const asciiMiss = missing(
       ascii === null
         ? null
-        : words(ascii).join(' ') + ' ' + words(cols.join(' ')).join(' '),
+        : new Set([...words(unbox(ascii)), ...words(unbox(cols.join(' ')))]),
     )
     rows.push({
       id,
       title: s.title,
       verdict: svgMiss.length || asciiMiss.length ? 'differs' : 'match',
-      ...(svgMiss.length && { svgMissing: svgMiss.slice(0, 8) }),
-      ...(asciiMiss.length && { asciiMissing: asciiMiss.slice(0, 8) }),
+      ...(svgMiss.length && { svgMissing: svgMiss }),
+      ...(asciiMiss.length && { asciiMissing: asciiMiss }),
     })
   }
 } finally {
   await session.close()
 }
-for (const r of rows)
-  if (r.verdict !== 'match' && KNOWN[r.id as string])
-    r.note = KNOWN[r.id as string]
-const unexplained = rows.filter((r) => r.verdict !== 'match' && !r.note)
+const known = (r: Record<string, unknown>) => KNOWN[r.id as string]
+for (const r of rows) if (known(r)?.expect === sig(r)) r.note = known(r).note
+const unexplained = rows.filter(
+  (r) => r.verdict !== 'match' && known(r)?.expect !== sig(r),
+)
+for (const r of unexplained)
+  console.log('UNEXPLAINED', sig(r), JSON.stringify(r))
 const count = (v: string) => rows.filter((r) => r.verdict === v).length
 const out = {
   mermaidVersion: pkg.version,
@@ -137,6 +172,3 @@ if (process.argv.includes('--write'))
     'docs/gallery-verdicts.json',
     JSON.stringify(out, null, 1) + '\n',
   )
-else
-  for (const r of rows.filter((r) => r.verdict !== 'match'))
-    console.log(JSON.stringify(r))
