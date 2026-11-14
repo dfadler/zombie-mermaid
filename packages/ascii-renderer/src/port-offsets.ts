@@ -1482,25 +1482,46 @@ function allocateFaces(
     for (const [face, ends] of byFace) {
       const geo = portGeometry(graph, ends[0]!.run)
       const n = ends.length
-      if (n < 4 || !geo) continue
+      // Three ends are placed here only when every one is a straight stroke
+      // (between two decisions, say), which no other placing spreads; a bent one
+      // among them keeps its own placing.
+      if (
+        n < 3 ||
+        (n === 3 && !ends.every((f) => runsOf(f.edge)?.straight)) ||
+        !geo
+      )
+        continue
+      // ELK's order along the face (the reciprocal's end first, as mermaid draws).
+      const orderOf = (f: FaceEnd): number => {
+        const h = graph.edgeHints!.get(f.edge)
+        /* v8 ignore next */
+        return (f.role === 'S' ? h?.start : h?.end)?.order ?? 0
+      }
       ends.sort(
         (a, b) =>
           a.y - b.y ||
+          (n === 3 ? orderOf(a) - orderOf(b) : 0) ||
           (a.role === b.role ? 0 : a.role === 'S' ? -1 : 1) ||
           graph.edges.indexOf(a.edge) - graph.edges.indexOf(b.edge),
       )
-      // Adjacent slant rows, the vertex row too when the count is odd.
-      const offs = ends.map((_, i) =>
-        n % 2 ? i - (n - 1) / 2 : i - n / 2 + (i < n / 2 ? 0 : 1),
-      )
-      if (
-        !offs.every(
-          (o) =>
-            o === 0 ||
-            attachesAt(ends[0]!.run, geo.centre + o, geo, true, true),
-        )
-      )
-        continue
+      // The slant rows nearest the vertex, half above it and half below, the
+      // vertex row itself too when the count is odd. A taller decision has a
+      // vertex of two rows (neither takes a stroke but the centre one), so the
+      // rows are found, not counted off from the centre.
+      const rows: number[] = []
+      for (let p = geo.lo; p <= geo.hi; p++)
+        if (p !== geo.centre && attachesAt(ends[0]!.run, p, geo, true, true))
+          rows.push(p)
+      const above = rows.filter((p) => p < geo.centre).reverse()
+      const below = rows.filter((p) => p > geo.centre)
+      const half = Math.floor(n / 2)
+      /* v8 ignore next */
+      if (above.length < half || below.length < half) continue
+      const offs = [
+        ...above.slice(0, half).reverse(),
+        ...(n % 2 ? [geo.centre] : []),
+        ...below.slice(0, half),
+      ].map((p) => p - geo.centre)
       ends.forEach((f, i) => {
         f.rank = i
         if (!runsOf(f.edge)?.straight) return
@@ -1514,6 +1535,8 @@ function allocateFaces(
           [{ edge: f.edge, run, role }],
           [offs[i]!],
           shiftedRun,
+          false,
+          true,
         )
         ranked.delete(faceOf(run))
       })
@@ -1731,6 +1754,8 @@ function applyOffsets(
   offs: readonly number[],
   shiftedRun: (run: PortRun) => ShiftedRun,
   skipZero = false,
+  /** The ends are on a diamond's slants though no ELK rank orders them. */
+  slants = false,
 ): void {
   list.forEach((f, i) => {
     const by = offs[i]!
@@ -1745,7 +1770,11 @@ function applyOffsets(
     }
     // A stroke on a diamond's side slant starts on the slant, two cells inside
     // the border, not a gap away from it.
-    if (f.rank !== undefined && by !== 0 && f.run.node.shape === 'diamond') {
+    if (
+      (f.rank !== undefined || slants) &&
+      by !== 0 &&
+      f.run.node.shape === 'diamond'
+    ) {
       const d = slantDepth(f.run, by)
       if (f.run.axis === 'h' && d > 0) {
         shift.points ??= f.edge.path.map(() => ({ x: 0, y: 0 }))

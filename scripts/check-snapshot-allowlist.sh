@@ -206,6 +206,14 @@ ALLOWLIST=(
   # slid to: the repo rule is an SVG and an ASCII snapshot per case; reviewed via
   # `git diff` (`vitest -u`).
   "__tests__/ascii-label-after-slide.test.ts"
+  # SVG + ASCII goldens for ascii-parallel-lane-reversal: the repo rule is an SVG and an ASCII snapshot per case.
+  "__tests__/ascii-parallel-lane-reversal.test.ts"
+  # SVG + ASCII goldens for ascii-decision-pair-three-edges: the repo rule is an SVG and an ASCII snapshot per case.
+  "__tests__/ascii-decision-pair-three-edges.test.ts"
+  # SVG + ASCII goldens for ascii-dense-pair-reverse-edges: the repo rule is an SVG and an ASCII snapshot per case.
+  "__tests__/ascii-dense-pair-reverse-edges.test.ts"
+  # SVG + ASCII goldens for ascii-decision-pair-four-edges: the repo rule is an SVG and an ASCII snapshot per case.
+  "__tests__/ascii-decision-pair-four-edges.test.ts"
   # SVG + ASCII goldens for a decision's entry face with three ends (#2913): the
   # repo rule is an SVG and an ASCII snapshot per case; reviewed via `git diff`
   # (`vitest -u`).
