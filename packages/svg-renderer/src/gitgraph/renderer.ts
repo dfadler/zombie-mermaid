@@ -42,9 +42,11 @@ import { pieColorValue } from '../pie/renderer.ts'
 function maxWidthTag(tag: string, w: number): string {
   const t = tag.replace(/ width="[^"]*" height="[^"]*"/, ' width="100%"')
   const cap = `max-width: ${w}px;`
-  return /<svg[^>]* style="/.test(t)
-    ? t.replace(/( style="[^"]*?);?"/, `$1; ${cap}"`)
-    : t.replace(' width="100%"', ` width="100%" style="${cap}"`)
+  const at = t.indexOf(' style="')
+  if (at < 0) return t.replace(' width="100%"', ` width="100%" style="${cap}"`)
+  const end = t.indexOf('"', at + 8)
+  const css = t.slice(at + 8, end).replace(/;$/, '')
+  return `${t.slice(0, at + 8)}${css}; ${cap}${t.slice(end)}`
 }
 
 function r(n: number): string {
