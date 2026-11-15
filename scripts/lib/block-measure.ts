@@ -18,15 +18,61 @@ export interface BlockRun {
   breaches: string[]
 }
 
+/**
+ * Link cases scored next to the gallery samples. They are not samples because
+ * every sample needs Linux and macOS visual baselines; these only need the oracle.
+ */
+export const LINK_CASES: { title: string; source: string }[] = [
+  {
+    title: 'Links',
+    source: `block-beta
+  columns 3
+  a space b
+  c space d
+  a --> b
+  a -- "label" --> d
+  c ==> d
+  b -.- d`,
+  },
+  {
+    title: 'Link markers',
+    source: `block-beta
+  columns 3
+  a space b
+  c space d
+  e space f
+  a --> b
+  c --x d
+  e <--> f
+  a --o e`,
+  },
+  {
+    title: 'Links between neighbours',
+    source: `block-beta
+  columns 3
+  a b c
+  block:g:2
+    d e
+  end
+  f
+  a --> b
+  g -- "into group" --> f
+  c --> a`,
+  },
+]
+
 export async function scoreBlock(
   session: RealMermaidSession,
   filter?: string,
 ): Promise<BlockRun> {
-  const wanted = samples
-    .filter((s) => /^\s*(?:---[\s\S]*?---\s*)?block(?:-beta)?\b/.test(s.source))
-    .filter(
-      (s) => !filter || s.title.toLowerCase().includes(filter.toLowerCase()),
-    )
+  const wanted = [
+    ...samples.filter((s) =>
+      /^\s*(?:---[\s\S]*?---\s*)?block(?:-beta)?\b/.test(s.source),
+    ),
+    ...LINK_CASES,
+  ].filter(
+    (s) => !filter || s.title.toLowerCase().includes(filter.toLowerCase()),
+  )
   const results: Record<string, BlockAgreement> = {}
   const errored: string[] = []
   for (const [i, { title, source }] of wanted.entries()) {
