@@ -52,6 +52,10 @@ describe('a parallel lane that would double back along its own row', () => {
       const arrows = [...out].filter((c) => '▲▼◄►'.includes(c)).length
       expect(arrows).toBe(3)
     })
+    // #3161: Zq's lane ran across Fp's stroke; mermaid@12.3.0 draws no crossing.
+    it(`${dir}: no two strokes cross`, () => {
+      expect(draw(decision(dir))).not.toMatch(/[┼╋┿╂╪╫]/)
+    })
   }
 
   it('leaves the text of both nodes whole', () => {

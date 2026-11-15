@@ -404,6 +404,8 @@ export interface GitGraphInitConfig {
     showCommitLabel?: boolean;
     // (undocumented)
     titleTopMargin?: number;
+    // (undocumented)
+    useMaxWidth?: boolean;
 }
 
 // @public
@@ -422,6 +424,7 @@ export interface InitConfig {
     erLayout?: ErInitLayout;
     gitGraph?: GitGraphInitConfig;
     ignored: string[];
+    ishikawaPadding?: number;
     journey?: JourneyInitConfig;
     kanban?: KanbanInitConfig;
     look?: string;
@@ -442,6 +445,7 @@ export interface InitConfig {
     theme?: string;
     themeVariables?: ThemeVariables;
     timeline?: TimelineInitConfig;
+    treemap?: TreemapInitConfig;
     xyChart?: XyChartInitConfig;
 }
 
@@ -1099,6 +1103,18 @@ export interface TimelineInitConfig {
 
 // @public
 export function toDirection(raw: string | undefined): Direction;
+
+// @public
+export interface TreemapInitConfig {
+    // (undocumented)
+    diagramPadding?: number;
+    nodeHeight?: number;
+    nodeWidth?: number;
+    padding?: number;
+    // (undocumented)
+    showValues?: boolean;
+    valueFormat?: string;
+}
 
 // @public
 export function tryApplyClassAssignment(line: string, target: StyleDirectives): boolean;

@@ -18,7 +18,7 @@
  * `dashboard-app.tsx`'s header comment documents for the same split).
  */
 import { createElement, Fragment } from 'react'
-import { hydrateRoot } from 'react-dom/client'
+import { hydrateRoot, type Root } from 'react-dom/client'
 import {
   NAV_PROPS_ELEMENT_ID,
   NAV_ROOT_ID,
@@ -80,10 +80,10 @@ function readNavProps(): NavProps {
  * load — every generated page renders exactly one {@link NAV_ROOT_ID}
  * container.
  */
-export function hydrateNav(): void {
+export function hydrateNav(): Root {
   const container = document.getElementById(NAV_ROOT_ID)
   if (!container) {
     throw new Error(`nav-client: no #${NAV_ROOT_ID} element found to hydrate`)
   }
-  hydrateRoot(container, createElement(Nav, readNavProps()))
+  return hydrateRoot(container, createElement(Nav, readNavProps()))
 }
