@@ -41,21 +41,21 @@ exports[`a parallel lane that would double back along its own row > snapshots SV
 `;
 
 exports[`a parallel lane that would double back along its own row > snapshots SVG and ASCII (unicode and ASCII-only), TD and BT > ascii-node-text 1`] = `
-"   ┌─────┐    
-   │     ├───┐
-   │ 9h0 │   │
-   │     ├┄┐ │
-   └─────┘ ┆ │
-      ▲    ┆ │
-      │    ┆ │
-      │    ┆ │
-      │    ┆ │
-      │    ┆ │
-   ╭──┴──╮ ┆ │
- ┌►│     │◄┘ │
- │ │ z7b │   │
- └─┤     │◄──┘
-   ╰─────╯    "
+"   ┌─────┐
+   │     │
+   │ 9h0 │
+   │     │
+   └──┬─┬┘
+    ▲ ┆ │ 
+    │ ┆ │ 
+    │ ┆ │ 
+    │ ┆ │ 
+    │ ▼ ▼ 
+   ╭┴────╮
+ ┌►│     │
+ │ │ z7b │
+ └─┤     │
+   ╰─────╯"
 `;
 
 exports[`a parallel lane that would double back along its own row > snapshots SVG and ASCII (unicode and ASCII-only), TD and BT > ascii-only-BT 1`] = `
