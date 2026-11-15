@@ -1866,8 +1866,8 @@ is a cause of the line above it, to any depth. Categories alternate above and
 below the spine, the first pair nearest the head; a cause one level down hangs
 from its parent bone as a slanted bone, the next as a stub again. `<br>` breaks a
 label, a long cause wraps at 15 characters and a long effect in the head, `%%`
-comment lines and blank lines are skipped. Not drawn: the `handDrawn` look and the
-`ishikawa.diagramPadding` / `useMaxWidth` keys.
+comment lines and blank lines are skipped. `ishikawa.diagramPadding` is read.
+Not drawn: the `handDrawn` look.
 
 ### ASCII Ishikawa diagrams
 

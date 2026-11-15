@@ -404,7 +404,7 @@ export function layoutIshikawa(d: Ishikawa): PositionedIshikawa | undefined {
   grow(bounds, 0, spineY - hh / 2)
   grow(bounds, 1.2 * hw, spineY + hh / 2)
 
-  const pad = ISHIKAWA.padding
+  const pad = d.diagramPadding ?? ISHIKAWA.padding
   const ox = pad - bounds.x0
   const oy = pad - bounds.y0
   const shift = (l: IshikawaLine): IshikawaLine => ({

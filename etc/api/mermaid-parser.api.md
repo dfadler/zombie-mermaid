@@ -661,6 +661,7 @@ export function isExcludedDate(chart: Pick<GanttChart, 'includes' | 'excludes' |
 
 // @public
 export interface Ishikawa {
+    diagramPadding?: number;
     // (undocumented)
     root?: IshikawaNode;
 }
