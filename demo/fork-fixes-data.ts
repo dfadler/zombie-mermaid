@@ -1113,6 +1113,20 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before: the long words stay whole and push the diagram wide. After: each splits with a trailing `-`, and the participant name wraps in its box, as in mermaid 12.3.0.',
   },
+  {
+    id: 'theme-primary-color-derives-border',
+    title:
+      'themeVariables.primaryColor alone left the node border at the default',
+    symptom:
+      'With `theme: base` and only `primaryColor` set, the node fill changed but the border stayed the default grey. mermaid@12.3.0 also gives the border a darker, less saturated shade of the fill.',
+    source:
+      '%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#ffcc00"}}}%%\nflowchart LR\n  A[Alpha] --> B[Beta]',
+    fixCommit: '4a73b0871',
+    pr: 3191,
+    render: 'svg',
+    lookFor:
+      'Before: yellow nodes with the default border. After: the border is a darker olive, as in mermaid 12.3.0.',
+  },
 ]
 
 /** Entries shown on the page: everything not parked. */
