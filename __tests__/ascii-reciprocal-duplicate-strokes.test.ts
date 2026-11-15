@@ -47,43 +47,45 @@ describe('duplicate pair with a reciprocal (TD/BT)', () => {
     })
   }
 
-  it('TD: ASCII snapshot', () => {
-    expect(render('TD')).toMatchInlineSnapshot(`
-      " ┌──────────┐
-       │          │
-       │ L6rc9iw  │
-       │          │
-       └────┬─────┘
-          ▲ │ ▲    
-          │ │ │    
-          │ │ │    
-          │ │ │    
-          │ ▼ │    
-       ╭──┴───┴───╮
-       (          )
-       ( 9B531Zk  )
-       (          )
-       ╰──────────╯"
-    `)
+  // The exact grids, one row per entry (the repo keeps snapshot matchers to an
+  // allow-list). The same source in RL has a gallery snapshot of its own.
+  it('TD: the exact grid', () => {
+    expect(render('TD').split('\n')).toEqual([
+      ' ┌──────────┐',
+      ' │          │',
+      ' │ L6rc9iw  │',
+      ' │          │',
+      ' └────┬─────┘',
+      '    ▲ │ ▲    ',
+      '    │ │ │    ',
+      '    │ │ │    ',
+      '    │ │ │    ',
+      '    │ ▼ │    ',
+      ' ╭──┴───┴───╮',
+      ' (          )',
+      ' ( 9B531Zk  )',
+      ' (          )',
+      ' ╰──────────╯',
+    ])
   })
 
-  it('BT: ASCII snapshot', () => {
-    expect(render('BT')).toMatchInlineSnapshot(`
-      " ╭──────────╮
-       (          )
-       ( 9B531Zk  )
-       (          )
-       ╰──┬───┬───╯
-          │ ▲ │    
-          │ │ │    
-          │ │ │    
-          │ │ │    
-          ▼ │ ▼    
-       ┌────┴─────┐
-       │          │
-       │ L6rc9iw  │
-       │          │
-       └──────────┘"
-    `)
+  it('BT: the exact grid', () => {
+    expect(render('BT').split('\n')).toEqual([
+      ' ╭──────────╮',
+      ' (          )',
+      ' ( 9B531Zk  )',
+      ' (          )',
+      ' ╰──┬───┬───╯',
+      '    │ ▲ │    ',
+      '    │ │ │    ',
+      '    │ │ │    ',
+      '    │ │ │    ',
+      '    ▼ │ ▼    ',
+      ' ┌────┴─────┐',
+      ' │          │',
+      ' │ L6rc9iw  │',
+      ' │          │',
+      ' └──────────┘',
+    ])
   })
 })

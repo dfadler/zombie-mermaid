@@ -2235,21 +2235,29 @@ function spreadParallelEdges(
   const out = new Map<AsciiEdge, number>()
   for (const group of groups.values()) {
     const first = runs.get(group[0]!)!
-    // Another edge on either port (a reciprocal pair alone is not another).
+    // Another edge on either port. A mixed group (a duplicate pair with its
+    // reciprocal) holds both roles at its ports itself.
     const shared = [first.s!, first.e!].some((k) => {
       const port = portOf(k)
-      const used = [...slotEdges].reduce(
-        (n, [key, c]) => n + (portOf(key) === port ? c : 0),
-        0,
+      if (!mixed(group)) return rolesAt.get(port)!.size > 1
+      return (
+        [...slotEdges].reduce(
+          (n, [key, c]) => n + (portOf(key) === port ? c : 0),
+          0,
+        ) > group.length
       )
-      return used > group.length || (rolesAt.get(port)!.size > 1 && !mixed(group))
     })
     // A plain reciprocal pair alone keeps its own routing: the strokes of a
     // mixed group are spread only with a duplicate in one direction.
     const duplicated = group.some(
       (e) => group.filter((o) => o.from === e.from).length > 1,
     )
-    if (group.length < 2 || shared || (mixed(group) && !duplicated)) continue
+    if (
+      group.length < 2 ||
+      shared ||
+      (mixed(group) && (!duplicated || first.r.start?.axis !== 'v'))
+    )
+      continue
     const offsetOf = (i: number): number =>
       STROKE_SPACING * i - STROKE_SPACING * ((group.length - 1) / 2)
     // `spreadsOnFaces` (edge-routing.ts) already checked the faces are wide

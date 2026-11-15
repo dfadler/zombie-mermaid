@@ -564,7 +564,7 @@ const FLOW_FAN_LABEL_ROWS = 2
 /**
  * The plain edges back from a group's target to its source that join the group's
  * strokes on the facing faces: a duplicate pair (two or more) with a single
- * unlabeled reciprocal, all in one column or row. Empty otherwise.
+ * unlabeled reciprocal, all in one column. Empty otherwise.
  */
 export function reciprocalStrokes(
   graph: AsciiGraph,
@@ -577,9 +577,10 @@ export function reciprocalStrokes(
   return group.length >= 2 &&
     back.length === 1 &&
     back[0]!.text === '' &&
+    group.every((e) => e.text === '') &&
     !back[0]!.clusterSource &&
     !back[0]!.clusterTarget &&
-    (a.x === b.x || a.y === b.y)
+    a.x === b.x
     ? back
     : []
 }
