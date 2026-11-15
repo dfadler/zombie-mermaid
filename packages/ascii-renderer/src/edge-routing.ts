@@ -3320,7 +3320,14 @@ export function determineLabelLine(
     const rb = rank(b.line)
     // #3158: a hook's last leg carries the arrowhead into its node, so a
     // self-loop's label goes on the first leg, not over the arrowhead.
-    const toward = edge.from === edge.to ? a.index - b.index : b.index - a.index
+    const toward =
+      edge.from === edge.to &&
+      !edge.loopNest &&
+      edge.path.length === 4 &&
+      dirEquals(edge.startDir, Left) &&
+      dirEquals(edge.endDir, Left)
+        ? a.index - b.index
+        : b.index - a.index
     return ra[0] - rb[0] || ra[1] - rb[1] || toward
   }
 
