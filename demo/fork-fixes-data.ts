@@ -1126,6 +1126,19 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before: the `Zq` stroke runs across the `Fp` stroke. After: the two strokes to `F1` nest and do not cross. `VW` and `38` still leave in the opposite order from mermaid 12.3.0.',
   },
+  {
+    id: 'ascii-cluster-exit-lone-pair',
+    title: 'ASCII: two edges out of a subgraph to one node',
+    symptom:
+      'Two edges from one subgraph to a node straight below it, with no other exit from the subgraph, left the cluster through a side wall once this fork attached subgraph edges to the frame (#2737). mermaid@12.3.0 draws two parallel strokes from the cluster’s bottom wall into the target’s top face. Upstream beautiful-mermaid does not attach edges to a subgraph at all: it draws a loose `S` node and one edge.',
+    source:
+      'flowchart TD\n  subgraph S [Cluster]\n    a\n  end\n  Start --> S\n  S -->|1| T\n  S -->|2| T',
+    fixCommit: '88cf6d00b',
+    pr: 3193,
+    render: 'ascii',
+    lookFor:
+      'Before (upstream): the frame floats apart from `Start`, a separate `S` box takes the edges, and only the `1` edge reaches `T`. After: `Start` feeds the frame, and both edges leave its bottom wall as parallel strokes into `T`’s top face, labels `1` and `2` side by side, as in mermaid 12.3.0.',
+  },
 ]
 
 /** Entries shown on the page: everything not parked. */
