@@ -25,6 +25,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -52,6 +53,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -80,6 +82,7 @@
       "useCases": [],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -109,6 +112,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -146,6 +150,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -175,6 +180,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -204,6 +210,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -233,6 +240,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -262,6 +270,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -289,6 +298,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -326,6 +336,7 @@
           "arrow": "backward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -355,6 +366,7 @@
           "arrow": "none"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -385,6 +397,7 @@
           "label": "hello world"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -415,6 +428,7 @@
           "label": "hello world"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -445,6 +459,7 @@
           "label": "hi there"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -475,6 +490,7 @@
           "label": "hi"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -520,6 +536,7 @@
           "arrow": "none"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -546,9 +563,10 @@
           "source": "A",
           "target": "B",
           "type": "association",
-          "arrow": "other3"
+          "arrow": "circleEnd"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -575,9 +593,11 @@
           "source": "A",
           "target": "B",
           "type": "association",
-          "arrow": "forward"
+          "arrow": "forward",
+          "id": "e1"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -621,6 +641,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -645,6 +666,7 @@
         }
       ],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -669,6 +691,7 @@
         }
       ],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -710,6 +733,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -727,6 +751,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -744,6 +769,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": [
         {
           "target": "A",
@@ -766,6 +792,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": [
         {
           "target": "A",
@@ -792,6 +819,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": [
         {
           "target": "A",
@@ -816,6 +844,7 @@
       "useCases": [],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -844,6 +873,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -871,6 +901,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -900,6 +931,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -929,6 +961,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -962,6 +995,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -979,6 +1013,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -996,6 +1031,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1025,6 +1061,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1054,6 +1091,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1071,6 +1109,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1120,6 +1159,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1153,6 +1193,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1189,6 +1230,7 @@
         }
       ],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1213,6 +1255,7 @@
         }
       ],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1267,6 +1310,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1301,6 +1345,7 @@
           "label": "a-b"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1331,6 +1376,7 @@
           "label": "a -- b"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1364,6 +1410,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1391,6 +1438,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1420,6 +1468,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1449,6 +1498,7 @@
           "arrow": "backward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1482,6 +1532,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1503,6 +1554,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1520,6 +1572,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1541,6 +1594,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1555,12 +1609,14 @@
       "actors": [
         {
           "id": "A",
-          "label": "A"
+          "label": "A",
+          "stereotype": "system"
         }
       ],
       "useCases": [],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1577,6 +1633,7 @@
       "useCases": [],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1589,11 +1646,13 @@
         {
           "id": "A",
           "label": "A",
-          "shape": "ellipse"
+          "shape": "ellipse",
+          "classes": ["foo"]
         }
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1611,6 +1670,12 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [
+        {
+          "id": "foo",
+          "styles": ["fill:#f00"]
+        }
+      ],
       "notes": []
     }
   },
@@ -1622,6 +1687,7 @@
       "useCases": [],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1648,9 +1714,10 @@
           "source": "A",
           "target": "B",
           "type": "association",
-          "arrow": "other4"
+          "arrow": "crossEnd"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1668,6 +1735,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1685,6 +1753,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": [
         {
           "target": "A",
@@ -1706,6 +1775,7 @@
       "useCases": [],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": [
         {
           "target": "A",
@@ -1728,6 +1798,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": [
         {
           "target": "A",
@@ -1758,6 +1829,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1775,6 +1847,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1810,6 +1883,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1827,6 +1901,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1856,6 +1931,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1885,6 +1961,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1905,6 +1982,7 @@
       "useCases": [],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1922,6 +2000,7 @@
       ],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1955,6 +2034,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -1988,6 +2068,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -2021,6 +2102,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -2050,6 +2132,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -2070,6 +2153,7 @@
       "useCases": [],
       "boundaries": [],
       "relationships": [],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -2106,6 +2190,7 @@
           "arrow": "forward"
         }
       ],
+      "classDefs": [],
       "notes": []
     }
   },
@@ -2116,5 +2201,322 @@
   "backward label markerless only": {
     "source": "usecase-beta\nA <-- hi --> B",
     "error": true
+  },
+  "circle labeled": {
+    "source": "usecase-beta\nA -- hi --o B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "circleEnd",
+          "label": "hi"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "cross start": {
+    "source": "usecase-beta\nA x-- B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "crossStart"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "circle start": {
+    "source": "usecase-beta\nA o-- B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "circleStart"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "edge id metadata": {
+    "source": "usecase-beta\nA e1@--> B\ne1@{ animate: true, animation: fast }",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward",
+          "id": "e1",
+          "animate": true,
+          "animation": "fast"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "edge id labeled": {
+    "source": "usecase-beta\nA e1@-- hi --> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward",
+          "label": "hi",
+          "id": "e1"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "stereotype both": {
+    "source": "usecase-beta\nactor A(Alice) <<sys>>\nU(Do) <<ui>>\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "Alice",
+          "stereotype": "sys"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "Do",
+          "shape": "ellipse",
+          "stereotype": "ui"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "class styles": {
+    "source": "usecase-beta\nclassDef foo fill:#f00,stroke:#333\nactor A:::foo\nU:::foo\nclass A foo\nstyle U stroke:#0f0",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "classes": ["foo"]
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse",
+          "classes": ["foo"],
+          "styles": ["stroke:#0f0"]
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "classDefs": [
+        {
+          "id": "foo",
+          "styles": ["fill:#f00", "stroke:#333"]
+        }
+      ],
+      "notes": []
+    }
+  },
+  "classdef default": {
+    "source": "usecase-beta\nclassDef default fill:#eee\nA --> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [
+        {
+          "id": "default",
+          "styles": ["fill:#eee"]
+        }
+      ],
+      "notes": []
+    }
+  },
+  "class list": {
+    "source": "usecase-beta\nA\nB\nclass A,B foo",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse",
+          "classes": ["foo"]
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse",
+          "classes": ["foo"]
+        }
+      ],
+      "boundaries": [],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "class undeclared": {
+    "source": "usecase-beta\nclass Z foo",
+    "error": true
+  },
+  "class suffix relation": {
+    "source": "usecase-beta\nA:::foo --> B",
+    "error": true
+  },
+  "markdown label": {
+    "source": "usecase-beta\nA(\"`**bold** it`\") --> B",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "**bold** it",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
   }
 }

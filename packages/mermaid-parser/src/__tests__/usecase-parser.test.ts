@@ -144,16 +144,78 @@ describe('parseUsecase', () => {
       H + 'actor A@{ type: hollow }',
       /not supported yet/,
     ],
-    ['unsupported stereotype', H + 'A <<x>>', /not supported yet/],
-    ['unsupported class suffix', H + 'A:::c', /not supported yet/],
-    ['unsupported classDef', H + 'classDef c fill:#f00', /not supported yet/],
+    ['class on an undeclared endpoint', H + 'A:::c --> B', /without being/],
+    ['class for an undeclared node', H + 'class Z c', /not declared/],
+    ['metadata on a node', H + 'A\nA@{ type: hollow }', /not supported yet/],
     ['unsupported json', H + 'json J @ {"a":1}', /not supported yet/],
-    ['unsupported markdown', H + 'A("`x`")', /not supported yet/],
-    ['unsupported circle arrow', H + 'A --o B', /not supported yet/],
-    ['unsupported edge id', H + 'A e1@--> B', /not supported yet/],
   ]
   it.each(bad)('rejects %s', (_n, src, re) => {
     expect(() => parseUsecase(src)).toThrow(re)
+  })
+
+  it('reads markers, edge ids, stereotypes, classes and styles', () => {
+    const arrows = (s: string) => p(`A ${s} B`).relationships[0]!.arrow
+    expect(arrows('--o')).toBe('circleEnd')
+    expect(arrows('--x')).toBe('crossEnd')
+    expect(arrows('o--')).toBe('circleStart')
+    expect(arrows('x--')).toBe('crossStart')
+    expect(arrows('-- hi --x')).toBe('crossEnd')
+    const d = p(
+      [
+        'classDef foo fill:#f00,stroke:#333',
+        'actor A(Alice) <<sys>>:::foo',
+        'U:::foo',
+        'U(Do) <<ui>>',
+        'style U stroke:#0f0',
+        'class A foo',
+        'A e1@--> U',
+        'e1@{ animate: true, animation: fast }',
+        'M("`**bold**`") --> U',
+      ].join('\n'),
+    )
+    expect(d.classDefs).toEqual([
+      { id: 'foo', styles: ['fill:#f00', 'stroke:#333'] },
+    ])
+    expect(d.useCases.find((u) => u.id === 'M')!.label).toBe('**bold**')
+    expect(d.actors[0]).toMatchObject({
+      label: 'Alice',
+      stereotype: 'sys',
+      classes: ['foo'],
+    })
+    expect(d.useCases.find((u) => u.id === 'U')).toMatchObject({
+      label: 'Do',
+      stereotype: 'ui',
+      classes: ['foo'],
+      styles: ['stroke:#0f0'],
+    })
+    expect(d.relationships[0]).toMatchObject({
+      id: 'e1',
+      animate: true,
+      animation: 'fast',
+    })
+  })
+
+  it('lowers them to the flowchart model', () => {
+    const g = usecaseToGraph(
+      p(
+        'classDef foo fill:#f00\nactor A <<s>>:::foo\nU\nstyle U stroke:#0f0\nA e1@--o U\nU x-- A\ne1@{ animate: true }\nA --> U',
+      ),
+    )
+    expect(g.nodes.get('A')!.label).toBe('«s»\nA')
+    expect(g.classDefs.get('foo')).toEqual({ fill: '#f00' })
+    expect(g.classAssignments.get('A')).toBe('foo')
+    expect(g.nodeStyles.get('U')).toEqual({ stroke: '#0f0' })
+    expect(g.edges[0]).toMatchObject({
+      id: 'e1',
+      animate: true,
+      hasArrowEnd: true,
+      endMarker: 'circle',
+    })
+    expect(g.edges[1]).toMatchObject({
+      hasArrowStart: true,
+      startMarker: 'cross',
+    })
+    expect(g.edges[2]).not.toHaveProperty('animate')
   })
 
   it('reports the line of an error', () => {
