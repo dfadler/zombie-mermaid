@@ -72,3 +72,81 @@ describe('a hub with six ends on one face (ascii-longest-path-layering)', () => 
     expect(text.match(/long label/g)).toHaveLength(2)
   })
 })
+
+describe('a decision with more than three ends on a face', () => {
+  const src = `graph LR
+D{d} -->|a| B
+B -->|b| D
+D -->|c| C
+C -->|e| D
+D -->|f| E
+D -->|g| F
+E -->|h| D`
+  it('keeps the grid’s faces for a labelled reciprocal pair: its labels stay apart', () => {
+    registerAsciiLayout(asciiLayoutProvider)
+    const text = renderMermaidASCII(src, {
+      colorMode: 'none',
+      layoutHints: true,
+    })
+    for (const l of 'abcefgh')
+      expect(text).toMatch(new RegExp(`(?<![a-zA-Z])${l}(?![a-zA-Z])`))
+    // `b` runs down into the decision’s top, its arrowhead just below it.
+    expect(text).toMatch(/(?<![a-zA-Z])b[^\n]*\n\s*▼/)
+  })
+
+  it('keeps them when the decision’s edge of the pair is routed second', () => {
+    registerAsciiLayout(asciiLayoutProvider)
+    const text = renderMermaidASCII(
+      `graph LR
+D{d} -->|f| E
+D -->|g| F
+E -->|h| D
+G -->|i| D
+D -->|j| G
+B -->|b| D
+D -->|a| B`,
+      { colorMode: 'none', layoutHints: true },
+    )
+    expect(text).toMatchInlineSnapshot(`
+      "               ┌───┐
+         ┌───────────┤   │
+         │           │ E │
+         │   ┌──────►│   │
+         │   │       └───┘
+         │   │            
+         │   f            
+         │   │            
+         │   │            
+         │   │       ┌───┐
+         h   │       │   │
+         │   │ ┌────►│ F │
+         ▼   │ │     │   │
+        ╱╲   │ │     └───┘
+        ╱╲   │ g          
+       ╱  ╲  │ │          
+       ╱  ╲──┘ │          
+       ╱  ╲────┘          
+      <    >              
+      < d ◄>─────┐        
+      <    >     │        
+       ╲  ╱────┐ i        
+       ╲ ◄╱──┐ │ │        
+       ╲  ╱  │ │ │        
+        ╲╱   │ │ │        
+        ╲╱   │ │ │   ┌───┐
+         │   │ │ └───┤   │
+         │ j │ │     │ G │
+         └───┼─┼────►│   │
+             │ │     └───┘
+             │ │          
+             b a          
+             │ │          
+             │ │          
+             │ │     ┌───┐
+             │ └────►│   │
+             │       │ B │
+             └───────┤   │
+                     └───┘"
+    `)
+  })
+})

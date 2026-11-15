@@ -2920,9 +2920,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // holds more ends than its three cells (a plain node grows a cell per end,
   // `hintedFaceCells`), so its arrowhead would land on another end's stroke.
   const crowded = (): boolean => {
-    const h = graph.edgeHints?.get(edge)
+    const h = graph.edgeHints!.get(edge)!
     return (
-      !h ||
       (edge.from.shape === 'diamond' &&
         hintedEnds(graph, edge.from, h.start.face) > 3) ||
       (edge.to.shape === 'diamond' &&
