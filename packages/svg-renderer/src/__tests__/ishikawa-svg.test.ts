@@ -116,7 +116,9 @@ describe('ishikawa.diagramPadding', () => {
       return [Number(m[1]), Number(m[2])]
     }
     const [w0, h0] = wh(base)
-    const [w1, h1] = wh(`%%{init: {"ishikawa":{"diagramPadding":50}}}%%\n${base}`)
+    const [w1, h1] = wh(
+      `%%{init: {"ishikawa":{"diagramPadding":50}}}%%\n${base}`,
+    )
     expect([w1! - w0!, h1! - h0!]).toEqual([60, 60])
   })
 })
