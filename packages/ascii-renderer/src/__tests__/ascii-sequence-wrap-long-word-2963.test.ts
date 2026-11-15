@@ -16,7 +16,7 @@ describe('long word in wrapped sequence text (#2963)', () => {
       `sequenceDiagram\n A->>B: wrap: ${W}_and_more_words here`,
     )
     expect(out).not.toContain(W)
-    expect(out).toMatch(/Supercalifragilisticexpia-/)
+    expect(out).toMatch(/Supercalifragilisticexpialido-/)
     expect(out).toContain('here')
     expect(out).not.toContain('wrap:')
   })
@@ -53,7 +53,7 @@ describe('long word in wrapped sequence text (#2963)', () => {
     const out = render(`${INIT}sequenceDiagram\n A->>B: nowrap: ${W}`, true)
     expect(out).toContain(W)
     const split = render(`${INIT}sequenceDiagram\n A->>B: ${W}`, true)
-    expect(split).toMatch(/Supercalifragilisticex-/)
+    expect(split).toMatch(/Supercalifragilisticexpia-/)
   })
 
   it('wraps a short word run after a long word on the same line', () => {
