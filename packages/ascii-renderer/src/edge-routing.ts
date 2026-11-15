@@ -2915,9 +2915,18 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
         )
       : undefined
   if (twin) hintedPath = [...twin.path].reverse()
-  // A horizontal flow has no jog column per edge yet (#2888): a labelled
-  // reciprocal pair on one route would print its labels over each other, so
-  // the second keeps the grid's faces.
+  // A labelled reciprocal pair on one route in a horizontal flow: the second
+  // keeps the grid's faces only where either face holds more ends than its
+  // three cells, so its arrowhead would land on another end's stroke. Within
+  // the cells it takes ELK's face, as the first does.
+  const crowded = (): boolean => {
+    const h = graph.edgeHints?.get(edge)
+    return (
+      !h ||
+      hintedEnds(graph, edge.from, h.start.face) > 3 ||
+      hintedEnds(graph, edge.to, h.end.face) > 3
+    )
+  }
   const sameRoute = (o: AsciiEdge): boolean =>
     o !== edge &&
     o.from === edge.to &&
@@ -2929,7 +2938,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       const r = hintedPath![hintedPath!.length - 1 - i]!
       return c.x === r.x && c.y === r.y
     })
-  if (lrFlow && hintedPath && graph.edges.some(sameRoute)) hintedPath = null
+  if (lrFlow && hintedPath && graph.edges.some(sameRoute) && crowded())
+    hintedPath = null
   // The hinted route was rejected: an overflowing group's sibling keeps its lane
   // (#329) rather than the shared centre path of the ordinary search.
   if (
