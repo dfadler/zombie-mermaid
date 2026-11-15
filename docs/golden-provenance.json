@@ -550,7 +550,7 @@
       "source": "this renderer's own output, accepted once when the test was written",
       "owner": "__tests__/ascii-parallel-lane-reversal.test.ts",
       "mermaid": "12.3.0",
-      "verdict": "mermaid 12.3.0 draws the four labelled edges (VW, 38, Fp, Zq) as four separate strokes; the ASCII snapshots draw the same four with no stray +, checked by the test's assertions; the snapshots pin this renderer's output only"
+      "verdict": "mermaid 12.3.0 draws the four labelled edges (VW, 38, Fp, Zq) as four separate strokes; the ASCII snapshots draw the same four with no stray + and no crossing (#3161), checked by the test's assertions, though VW and 38 still leave in the opposite order from mermaid 12.3.0; the snapshots pin this renderer's output only"
     },
     {
       "paths": [

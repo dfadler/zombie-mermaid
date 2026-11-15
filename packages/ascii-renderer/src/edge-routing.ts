@@ -686,6 +686,30 @@ function decisionDuplicates(
  * nodes' grid coordinates (grid.ts's call site satisfies this — it runs
  * this immediately before bundling analysis, well after layout).
  */
+/**
+ * #3161: in a vertical flow ELK orders a decision's strokes left to right along
+ * its flow face (left slant, bottom, right slant); the lanes of a group bound
+ * for one side nest, the stroke that turns nearest the node being the one
+ * outermost towards that side, so a group's lane order follows ELK's.
+ */
+function orderByHints(graph: AsciiGraph, group: AsciiEdge[]): void {
+  const hints = graph.edgeHints
+  if (!hints || graph.config.graphDirection === 'LR') return
+  const rank = (e: AsciiEdge): number | undefined => {
+    const s = hints.get(e)?.start
+    const face = s && ['L', 'B', 'R'].indexOf(s.face)
+    return s && face! >= 0 ? face! * 100 + s.order : undefined
+  }
+  const ranks = group.map(rank)
+  if (ranks.some((r) => r === undefined)) return
+  const right =
+    requireGridCoord(group[0]!.to).x > requireGridCoord(group[0]!.from).x
+  const by = new Map(group.map((e, i) => [e, ranks[i]!]))
+  group.sort((a, b) =>
+    right ? by.get(b)! - by.get(a)! : by.get(a)! - by.get(b)!,
+  )
+}
+
 export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   const groups = new Map<string, AsciiEdge[]>()
   for (const edge of graph.edges) {
@@ -708,6 +732,7 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
     )
       continue
     const usedOffsets = new Set<number>()
+    orderByHints(graph, group)
     for (let i = 0; i < group.length; i++) {
       group[i]!.parallelLane = { index: i, total: group.length, usedOffsets }
     }

@@ -38,6 +38,17 @@ import {
 import { withDataSrc } from '../renderer.ts'
 import { pieColorValue } from '../pie/renderer.ts'
 
+/** `useMaxWidth: true` (Mermaid's default): `width="100%"` and a `max-width` style instead of fixed `width`/`height`. */
+function maxWidthTag(tag: string, w: number): string {
+  const t = tag.replace(/ width="[^"]*" height="[^"]*"/, ' width="100%"')
+  const cap = `max-width: ${w}px;`
+  const at = t.indexOf(' style="')
+  if (at < 0) return t.replace(' width="100%"', ` width="100%" style="${cap}"`)
+  const end = t.indexOf('"', at + 8)
+  const css = t.slice(at + 8, end).replace(/;$/, '')
+  return `${t.slice(0, at + 8)}${css}; ${cap}${t.slice(end)}`
+}
+
 function r(n: number): string {
   return String(Math.round(n * 1e4) / 1e4)
 }
@@ -147,16 +158,20 @@ export function renderGitGraphSvg(
   parts.push(
     withDataSrc(
       withRootClass(
-        svgOpenTag(
-          Number(r(vb.width)),
-          Number(r(vb.height)),
-          colors,
-          transparent,
-          title,
-          decorative,
-          undefined,
-          emit.styleAttribute,
-          emit.description,
+        (gg.useMaxWidth
+          ? (t: string) => maxWidthTag(t, Number(r(vb.width)))
+          : (t: string) => t)(
+          svgOpenTag(
+            Number(r(vb.width)),
+            Number(r(vb.height)),
+            colors,
+            transparent,
+            title,
+            decorative,
+            undefined,
+            emit.styleAttribute,
+            emit.description,
+          ),
         ),
         cls,
       ),
