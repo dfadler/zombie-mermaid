@@ -1507,8 +1507,12 @@ Another
   its date and a `vert` marker is a `┆` (`:`) line through every row.
 - **The axis** repeats the SVG's ticks and `axisFormat`, dropping a label that
   would run into the one before it. A legend below names the glyphs in use.
-- Not drawn: `excludes` shading and the today line (output must not depend on
-  the clock). `accTitle` and `accDescr` are not printed.
+- **`excludes`** days show `·` (ASCII mode: `,`) on the cells no bar covers, as
+  the SVG shades them; a run is shaded only when a non-excluded day follows it.
+- **`todayMarker`** draws a `│` (`|`) column when the current date is inside the
+  chart's range, as the SVG does; for any other period the output does not
+  depend on the clock. `todayMarker off` removes it. The legend names both.
+- `accTitle` and `accDescr` are not printed.
 
 ## Timelines
 
