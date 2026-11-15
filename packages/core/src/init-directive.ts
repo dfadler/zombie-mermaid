@@ -681,7 +681,9 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         if ((QUADRANT_COLOR_VARIABLES as readonly string[]).includes(vk)) {
           if (color) (tv.quadrant ??= {})[vk as QuadrantColorVariable] = color
         } else if (PIE_VARIABLE.test(vk)) {
-          if (color) (tv.pieColors ??= {})[Number(vk.slice(3)) - 1] = color
+          // Mermaid 12.3.0 paints an invalid pieN as the root `fill: #333`,
+          // not the default palette (#3162).
+          ;(tv.pieColors ??= {})[Number(vk.slice(3)) - 1] = color ?? '#333'
         } else if (
           (BASE_ONLY_VARIABLES as readonly string[]).includes(vk) ||
           (ANY_THEME_VARIABLES as readonly string[]).includes(vk)
