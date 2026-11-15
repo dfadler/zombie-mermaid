@@ -120,6 +120,76 @@ describe('layoutTreemap', () => {
   })
 })
 
+describe('layoutTreemap config', () => {
+  const body =
+    '\n"A"\n  "A1": 3000\n  "A2": 1234.5\n"B"\n  "B1": 400\n  "B2": 0.25'
+  const withCfg = (cfg: string) =>
+    layout(`%%{init: {"treemap": ${cfg}}}%%\ntreemap-beta${body}`)
+
+  it('sizes the canvas from nodeWidth and nodeHeight (x10; 0 falls back to 960 x 500)', () => {
+    // Measured in mermaid@12.3.0: viewBox widths 596 and 956, heights 171 and 471.
+    expect(withCfg('{"nodeWidth": 60, "nodeHeight": 20}')).toMatchObject({
+      width: 596,
+      height: 171,
+    })
+    expect(withCfg('{"nodeWidth": 0, "nodeHeight": 0}')).toMatchObject({
+      width: 956,
+      height: 471,
+    })
+  })
+
+  it('reads padding, which sets the gap between siblings', () => {
+    // Mermaid@12.3.0 with padding 4: sections at x 10 (895 wide) and 909 (81 wide).
+    const p = withCfg('{"padding": 4}')
+    expect(p.sections.slice(1).map((s) => [s.x, s.width])).toEqual([
+      [10, 895],
+      [909, 81],
+    ])
+  })
+
+  it('reads diagramPadding into the viewBox', () => {
+    expect(withCfg('{"diagramPadding": 30}')).toMatchObject({
+      width: 1040,
+      height: 415,
+    })
+  })
+
+  it('drops every total with showValues: false and gives the section label the room', () => {
+    const on = layout(`treemap-beta${body}`)
+    const off = withCfg('{"showValues": false}')
+    expect(off.sections.some((s) => s.valueLabel)).toBe(false)
+    expect(off.leaves.some((l) => l.valueLabel)).toBe(false)
+    expect(on.leaves.some((l) => l.valueLabel)).toBe(true)
+    // Boxes do not move; labels still fit (mermaid@12.3.0 hides only the value texts).
+    expect(off.leaves.map((l) => l.label?.text)).toEqual(
+      on.leaves.map((l) => l.label?.text),
+    )
+  })
+
+  it.each([
+    ['$0,0', '$1,234.5'],
+    ['$,.2f', '$1.2e+3'],
+    ['$.1f', '$1234.5'],
+    ['.1%', '123450.0%'],
+    ['.2f', '1234.50'],
+    ['s', '1.23450k'],
+    ['.3~s', '1.23k'],
+    ['zzz', '1,234.5'],
+  ])('formats values with valueFormat %s like mermaid@12.3.0', (fmt, a2) => {
+    const p = withCfg(`{"valueFormat": "${fmt}"}`)
+    expect(p.leaves.find((l) => l.name === 'A2')!.valueLabel!.text).toBe(a2)
+  })
+
+  it('ignores a bad value and keys mermaid does not read', () => {
+    const base = layout(`treemap-beta${body}`)
+    expect(
+      withCfg(
+        '{"padding": -3, "nodeWidth": "wide", "showValues": "no", "borderWidth": 5, "labelFontSize": 30, "valueFontSize": 30, "useMaxWidth": false}',
+      ),
+    ).toEqual(base)
+  })
+})
+
 describe('renderMermaidSVG – treemap', () => {
   it('draws sections, then leaves with their text', () => {
     const svg = renderMermaidSVG(NESTED)
@@ -143,9 +213,73 @@ describe('renderMermaidSVG – treemap', () => {
     const svg = renderMermaidSVG(
       'treemap-beta\n"R"\n  "A": 5:::kk\nclassDef kk fill:#f96,stroke:url(javascript:x),stroke-width:4px,color:red,x:y',
     )
-    expect(svg).toContain('style="fill:#f96;stroke-width:4px"')
-    expect(svg).toContain('style="fill:red"')
+    expect(svg).toContain(
+      'style="fill:#f96 !important;stroke-width:4px !important;x:y !important"',
+    )
+    expect(svg).toContain('style="fill:red !important"')
     expect(svg).not.toContain('javascript')
+  })
+
+  it('routes every classDef property like mermaid: label ones to the text, the rest to the box', () => {
+    // Measured in mermaid@12.3.0: opacity/dash/rx/filter to the rect, `color` as
+    // `fill` and the font and text properties to both texts, all `!important`.
+    const svg = renderMermaidSVG(
+      'treemap-beta\n"R"\n  "A": 5:::kk\nclassDef kk opacity:0.5,stroke-dasharray:4 2,rx:5,font-weight:700,text-transform:uppercase,color:#080,font-size:9px,fill:red,fill:blue',
+    )
+    expect(svg).toContain(
+      'style="opacity:0.5 !important;stroke-dasharray:4 2 !important;rx:5 !important;fill:blue !important"',
+    )
+    const text =
+      'style="font-weight:700 !important;text-transform:uppercase !important;fill:#080 !important"'
+    // The leaf's font size comes from the layout, not the class (the section keeps it).
+    expect(svg.split(text).length).toBe(3)
+    expect(svg).not.toContain('font-size:9px !important')
+  })
+
+  it('drops classDef values that could fetch a resource or break the declaration', () => {
+    const svg = renderMermaidSVG(
+      [
+        'treemap-beta\n"R"\n  "A": 5:::kk',
+        'classDef kk filter:url(http://evil/x.svg#f),background:image-set("http://evil/a.png" 1x),cursor:ur\\6c(x),behavior:foo,mask:a/*b,display:none!important,opacity:0.4',
+      ].join('\n'),
+    )
+    expect(svg).toContain('style="opacity:0.4 !important"')
+    expect(svg).not.toContain('evil')
+    expect(svg).not.toContain('behavior')
+  })
+
+  it('applies a classDef font-size to a section header and as the start of a leaf fit', () => {
+    const p = layout(
+      'treemap-beta\n"R":::big\n  "A": 5:::big\nclassDef big font-size:20px',
+    )
+    expect(p.sections[1]!.label.fontSize).toBe(20)
+    expect(p.sections[1]!.valueLabel?.fontSize).toBe(20)
+    // 38px normally; 20px starts the fit, so the value is 12px (0.6 x 20).
+    expect(p.leaves[0]!.label?.fontSize).toBe(20)
+    expect(p.leaves[0]!.valueLabel?.fontSize).toBe(12)
+    // A header taller than 25px grows the viewBox, as in mermaid@12.3.0.
+    const tall = layout(
+      'treemap-beta\n"R":::big\n  "A": 5\nclassDef big font-size:40px',
+    )
+    expect(tall.height).toBeGreaterThan(
+      layout('treemap-beta\n"R"\n  "A": 5').height,
+    )
+  })
+
+  it('reads the treemap config from front matter', () => {
+    const svg = renderMermaidSVG(
+      '---\nconfig:\n  treemap:\n    nodeWidth: 60\n    nodeHeight: 20\n    valueFormat: "$0,0"\n---\ntreemap-beta\n"A": 1500\n"B": 500',
+    )
+    expect(svg).toContain('viewBox="0 0 596 171"')
+    expect(svg).toContain('$1,500')
+  })
+
+  it('ignores a classDef font-size it cannot measure', () => {
+    const p = layout(
+      'treemap-beta\n"R":::big\n  "A": 5:::big\nclassDef big font-size:2em',
+    )
+    expect(p.sections[1]!.label.fontSize).toBe(12)
+    expect(p.leaves[0]!.label?.fontSize).toBe(38)
   })
 
   it('takes the theme accent on a dark background and Mermaid hues on a light one', () => {
