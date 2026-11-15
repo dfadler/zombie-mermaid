@@ -37,6 +37,7 @@ import {
   checkLineLength,
   detectDiagramType,
   extractAccessibility,
+  deriveBorderColor,
   extractInitConfig,
   parseHexColor,
 } from '@zombie-mermaid/core'
@@ -159,7 +160,12 @@ function directiveTheme(
   const tv = extractInitConfig(text.split(/\r\n?|\n/)).themeVariables
   const hex = (v?: string) => (v && parseHexColor(v) ? v : undefined)
   const line = hex(tv?.lineColor)
-  const border = hex(tv?.primaryBorderColor)
+  // Mermaid derives the border from primaryColor when none is given (#3165).
+  const border =
+    hex(tv?.primaryBorderColor) ??
+    (tv?.primaryColor
+      ? (deriveBorderColor(tv.primaryColor) ?? undefined)
+      : undefined)
   const out: Partial<AsciiTheme> = {}
   if (line) {
     out.line = line

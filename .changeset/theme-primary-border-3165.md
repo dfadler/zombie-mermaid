@@ -1,5 +1,6 @@
 ---
 'zombie-mermaid': patch
+'@zombie-mermaid/ascii-renderer': patch
 '@zombie-mermaid/core': patch
 ---
 
