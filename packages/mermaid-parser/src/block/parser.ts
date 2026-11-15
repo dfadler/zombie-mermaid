@@ -140,13 +140,13 @@ const SHAPE_ENDS = [
 const ID_RE = /[^([\n\-){}\s<>:=]+/y
 /** Mermaid's LINK rules: `--->`, `===>`, `-.->`, each with an optional `x`, `o` or `<` start. */
 const LINK_RES = [
-  /^\s*[xo<]?--+[-xo>]\s*/,
+  /^\s*[xo<]?-{2,}[-xo>]\s*/,
   /^\s*[xo<]?==+[=xo>]\s*/,
   /^\s*[xo<]?-?\.+-[xo>]?\s*/,
 ]
 /** Mermaid's START_LINK rules, which expect a quoted label and then a LINK. */
 const START_LINK_RES = [
-  /^\s*[xo<]?--\s*/,
+  /^\s*[xo<]?-{2}\s*/,
   /^\s*[xo<]?==\s*/,
   /^\s*[xo<]?-\.\s*/,
 ]
