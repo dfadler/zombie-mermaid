@@ -907,7 +907,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
 
   const diamond = spreadDiamondFaces(graph, runs)
   const split = splitLabeledArrivals(runs)
-  const spread = spreadParallelEdges(runs, rolesAt, portOf)
+  const spread = spreadParallelEdges(runs, rolesAt, portOf, slotEdges)
   const landings = separateFanIns(
     graph,
     runs,
@@ -2220,11 +2220,14 @@ function spreadParallelEdges(
   runs: ReadonlyMap<AsciiEdge, { r: EdgeRuns; s?: string; e?: string }>,
   rolesAt: ReadonlyMap<string, Set<'S' | 'E'>>,
   portOf: (key: string) => string,
+  slotEdges: ReadonlyMap<string, number>,
 ): Map<AsciiEdge, number> {
+  // One group per pair of ports, either way round: a plain reciprocal edge
+  // takes a stroke among a duplicate pair's (`reciprocalStrokes`).
   const groups = new Map<string, AsciiEdge[]>()
   for (const [edge, { r, s, e }] of runs) {
     if (!r.straight || !s || !e) continue
-    const key = `${s}>${e}`
+    const key = [portOf(s), portOf(e)].sort().join('>')
     const group = groups.get(key) ?? []
     group.push(edge)
     groups.set(key, group)
@@ -2232,10 +2235,29 @@ function spreadParallelEdges(
   const out = new Map<AsciiEdge, number>()
   for (const group of groups.values()) {
     const first = runs.get(group[0]!)!
-    const shared = [first.s!, first.e!].some(
-      (k) => rolesAt.get(portOf(k))!.size > 1,
+    // Another edge on either port. A mixed group (a duplicate pair with its
+    // reciprocal) holds both roles at its ports itself.
+    const shared = [first.s!, first.e!].some((k) => {
+      const port = portOf(k)
+      if (!mixed(group)) return rolesAt.get(port)!.size > 1
+      return (
+        [...slotEdges].reduce(
+          (n, [key, c]) => n + (portOf(key) === port ? c : 0),
+          0,
+        ) > group.length
+      )
+    })
+    // A plain reciprocal pair alone keeps its own routing: the strokes of a
+    // mixed group are spread only with a duplicate in one direction.
+    const duplicated = group.some(
+      (e) => group.filter((o) => o.from === e.from).length > 1,
     )
-    if (group.length < 2 || shared) continue
+    if (
+      group.length < 2 ||
+      shared ||
+      (mixed(group) && (!duplicated || first.r.start?.axis !== 'v'))
+    )
+      continue
     const offsetOf = (i: number): number =>
       STROKE_SPACING * i - STROKE_SPACING * ((group.length - 1) / 2)
     // `spreadsOnFaces` (edge-routing.ts) already checked the faces are wide
@@ -2244,6 +2266,10 @@ function spreadParallelEdges(
   }
   return out
 }
+
+/** Whether a group runs both ways between its nodes. */
+const mixed = (group: readonly AsciiEdge[]): boolean =>
+  group.some((e) => e.from !== group[0]!.from)
 
 /**
  * Give labeled edges that reach one port from opposite sides a stroke each.
