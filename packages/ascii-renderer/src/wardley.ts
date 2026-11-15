@@ -27,9 +27,12 @@
 //     map when the diagram has an `annotations [x, y]` line, as Mermaid shows
 //     them in a box. Notes are text at their spot, accelerators `>>` and
 //     deaccelerators `<<` before their name.
-//   - `size` and `label [dx, dy]` offsets only matter for the SVG. accTitle
-//     and accDescr are not printed (see the pie renderer). Widths are display
-//     widths, so CJK and emoji names line up.
+//   - `size` sets the
+//     chart's aspect ratio: the grid stays 72 wide and its height follows,
+//     22 rows for the default 804 x 504 chart. A `label [dx, dy]` offset
+//     moves the label by that many pixels, in cells of the same scale.
+//     accTitle and accDescr are not printed (see the pie renderer). Widths
+//     are display widths, so CJK and emoji names line up.
 // ============================================================================
 
 import {
@@ -42,9 +45,11 @@ import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 import { colorizeText } from './ansi.ts'
 import { displayWidth } from './display-width.ts'
 
-/** Chart size in cells, inside the axes. */
+/** Chart width in cells, inside the axes; the height follows the chart's aspect ratio. */
 const W = 72
-const H = 22
+/** Rows for Mermaid's default 804 x 504 chart (900 x 600 less 48px padding). */
+const DEFAULT_H = 22
+const DEFAULT_ASPECT = 504 / 804
 
 type Role = 'label' | 'node' | 'line' | 'axis' | 'accent'
 
@@ -107,6 +112,16 @@ export function renderWardleyAscii(
   theme: AsciiTheme,
 ): string {
   const map = parseWardley(text)
+  const chartW = Math.max(1, (map.size?.width ?? 900) - 96)
+  const chartH = Math.max(1, (map.size?.height ?? 600) - 96)
+  const H = clamp(
+    Math.round((DEFAULT_H * (chartH / chartW)) / DEFAULT_ASPECT),
+    8,
+    60,
+  )
+  /** Cells for a pixel offset in the SVG's chart. */
+  const cells = (px: number | undefined, pxPerCell: number): number =>
+    px === undefined ? 0 : Math.round(px / pxPerCell)
   const g = config.useAscii ? ASC : UNI
   const color: Record<Role, string> = {
     label: theme.fg,
@@ -284,10 +299,22 @@ export function renderWardleyAscii(
     const tag = node.strategy ? ` (${node.strategy})` : ''
     const s = node.label + tag
     const w = displayWidth(s)
+    const custom: Array<[number, number]> =
+      node.labelOffsetX === undefined && node.labelOffsetY === undefined
+        ? []
+        : [
+            [
+              r + cells(node.labelOffsetY, chartH / H),
+              c +
+                cells(node.labelOffsetX, chartW / W) -
+                (node.kind === 'anchor' ? Math.floor(w / 2) : 0),
+            ],
+          ]
     if (node.kind === 'anchor') {
       place(
         s,
         [
+          ...custom,
           [r, c - Math.floor(w / 2)],
           [r - 1, c - Math.floor(w / 2)],
           [r + 1, c - Math.floor(w / 2)],
@@ -300,6 +327,7 @@ export function renderWardleyAscii(
     place(
       s,
       [
+        ...custom,
         [r, start],
         [r, c - 2 - w],
         [r - 1, start],

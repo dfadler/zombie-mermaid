@@ -2015,7 +2015,8 @@ Visibility
   flow; `evolve` is a dotted arrow towards the target.
 - Annotations are `(n)` marks, listed under the map when the diagram has an `annotations [x, y]`
   line; accelerators and deaccelerators are `>>` and `<<` before their name.
-- `size`, `label [dx, dy]` offsets and the pipeline's dotted join are SVG only.
+- `size` sets the grid's height (72 columns wide, 22 rows for the default 900 x 600 chart) and a
+  `label [dx, dy]` offset moves the label by that many pixels, in grid cells; the pipeline's dotted join is SVG only.
 - `accTitle` and `accDescr` are not printed.
 
 ## Use case diagrams

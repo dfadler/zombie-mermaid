@@ -9,6 +9,7 @@ import { C4InitLayout } from '@zombie-mermaid/core';
 import { ClassInitLayout } from '@zombie-mermaid/core';
 import { Direction } from '@zombie-mermaid/core';
 import { ErInitLayout } from '@zombie-mermaid/core';
+import { InitConfig } from '@zombie-mermaid/core';
 import { JourneyInitConfig } from '@zombie-mermaid/core';
 import { MermaidGraph } from '@zombie-mermaid/core';
 import { NodeInteraction } from '@zombie-mermaid/core';
@@ -2841,6 +2842,7 @@ export interface WardleyMap {
     };
     stageBoundaries?: number[];
     stages?: string[];
+    theme?: InitConfig['wardleyTheme'];
     title?: string;
     // (undocumented)
     trends: WardleyTrend[];

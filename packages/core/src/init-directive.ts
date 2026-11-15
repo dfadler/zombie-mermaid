@@ -153,6 +153,23 @@ export interface SankeyInitConfig {
   nodeColors?: Record<string, string>
 }
 
+/** The `themeVariables.wardley` colours mermaid 12.3.0 reads (`gridColor` only matters with the site-config `showGrid`, which is not read). */
+export const WARDLEY_THEME_KEYS = [
+  'backgroundColor',
+  'axisColor',
+  'axisTextColor',
+  'componentFill',
+  'componentStroke',
+  'componentLabelColor',
+  'linkStroke',
+  'evolutionStroke',
+  'annotationStroke',
+  'annotationTextColor',
+  'annotationFill',
+] as const
+
+export type WardleyThemeKey = (typeof WARDLEY_THEME_KEYS)[number]
+
 /** Drop C0/C1 control characters (and DEL): they would reach a terminal or an XML parser. */
 function stripControls(s: string): string {
   return s.replace(/[\u0000-\u001f\u007f-\u009f]/g, '')
@@ -478,6 +495,8 @@ export interface InitConfig {
   packet?: PacketInitConfig
   /** The `sankey` block (see {@link SankeyInitConfig}). */
   sankey?: SankeyInitConfig
+  /** `themeVariables.wardley` colours (see {@link WARDLEY_THEME_KEYS}); a value that is not a safe colour is dropped. */
+  wardleyTheme?: Partial<Record<WardleyThemeKey, string>>
   /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
   classLayout?: ClassInitLayout
   /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
@@ -675,6 +694,15 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         if (vk === 'radar' && typeof vv === 'object' && vv !== null) {
           // The colour keys are palette, not read.
           config.radarTheme = radarNumbers({ ...vv }, RADAR_STYLE_KEYS)
+          continue
+        }
+        if (vk === 'wardley' && typeof vv === 'object' && vv !== null) {
+          const w: Partial<Record<WardleyThemeKey, string>> = {}
+          for (const wk of WARDLEY_THEME_KEYS) {
+            const c = directiveColor((vv as Record<string, unknown>)[wk])
+            if (c) w[wk] = c
+          }
+          config.wardleyTheme = w
           continue
         }
         const color = directiveColor(vv)
@@ -1120,6 +1148,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
         )
       }
     }
+    if (config.wardleyTheme)
+      merged.wardleyTheme = { ...merged.wardleyTheme, ...config.wardleyTheme }
     if (config.classLayout)
       merged.classLayout = { ...merged.classLayout, ...config.classLayout }
     if (config.erLayout)

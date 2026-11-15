@@ -168,4 +168,13 @@ note "n" [0.1, 0.1]`,
     )
     expect(render(src)).toBe(render(src))
   })
+
+  it('sizes the grid from `size` and moves a label by its offset', () => {
+    const base = 'wardley-beta\ncomponent A [0.5, 0.5]'
+    const rows = (t: string): number => render(t).split('\n').length
+    expect(
+      rows('wardley-beta\nsize [900, 300]\ncomponent A [0.5, 0.5]'),
+    ).toBeLessThan(rows(base))
+    expect(render(base + ' label [60, 0]')).not.toBe(render(base))
+  })
 })
