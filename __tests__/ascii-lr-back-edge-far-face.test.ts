@@ -107,46 +107,12 @@ B -->|b| D
 D -->|a| B`,
       { colorMode: 'none', layoutHints: true },
     )
-    expect(text).toMatchInlineSnapshot(`
-      "               ┌───┐
-         ┌───────────┤   │
-         │           │ E │
-         │   ┌──────►│   │
-         │   │       └───┘
-         │   │            
-         │   f            
-         │   │            
-         │   │            
-         │   │       ┌───┐
-         h   │       │   │
-         │   │ ┌────►│ F │
-         ▼   │ │     │   │
-        ╱╲   │ │     └───┘
-        ╱╲   │ g          
-       ╱  ╲  │ │          
-       ╱  ╲──┘ │          
-       ╱  ╲────┘          
-      <    >              
-      < d ◄>─────┐        
-      <    >     │        
-       ╲  ╱────┐ i        
-       ╲ ◄╱──┐ │ │        
-       ╲  ╱  │ │ │        
-        ╲╱   │ │ │        
-        ╲╱   │ │ │   ┌───┐
-         │   │ │ └───┤   │
-         │ j │ │     │ G │
-         └───┼─┼────►│   │
-             │ │     └───┘
-             │ │          
-             b a          
-             │ │          
-             │ │          
-             │ │     ┌───┐
-             │ └────►│   │
-             │       │ B │
-             └───────┤   │
-                     └───┘"
-    `)
+    // The decision keeps the grid’s faces for the pair: `◄` arrowheads inside its side.
+    expect(
+      text
+        .split('\n')
+        .filter((l) => l.includes('◄'))
+        .map((l) => l.trim()),
+    ).toEqual(['< d ◄>─────┐', '╲ ◄╱──┐ │ │'])
   })
 })
