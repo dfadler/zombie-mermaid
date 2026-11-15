@@ -36,6 +36,9 @@ export interface ArchitectureInitLayout {
 }
 
 // @public
+export function assertThemeVariableColors(text: string): void;
+
+// @public
 export function buildStyleBlock(font: string, mono: MonoFontEmbed | false, nonce?: string, body?: MonoFontEmbed): string;
 
 // @public (undocumented)
@@ -436,6 +439,7 @@ export interface InitConfig {
     quadrant?: QuadrantConfig;
     radar?: RadarInitConfig;
     radarTheme?: RadarStyleConfig;
+    rawThemeColors?: Partial<Record<RawThemeColor, string>>;
     sankey?: SankeyInitConfig;
     sequenceHideUnused?: boolean;
     sequenceLayout?: SequenceInitLayout;
@@ -459,6 +463,9 @@ export function isEdgeWithinOwnCluster(edge: {
 
 // @public
 export function isInitDirective(line: string): boolean;
+
+// @public
+export function isMermaidThemeColor(value: string): boolean;
 
 // @public
 export function isMonospaceFont(font: string): boolean;

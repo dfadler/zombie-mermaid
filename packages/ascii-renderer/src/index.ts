@@ -37,6 +37,7 @@ import {
   checkLineLength,
   detectDiagramType,
   extractAccessibility,
+  assertThemeVariableColors,
   deriveBorderColor,
   extractInitConfig,
   parseHexColor,
@@ -235,6 +236,8 @@ export function renderMermaidASCII(
   // accTitle/accDescr have no place in text output: drop them, never print.
   // The one exception is C4, where Mermaid draws accTitle as the title.
   const { text, accTitle, frontMatterTitle } = extractAccessibility(source)
+  // Mermaid throws on a colour it cannot derive from (#3163).
+  if (options.honorThemeVariables !== false) assertThemeVariableColors(text)
   const theme: AsciiTheme = {
     ...DEFAULT_ASCII_THEME,
     ...(options.honorThemeVariables !== false &&

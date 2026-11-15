@@ -199,5 +199,12 @@ describe('deriveBorderColor (mermaid 12.3.0 mkBorder, #3165)', () => {
   ])('%s', (input, out) => {
     expect(deriveBorderColor(input)).toBe(out)
   })
+  it('hsl() in space syntax and with deg', () => {
+    expect(deriveBorderColor('hsl(120deg 50% 50% / 0.5)')).toBe('#5c705c')
+  })
+  it.each(['hsl(120, 50, 50)', 'hsl(x, 50%, 50%)', 'hsl()', 'hsl(1 2% 3%'])(
+    'null for malformed %s',
+    (v) => expect(deriveBorderColor(v)).toBeNull(),
+  )
   it('null for names', () => expect(deriveBorderColor('red')).toBeNull())
 })

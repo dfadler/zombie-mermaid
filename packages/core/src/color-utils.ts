@@ -204,13 +204,28 @@ export function formatCssColor(c: RgbaColor): string {
   return `rgba(${r}, ${g}, ${b}, ${Number(a.toFixed(3))})`
 }
 
-const HSL_FUNC_RE =
-  /^hsla?\(\s*(-?[\d.]+)(?:deg)?\s*[, ]\s*([\d.]+)%\s*[, ]\s*([\d.]+)%\s*(?:[,/]\s*[\d.]+%?\s*)?\)$/i
+const HSL_FUNC_RE = /^hsla?\(([^()]*)\)$/i
+
+/** `hsl(h, s%, l%)` / `hsl(h s% l% / a)`, split into tokens (no nested quantifiers, so no ReDoS). */
+function parseHslFunc(
+  value: string,
+): { h: number; s: number; l: number } | null {
+  const body = HSL_FUNC_RE.exec(value.trim())?.[1]
+  if (body === undefined) return null
+  const [h, s, l] = body.trim().split(/[\s,/]+/)
+  if (h === undefined || !s?.endsWith('%') || !l?.endsWith('%')) return null
+  const hue = Number(h.replace(/deg$/i, ''))
+  const sat = Number(s.slice(0, -1))
+  const light = Number(l.slice(0, -1))
+  return [hue, sat, light].some(Number.isNaN)
+    ? null
+    : { h: hue, s: sat, l: light }
+}
 
 /** HSL (h in degrees, s/l in 0-100) of a hex, `rgb()` or `hsl()` colour. */
 function toHsl(value: string): { h: number; s: number; l: number } | null {
-  const hsl = HSL_FUNC_RE.exec(value.trim())
-  if (hsl) return { h: Number(hsl[1]), s: Number(hsl[2]), l: Number(hsl[3]) }
+  const hsl = parseHslFunc(value)
+  if (hsl) return hsl
   const c = parseCssColor(value)
   if (!c) return null
   const [r, g, b] = [c.r / 255, c.g / 255, c.b / 255]
