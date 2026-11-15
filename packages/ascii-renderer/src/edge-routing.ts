@@ -1615,6 +1615,17 @@ export function denseFacingPair(
   )
 }
 
+/** A lone self-loop hooked out of the left face and back into it (#3158). */
+export function isPlainLeftHook(edge: AsciiEdge): boolean {
+  return (
+    edge.from === edge.to &&
+    !edge.loopNest &&
+    edge.path.length === 4 &&
+    dirEquals(edge.startDir, Left) &&
+    dirEquals(edge.endDir, Left)
+  )
+}
+
 /** A self-loop ELK draws as a hook over the top face, out of it and back into it (#2888). */
 function hintedLoopFace(
   graph: AsciiGraph,
@@ -3364,14 +3375,7 @@ export function determineLabelLine(
     const rb = rank(b.line)
     // #3158: a hook's last leg carries the arrowhead into its node, so a
     // self-loop's label goes on the first leg, not over the arrowhead.
-    const toward =
-      edge.from === edge.to &&
-      !edge.loopNest &&
-      edge.path.length === 4 &&
-      dirEquals(edge.startDir, Left) &&
-      dirEquals(edge.endDir, Left)
-        ? a.index - b.index
-        : b.index - a.index
+    const toward = isPlainLeftHook(edge) ? a.index - b.index : b.index - a.index
     return ra[0] - rb[0] || ra[1] - rb[1] || toward
   }
 
