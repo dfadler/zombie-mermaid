@@ -181,8 +181,9 @@ the before and the after capture so the two are comparable.
 2. **Get the base-ref renderer without a full worktree.**
 
    ```bash
-   mkdir -p tmp-base-ref
-   git archive main src packages tsconfig.json | tar -x -C tmp-base-ref
+   base=$(mktemp -d /tmp/scratch.XXXXXX)   # or the session scratchpad
+   git archive main src packages tsconfig.json | tar -x -C "$base"
+   ln -s "$PWD/node_modules" "$base/node_modules"
    ```
 
    pulls `src/`, every workspace `packages/*/src`, and `tsconfig.json` at the
@@ -193,7 +194,7 @@ the before and the after capture so the two are comparable.
    and `@zombie-mermaid/mermaid-parser`), reached from `src/index.ts` only
    through the bare specifier `@zombie-mermaid/ascii-renderer` —
    `scripts/ascii-terminal-capture.sh` resolves that specifier by pointing
-   `tsx --tsconfig` at `tmp-base-ref/tsconfig.json`, so archiving `src/`
+   `tsx --tsconfig` at `$base/tsconfig.json`, so archiving `src/`
    alone leaves it unresolved against the scratch dir and silently
    re-resolves it against this repo's own `packages/` instead, making a
    "before" capture identical to "after" for any change under
@@ -204,8 +205,7 @@ the before and the after capture so the two are comparable.
    file, which the scratch dir doesn't have. `scripts/ascii-render-runner.mjs`
    (what the capture script runs inside the PTY) imports `renderMermaidASCII`
    directly instead — the same function `cli.ts` itself calls — and skips
-   the CLI entirely on both sides. Delete `tmp-base-ref/` once done; it's a
-   scratch extraction, not something to commit.
+   the CLI entirely on both sides. Run `rm -rf "$base"` once done.
 
    `scripts/visual-diff.ts`'s own extraction (`loadRendererAt`) still
    archives `src/` alone and has the same unresolved-bare-specifier bug for
@@ -223,7 +223,7 @@ the before and the after capture so the two are comparable.
 
    ```bash
    scripts/ascii-terminal-capture.sh ./src/index.ts 12 /tmp/after
-   scripts/ascii-terminal-capture.sh ./tmp-base-ref/src/index.ts 12 /tmp/before
+   scripts/ascii-terminal-capture.sh "$base/src/index.ts" 12 /tmp/before
    ```
 
    Each invocation writes `<prefix>.cast` (the raw recording), `<prefix>.txt`

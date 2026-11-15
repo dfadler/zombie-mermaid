@@ -1,7 +1,7 @@
 // Render a .mmd file to SVG with a renderer entry, then screenshot it to a 2x PNG.
 // Usage (run through tsx so the .ts entry imports):
 //   pnpm exec tsx .claude/skills/pr-visual-verification/svg-shot.mjs <entry> <in.mmd> <out.png>
-// <entry> is ./src/index.ts for "after" or ./tmp-base-ref/src/index.ts for "before".
+// <entry> is ./src/index.ts for "after" or <scratch>/base/src/index.ts for "before" (see SKILL.md, section 4).
 // SVG output is a browser render, so a browser screenshot is the real thing (unlike ASCII).
 import { chromium } from '@playwright/test'
 import { readFileSync, writeFileSync } from 'node:fs'
