@@ -805,6 +805,7 @@ export function layoutGitGraph(g: GitGraph): PositionedGitGraph {
     arrows,
     commits: drawn,
     showBranches: cfg.showBranches,
+    useMaxWidth: cfg.useMaxWidth,
     look,
   }
   if (!Number.isFinite(box.minX)) box.add(0, 0)

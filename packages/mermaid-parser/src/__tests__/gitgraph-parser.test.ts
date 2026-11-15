@@ -173,7 +173,17 @@ describe('parseGitGraph branches', () => {
       parallelCommits: false,
       titleTopMargin: 25,
       diagramPadding: 8,
+      useMaxWidth: true,
     })
+  })
+
+  it('reads useMaxWidth as a boolean and keeps true for anything else', () => {
+    const cfg = (v: string) =>
+      parseGitGraph(`%%{init: {"gitGraph": {"useMaxWidth": ${v}}}}%%\ngitGraph`)
+        .config.useMaxWidth
+    expect(cfg('false')).toBe(false)
+    expect(cfg('true')).toBe(true)
+    expect(cfg('"no"')).toBe(true)
   })
 
   it("throws Mermaid's messages for a repeated or unknown branch", () => {
