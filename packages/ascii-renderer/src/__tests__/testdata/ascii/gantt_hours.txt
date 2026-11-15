@@ -2,6 +2,7 @@ gantt
     dateFormat HH:mm
     axisFormat %H:%M
     title Day
+    todayMarker off
     section Morning
     Standup :08:00, 30m
     Deep work :09:00, 3h
