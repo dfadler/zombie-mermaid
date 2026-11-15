@@ -445,10 +445,8 @@ export interface InitConfig {
     theme?: string;
     themeVariables?: ThemeVariables;
     timeline?: TimelineInitConfig;
-<<<<<<< HEAD
-    wardleyTheme?: Partial<Record<WardleyThemeKey, string>>;
-=======
     treemap?: TreemapInitConfig;
+    wardleyTheme?: Partial<Record<WardleyThemeKey, string>>;
     xyChart?: XyChartInitConfig;
 }
 
