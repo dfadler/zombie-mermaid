@@ -36,6 +36,12 @@ describe('DiagramGalleryTeaser', () => {
       ['Packet', 'diagrams/packet.html'],
       ['GitGraph', 'diagrams/gitgraph.html'],
       ['Sankey', 'diagrams/sankey.html'],
+      ['Use Case', 'diagrams/usecase.html'],
+      ['Block', 'diagrams/block.html'],
+      ['Treemap', 'diagrams/treemap.html'],
+      ['Ishikawa', 'diagrams/ishikawa.html'],
+      ['Event Modeling', 'diagrams/eventmodeling.html'],
+      ['Wardley', 'diagrams/wardley.html'],
     ]
 
     for (const [label, href] of expected) {
