@@ -134,9 +134,9 @@ export function parseUsecase(source: string): UsecaseDiagram {
     allowBracket: boolean,
   ): { ent: Entity; rest: string } => {
     const r = bareEntity(s, allowBracket)
-    const st = /^<<\s*([^<>]*?)\s*>>/.exec(r.rest)
+    const st = /^<<([^<>]*)>>/.exec(r.rest)
     if (st) {
-      r.ent.stereotype = st[1]!
+      r.ent.stereotype = st[1]!.trim()
       r.rest = r.rest.slice(st[0].length).trim()
     }
     const cl = /^:::([\w-]+)/.exec(r.rest)
@@ -382,22 +382,44 @@ export function parseUsecase(source: string): UsecaseDiagram {
     for (const [re, what] of UNSUPPORTED)
       if (re.test(line)) fail(`${what} are not supported yet`)
 
-    const cd = /^classDef\s+([\w-]+)\s+(\S.*)$/.exec(line)
-    if (cd) {
-      classDefs.push({ id: cd[1]!, styles: styleList(cd[2]!) })
-      continue
-    }
-    const cls = /^class\s+([\w,\s]+?)\s+([\w-]+)$/.exec(line)
-    const sty = /^style\s+(\w+)\s+(\S.*)$/.exec(line)
-    if (cls || sty) {
-      for (const id of (cls?.[1] ?? sty![1]!).split(/\s*,\s*/)) {
-        const el = elements.get(id)
-        if (!el) fail(`'${id}' is not declared`)
-        else if (cls) {
-          if (!el.classes.includes(cls[2]!)) el.classes.push(cls[2]!)
-        } else el.styles.push(...styleList(sty![2]!))
+    // Split by hand: a regex over `\s+` runs is polynomial on hostile input.
+    const kw = /^(classDef|class|style)\s/.exec(line)
+    if (kw) {
+      const rest = line.slice(kw[0].length).trim()
+      const cut = rest.search(/\s/)
+      const head = cut < 0 ? rest : rest.slice(0, cut)
+      const tail = cut < 0 ? '' : rest.slice(cut).trim()
+      if (kw[1] === 'classDef' && /^[\w-]+$/.test(head) && tail !== '') {
+        classDefs.push({ id: head, styles: styleList(tail) })
+        continue
       }
-      continue
+      const words = rest.split(/\s+/)
+      const ids =
+        kw[1] === 'class'
+          ? words
+              .slice(0, -1)
+              .join(' ')
+              .split(',')
+              .map((x) => x.trim())
+          : [head]
+      const name = words.at(-1)!
+      if (
+        kw[1] !== 'classDef' &&
+        ids.length > 0 &&
+        ids.every((x) => /^\w+$/.test(x)) &&
+        (kw[1] === 'style'
+          ? tail !== ''
+          : words.length > 1 && /^[\w-]+$/.test(name))
+      ) {
+        for (const id of ids) {
+          const el = elements.get(id)
+          if (!el) fail(`'${id}' is not declared`)
+          else if (kw[1] === 'class') {
+            if (!el.classes.includes(name)) el.classes.push(name)
+          } else el.styles.push(...styleList(tail))
+        }
+        continue
+      }
     }
 
     const dir = /^direction\s+(TD|TB|BT|LR|RL)$/.exec(line)

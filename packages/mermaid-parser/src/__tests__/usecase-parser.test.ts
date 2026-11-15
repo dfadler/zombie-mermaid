@@ -145,6 +145,8 @@ describe('parseUsecase', () => {
       /not supported yet/,
     ],
     ['class on an undeclared endpoint', H + 'A:::c --> B', /without being/],
+    ['classDef without styles', H + 'classDef c', /keyword/],
+    ['class with no name', H + 'A\nclass A', /keyword/],
     ['class for an undeclared node', H + 'class Z c', /not declared/],
     ['metadata on a node', H + 'A\nA@{ type: hollow }', /not supported yet/],
     ['unsupported json', H + 'json J @ {"a":1}', /not supported yet/],
