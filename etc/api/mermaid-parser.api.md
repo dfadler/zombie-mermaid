@@ -191,8 +191,30 @@ export interface Block {
 }
 
 // @public
+export type BlockArrow = '' | 'arrow_point' | 'arrow_cross' | 'arrow_circle';
+
+// @public
 export interface BlockDiagram {
+    edges: BlockEdge[];
     root: BlockNode;
+}
+
+// @public
+export interface BlockEdge {
+    // (undocumented)
+    arrowTypeEnd: BlockArrow;
+    arrowTypeStart: BlockArrow | 'arrow_open';
+    // (undocumented)
+    end: string;
+    id: string;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    pattern: 'solid' | 'dotted';
+    // (undocumented)
+    start: string;
+    // (undocumented)
+    thickness: 'normal' | 'thick';
 }
 
 // @public
@@ -1096,6 +1118,8 @@ export interface PositionedBlock {
 
 // @public
 export interface PositionedBlockDiagram {
+    // (undocumented)
+    edges: PositionedBlockEdge[];
     nodes: PositionedBlockNode[];
     viewBox: {
         x: number;
@@ -1103,6 +1127,32 @@ export interface PositionedBlockDiagram {
         width: number;
         height: number;
     };
+}
+
+// @public
+export interface PositionedBlockEdge {
+    // (undocumented)
+    arrowTypeEnd: BlockArrow;
+    // (undocumented)
+    arrowTypeStart: BlockEdge['arrowTypeStart'];
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    labelWidth: number;
+    labelX: number;
+    // (undocumented)
+    labelY: number;
+    path: string;
+    // (undocumented)
+    pattern: 'solid' | 'dotted';
+    points: {
+        x: number;
+        y: number;
+    }[];
+    // (undocumented)
+    thickness: 'normal' | 'thick';
 }
 
 // @public

@@ -2064,8 +2064,8 @@ a rounded box, a boundary as a titled frame and a generalization head as `▷`.
 ## Block diagrams
 
 `block` and `block-beta` follow [Mermaid's syntax](https://mermaid.ai/open-source/syntax/block.html)
-and its grid layout. `pnpm run block:oracle` compares every block's rectangle, its corner radius
-and the drawing size with `mermaid@12.3.0` on the gallery samples (all agree).
+and its grid layout. `pnpm run block:oracle` compares every block's rectangle, its corner radius,
+each link's path and label place, and the drawing size with `mermaid@12.3.0` on the gallery samples (all agree).
 
 ```mermaid
 block-beta
@@ -2087,8 +2087,23 @@ size of the widest block (a block spanning N columns counts as 1/N of its width)
 its children to fill it, and a repeated id changes the first block instead of adding one. A label
 in `[ ]` or `( )` must be quoted.
 
-Not supported yet, and rejected with an error naming the issue: links and arrows between blocks
-([#3105](https://github.com/dfadler/zombie-mermaid/issues/3105)), the other node shapes and block
+Links join two blocks and declare them: `a --> b`, `a --- b`, `a ==> b` (thick), `a -.- b`
+(dotted), `a --x b`, `a --o b`, `a <--> b` and `a -- "text" --> b`. As in Mermaid, a link is drawn
+from the first block's centre through the midpoint to the second's, clipped to each block's edge,
+so a link between two neighbours in a row folds back over itself. A link label must be quoted.
+
+```mermaid
+block-beta
+  columns 3
+  a space b
+  c space d
+  a --> b
+  a -- "label" --> d
+  c ==> d
+  b -.- d
+```
+
+Not supported yet, and rejected with an error naming the issue: the other node shapes and block
 arrows ([#3106](https://github.com/dfadler/zombie-mermaid/issues/3106)), and `classDef`, `class`,
 `style`, markdown strings and `block.padding`
 ([#3107](https://github.com/dfadler/zombie-mermaid/issues/3107)).
@@ -2111,7 +2126,11 @@ and a `block ... end` group is a larger box around its cells.
 ```
 
 - Round blocks use `╭╮╰╯` corners (`+` in ASCII mode); `space` leaves its cell empty.
-- Cells are one column apart and touch vertically; labels are centred in both directions.
+- Cells are one column apart and touch vertically (a diagram with links leaves 4 columns and 2 rows
+  between cells, more for a long link label); labels are centred in both directions.
+- A link is a straight line in that room between blocks that share a row or a column, else one
+  elbow, and never overwrites a box. The end gets `▶` (`>`), `x` or `o`; `==` draws `═` / `║` and
+  `-.-` `┄` / `┆`. Where two links would run over each other the first one drawn wins.
 - Frames use the line colour, labels the foreground.
 
 ## Unsupported upstream diagram types

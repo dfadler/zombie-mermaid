@@ -4205,6 +4205,54 @@ sankey-beta
   a b c d e`,
   },
 
+  {
+    title: 'Block: Links',
+    category: 'Block',
+    gallery: true,
+    description:
+      '`a --> b` joins two blocks (declaring them), `-- "text" -->` adds a label, `==>` is thick and `-.-` dotted. Mermaid draws each link from the first block\'s centre to the second\'s, clipped to the block edges, so a link between neighbours in a row doubles back on itself.',
+    source: `block-beta
+  columns 3
+  a space b
+  c space d
+  a --> b
+  a -- "label" --> d
+  c ==> d
+  b -.- d`,
+  },
+  {
+    title: 'Block: Link Markers',
+    category: 'Block',
+    description:
+      'The end markers of a link: `-->` an arrow, `--x` a cross, `--o` a circle, `<-->` an arrow at both ends.',
+    source: `block-beta
+  columns 3
+  a space b
+  c space d
+  e space f
+  a --> b
+  c --x d
+  e <--> f
+  a --o e`,
+  },
+
+  {
+    title: 'Block: Links Between Neighbours',
+    category: 'Block',
+    description:
+      'Links between blocks that touch, between a group and a block, and a self-contained pair on one row: Mermaid 12.3.0 clips each end to its block, so the path folds back over itself where the blocks are adjacent.',
+    source: `block-beta
+  columns 3
+  a b c
+  block:g:2
+    d e
+  end
+  f
+  a --> b
+  g -- "into group" --> f
+  c --> a`,
+  },
+
   // ══════════════════════════════════════════════════════════════════════════
   //  TREEMAP DIAGRAMS
   //  Mermaid's `treemap` / `treemap-beta` (checked against mermaid 12.3.0).

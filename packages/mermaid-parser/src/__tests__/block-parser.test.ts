@@ -132,15 +132,82 @@ describe('parseBlock', () => {
       fails('block-beta\n  :2', /expected a block/))
   })
 
+  describe('links', () => {
+    const edges = (src: string) => parseBlock(src).edges
+
+    it('reads every link style and declares both blocks', () => {
+      const d = parseBlock(
+        'block-beta\n  a --> b\n  a --- b\n  a ==> b\n  a -.- b\n  a --x b\n  a --o b\n  a <--> b\n  a -.-> b\n  a ===  b',
+      )
+      expect(d.root.children.map((c) => c.id)).toEqual(['a', 'b'])
+      expect(
+        d.edges.map((e) => [
+          e.id,
+          e.thickness,
+          e.pattern,
+          e.arrowTypeStart,
+          e.arrowTypeEnd,
+        ]),
+      ).toEqual([
+        ['1-a-b', 'normal', 'solid', 'arrow_open', 'arrow_point'],
+        ['2-a-b', 'normal', 'solid', 'arrow_open', ''],
+        ['3-a-b', 'thick', 'solid', 'arrow_open', 'arrow_point'],
+        ['4-a-b', 'normal', 'dotted', 'arrow_open', ''],
+        ['5-a-b', 'normal', 'solid', 'arrow_open', 'arrow_cross'],
+        ['6-a-b', 'normal', 'solid', 'arrow_open', 'arrow_circle'],
+        ['7-a-b', 'normal', 'solid', 'arrow_point', 'arrow_point'],
+        ['8-a-b', 'normal', 'dotted', 'arrow_open', 'arrow_point'],
+        ['9-a-b', 'thick', 'solid', 'arrow_open', ''],
+      ])
+    })
+
+    it('reads a quoted label, shapes on either side and links with no spaces', () => {
+      const d = parseBlock('block-beta\n  a["A"]-- "text" -->b("B")\n  c-->d')
+      expect(d.edges[0]).toMatchObject({ id: '1-a-b', label: 'text' })
+      expect(d.edges[1]).toMatchObject({ id: '1-c-d', label: '' })
+      expect(d.root.children.map((c) => [c.id, c.label, c.shape])).toEqual([
+        ['a', 'A', 'square'],
+        ['b', 'B', 'round'],
+        ['c', 'c', 'square'],
+        ['d', 'd', 'square'],
+      ])
+    })
+
+    it('reads a link inside a group, to a group and to a block declared later', () => {
+      const d = parseBlock(
+        'block-beta\n  block:g\n    x --> y\n  end\n  g --> z\n  z',
+      )
+      expect(d.edges.map((e) => e.id)).toEqual(['1-x-y', '1-g-z'])
+    })
+
+    it('keeps `~~~` an id, as Mermaid 12.3.0 does', () => {
+      expect(edges('block-beta\n  a ~~~ b')).toEqual([])
+      expect(parseBlock('block-beta\n  a ~~~ b').root.children).toHaveLength(3)
+    })
+
+    it('rejects what Mermaid rejects', () => {
+      const fails = (src: string, re: RegExp) =>
+        expect(() => parseBlock(src)).toThrow(re)
+      fails('block-beta\n  a:2 --> b', /expected a block/)
+      fails('block-beta\n  a --> b:2', /expected the next statement/)
+      fails('block-beta\n  a -->', /expected a block id/)
+      fails('block-beta\n  --> b', /expected a block/)
+      fails('block-beta\n  a -- text --> b', /Expected a quoted link label/)
+      fails('block-beta\n  a -- "text', /Unterminated string/)
+      fails('block-beta\n  a -- "text" b', /Expected a link after "text"/)
+    })
+
+    it('names the markdown-label issue', () => {
+      expect(() => parseBlock('block-beta\n  a -- "`x`" --> b')).toThrow(
+        'issues/3107',
+      )
+    })
+  })
+
   describe('syntax tracked in issues', () => {
     const tracked = (src: string, issue: number) =>
       expect(() => parseBlock(src)).toThrow(`issues/${issue}`)
 
-    it('names the links issue', () => {
-      for (const link of ['-->', '---', '==>', '-.-', '--x', '<-->'])
-        tracked(`block-beta\n  a ${link} b`, 3105)
-      tracked('block-beta\n  a -- "t" --> b', 3105)
-    })
     it('names the shapes issue', () => {
       for (const shape of ['(("x"))', '{"x"}', '{{"x"}}', '(["x"])', '[["x"]]'])
         tracked(`block-beta\n  a${shape}`, 3106)

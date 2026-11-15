@@ -19,13 +19,17 @@
 //
 //   - Round blocks use rounded corners (Unicode only; ASCII keeps `+`).
 //   - `space` leaves its cell empty.
-//   - Cells are one column apart and touch vertically.
+//   - Cells are one column apart and touch vertically; a diagram with links
+//     leaves room between them (4 columns, 2 rows, wider for a link label).
+//   - A link is a straight line in that room between two blocks that share a
+//     row or a column, else one elbow; it never overwrites a box. The end gets
+//     an arrow head (`▶` `>`), `x` or `o`; `==` draws `═`/`║` (`=`), `-.-` `┄`/`┆` (`.`/`:`).
 //   - Frames are painted in the line colour, labels in the foreground.
 //   - Widths are display widths (CJK and emoji labels line up).
 // ============================================================================
 
 import { parseBlock } from '@zombie-mermaid/mermaid-parser'
-import type { BlockNode } from '@zombie-mermaid/mermaid-parser'
+import type { BlockEdge, BlockNode } from '@zombie-mermaid/mermaid-parser'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 import { colorizeText } from './ansi.ts'
 import { displayWidth } from './display-width.ts'
@@ -41,6 +45,21 @@ const UNI = {
   rtr: '╮',
   rbl: '╰',
   rbr: '╯',
+  // Links: line, thick, dotted (horizontal, vertical), arrow heads right/left/down/up, corners
+  lh: '─',
+  lv: '│',
+  th: '═',
+  tv: '║',
+  dh: '┄',
+  dv: '┆',
+  ar: '▶',
+  al: '◀',
+  ad: '▼',
+  au: '▲',
+  cTL: '┌',
+  cTR: '┐',
+  cBL: '└',
+  cBR: '┘',
 }
 const ASC = {
   h: '-',
@@ -53,10 +72,28 @@ const ASC = {
   rtr: '+',
   rbl: '+',
   rbr: '+',
+  lh: '-',
+  lv: '|',
+  th: '=',
+  tv: '|',
+  dh: '.',
+  dv: ':',
+  ar: '>',
+  al: '<',
+  ad: 'v',
+  au: '^',
+  cTL: '+',
+  cTR: '+',
+  cBL: '+',
+  cBR: '+',
 }
 
-/** Columns between neighbouring cells. */
-const GAP = 1
+/** Room between neighbouring cells: columns across, rows down. */
+interface Gaps {
+  x: number
+  y: number
+}
+const PLAIN_GAPS: Gaps = { x: 1, y: 0 }
 /** Columns between a group's frame and its cells. */
 const INSET = 1
 
@@ -74,6 +111,13 @@ const blank = (w: number, h: number): Canvas =>
 
 const labelLines = (label: string): string[] =>
   label.split(/<br\s*\/?>/i).map((l) => l.replace(/\s+/g, ' ').trim())
+
+interface Rect {
+  x: number
+  y: number
+  w: number
+  h: number
+}
 
 interface Size {
   w: number
@@ -93,7 +137,7 @@ function gridOf(node: BlockNode): { xSize: number; ySize: number } {
 }
 
 /** Natural size of a node's box. */
-function measure(node: BlockNode, root = false): Size {
+function measure(node: BlockNode, gap: Gaps, root = false): Size {
   if (node.type === 'node') {
     const lines = labelLines(node.label)
     return {
@@ -106,14 +150,14 @@ function measure(node: BlockNode, root = false): Size {
   let ch = 0
   for (const c of node.children) {
     if (c.type === 'space') continue
-    const s = measure(c)
-    cw = Math.max(cw, Math.ceil((s.w + GAP) / c.widthInColumns) - GAP)
+    const s = measure(c, gap)
+    cw = Math.max(cw, Math.ceil((s.w + gap.x) / c.widthInColumns) - gap.x)
     ch = Math.max(ch, s.h)
   }
   const inset = root ? 0 : INSET + 1
   return {
-    w: xSize * cw + (xSize - 1) * GAP + 2 * inset,
-    h: ySize * ch + (root ? 0 : 2),
+    w: xSize * cw + (xSize - 1) * gap.x + 2 * inset,
+    h: ySize * ch + (ySize - 1) * gap.y + (root ? 0 : 2),
   }
 }
 
@@ -125,6 +169,8 @@ function draw(
   y: number,
   size: Size,
   g: typeof UNI,
+  gap: Gaps,
+  rects: Map<string, Rect>,
   root = false,
 ): void {
   const put = (cx: number, cy: number, s: string, line: boolean): void => {
@@ -132,6 +178,7 @@ function draw(
     if (row?.[cx] !== undefined) row[cx] = { s, line }
   }
   if (!root) {
+    if (!rects.has(node.id)) rects.set(node.id, { x, y, w: size.w, h: size.h })
     const round = node.type === 'node' && node.shape === 'round'
     const { w, h } = size
     put(x, y, round ? g.rtl : g.tl, true)
@@ -167,8 +214,8 @@ function draw(
   const inset = root ? 0 : INSET + 1
   const innerW = size.w - 2 * inset
   const innerH = size.h - (root ? 0 : 2)
-  const cw = Math.floor((innerW - (xSize - 1) * GAP) / xSize)
-  const ch = Math.floor(innerH / ySize)
+  const cw = Math.floor((innerW - (xSize - 1) * gap.x) / xSize)
+  const ch = Math.floor((innerH - (ySize - 1) * gap.y) / ySize)
   const columns = node.columns ?? -1
   let pos = 0
   for (const child of node.children) {
@@ -179,17 +226,116 @@ function draw(
       columns > 0 ? columns - px : child.widthInColumns,
     )
     if (child.type !== 'space') {
-      const w = cw * child.widthInColumns + (child.widthInColumns - 1) * GAP
+      const w = cw * child.widthInColumns + (child.widthInColumns - 1) * gap.x
       draw(
         canvas,
         child,
-        x + inset + px * (cw + GAP),
-        y + (root ? 0 : 1) + py * ch,
+        x + inset + px * (cw + gap.x),
+        y + (root ? 0 : 1) + py * (ch + gap.y),
         { w, h: ch },
         g,
+        gap,
+        rects,
       )
     }
     pos += span
+  }
+}
+
+/** Draw each link between the boxes in `rects`, only on blank cells. */
+function drawEdges(
+  canvas: Canvas,
+  edges: BlockEdge[],
+  rects: Map<string, Rect>,
+  g: typeof UNI,
+): void {
+  const put = (x: number, y: number, s: string, line = true): boolean => {
+    const c = canvas[y]?.[x]
+    if (c === undefined || c.s !== ' ') return false
+    for (const r of rects.values())
+      if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return false
+    canvas[y]![x] = { s, line }
+    return true
+  }
+  const head = (arrow: string, dir: 'r' | 'l' | 'd' | 'u'): string =>
+    arrow === 'arrow_point'
+      ? { r: g.ar, l: g.al, d: g.ad, u: g.au }[dir]
+      : arrow === 'arrow_cross'
+        ? 'x'
+        : arrow === 'arrow_circle'
+          ? 'o'
+          : ''
+  const text = (x: number, y: number, label: string): void => {
+    let cx = x
+    for (const ch of label) {
+      if (put(cx, y, ch, false) && displayWidth(ch) === 2)
+        put(cx + 1, y, '', false)
+      cx += displayWidth(ch)
+    }
+  }
+  for (const e of edges) {
+    const a = rects.get(e.start)
+    const b = rects.get(e.end)
+    if (!a || !b || a === b) continue
+    const hch =
+      e.thickness === 'thick' ? g.th : e.pattern === 'dotted' ? g.dh : g.lh
+    const vch =
+      e.thickness === 'thick' ? g.tv : e.pattern === 'dotted' ? g.dv : g.lv
+    const label = e.label.replace(/<br\s*\/?>/gi, ' ').trim()
+    const ys = Math.max(a.y, b.y)
+    const ye = Math.min(a.y + a.h, b.y + b.h) - 1
+    const xs = Math.max(a.x, b.x)
+    const xe = Math.min(a.x + a.w, b.x + b.w) - 1
+    if (ys <= ye) {
+      // Same row band: a horizontal line through the gap.
+      const y = Math.floor((ys + ye) / 2)
+      const east = b.x > a.x
+      const x0 = east ? a.x + a.w : b.x + b.w
+      const x1 = east ? b.x - 1 : a.x - 1
+      for (let x = x0; x <= x1; x++) put(x, y, hch)
+      const [s, t] = east ? [x0, x1] : [x1, x0]
+      const sa = head(e.arrowTypeStart, east ? 'l' : 'r')
+      const ta = head(e.arrowTypeEnd, east ? 'r' : 'l')
+      if (sa) canvas[y]![s] = { s: sa, line: true }
+      if (ta) canvas[y]![t] = { s: ta, line: true }
+      if (label)
+        text(
+          x0 + Math.floor((x1 - x0 + 1 - displayWidth(label)) / 2),
+          y - 1,
+          label,
+        )
+    } else if (xs <= xe) {
+      const x = Math.floor((xs + xe) / 2)
+      const south = b.y > a.y
+      const y0 = south ? a.y + a.h : b.y + b.h
+      const y1 = south ? b.y - 1 : a.y - 1
+      for (let y = y0; y <= y1; y++) put(x, y, vch)
+      const [s, t] = south ? [y0, y1] : [y1, y0]
+      const sa = head(e.arrowTypeStart, south ? 'u' : 'd')
+      const ta = head(e.arrowTypeEnd, south ? 'd' : 'u')
+      if (sa) canvas[s]![x] = { s: sa, line: true }
+      if (ta) canvas[t]![x] = { s: ta, line: true }
+      if (label) text(x + 2, Math.floor((y0 + y1) / 2), label)
+    } else {
+      // Diagonal: out of the side of `a` along its middle row, then along b's middle column to b.
+      const east = b.x > a.x
+      const south = b.y > a.y
+      const y = a.y + Math.floor(a.h / 2)
+      const x = b.x + Math.floor(b.w / 2)
+      const x0 = east ? a.x + a.w : a.x - 1
+      const y1 = south ? b.y - 1 : b.y + b.h
+      for (let cx = Math.min(x0, x); cx <= Math.max(x0, x); cx++)
+        if (cx !== x) put(cx, y, hch)
+      const corner = east ? (south ? g.cTR : g.cBR) : south ? g.cTL : g.cBL
+      put(x, y, corner)
+      for (let cy = Math.min(y, y1); cy <= Math.max(y, y1); cy++)
+        if (cy !== y) put(x, cy, vch)
+      const sa = head(e.arrowTypeStart, east ? 'l' : 'r')
+      const ta = head(e.arrowTypeEnd, south ? 'd' : 'u')
+      if (sa) canvas[y]![x0] = { s: sa, line: true }
+      if (ta) canvas[y1]![x] = { s: ta, line: true }
+      if (label) text(Math.min(x0, x) + 1, y - 1, label)
+    }
   }
 }
 
@@ -201,10 +347,15 @@ export function renderBlockAscii(
 ): string {
   const diagram = parseBlock(text)
   const g = config.useAscii ? ASC : UNI
-  const size = measure(diagram.root, true)
+  const widest = Math.max(0, ...diagram.edges.map((e) => displayWidth(e.label)))
+  const gap: Gaps =
+    diagram.edges.length > 0 ? { x: Math.max(4, widest + 2), y: 2 } : PLAIN_GAPS
+  const size = measure(diagram.root, gap, true)
   if (size.w <= 0 || size.h <= 0) return ''
   const canvas = blank(size.w, size.h)
-  draw(canvas, diagram.root, 0, 0, size, g, true)
+  const rects = new Map<string, Rect>()
+  draw(canvas, diagram.root, 0, 0, size, g, gap, rects, true)
+  drawEdges(canvas, diagram.edges, rects, g)
 
   return canvas
     .map((row0) => {

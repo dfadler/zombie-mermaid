@@ -77,4 +77,70 @@ describe('block ASCII', () => {
     })
     expect(out).toContain('\u001b[')
   })
+
+  describe('links', () => {
+    it('draws a labelled arrow in the room between blocks on a row', () => {
+      expect(render('block-beta\n  a space b\n  a -- "go" --> b')).toBe(
+        [
+          '┌───┐     go      ┌───┐',
+          '│ a │────────────▶│ b │',
+          '└───┘             └───┘',
+        ].join('\n'),
+      )
+    })
+
+    it('draws vertical links, markers, thick and dotted lines', () => {
+      expect(
+        render(
+          'block-beta\n  columns 1\n  a\n  b\n  c\n  d\n  a --> b\n  b ==x c\n  c -.-o d',
+        ),
+      ).toContain('▼')
+      const out = render(
+        'block-beta\n  columns 1\n  a\n  b\n  c\n  d\n  a --> b\n  b ==x c\n  c -.-o d',
+      )
+      expect(out).toContain('║')
+      expect(out).toContain('x')
+      expect(out).toContain('┆')
+      expect(out).toContain('o')
+      const up = render('block-beta\n  columns 1\n  a\n  b\n  b --> a')
+      expect(up).toContain('▲')
+    })
+
+    it('goes round a corner for blocks that share no row or column', () => {
+      const se = render(
+        'block-beta\n  columns 2\n  a space\n  space b\n  a --> b',
+      ).split('\n')
+      expect(se.join('\n')).toContain('┐')
+      expect(se.join('\n')).toContain('▼')
+      expect(
+        render('block-beta\n  columns 2\n  space a\n  b space\n  a --> b'),
+      ).toContain('┌')
+      expect(
+        render('block-beta\n  columns 2\n  space a\n  b space\n  b --> a'),
+      ).toContain('┘')
+      expect(
+        render('block-beta\n  columns 2\n  a space\n  space b\n  b --> a'),
+      ).toContain('└')
+      expect(
+        render(
+          'block-beta\n  columns 2\n  a space\n  space b\n  a -- "l" --> b',
+        ),
+      ).toContain('l')
+    })
+
+    it('draws leftwards, with ASCII glyphs, and ignores a link to itself', () => {
+      expect(render('block-beta\n  a space b\n  b --> a', true)).toContain(
+        '<---',
+      )
+      expect(render('block-beta\n  a space b\n  a ==> b', true)).toContain(
+        '===>',
+      )
+      expect(render('block-beta\n  a\n  a --> a')).toBe(
+        ['┌───┐', '│ a │', '└───┘'].join('\n'),
+      )
+      expect(
+        render('block-beta\n  columns 1\n  a\n  b\n  a --> b', true),
+      ).toContain('v')
+    })
+  })
 })

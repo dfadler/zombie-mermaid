@@ -18,9 +18,17 @@ export interface BlockRect {
   radius: number
 }
 
+/** A drawn link: its path numbers (x, y, x, y ...) and its label's centre, relative to the viewBox origin. */
+export interface BlockPath {
+  path: number[]
+  label: { x: number; y: number } | null
+}
+
 export interface BlockLayout {
   /** Every drawn block (leaves and groups), parents before children. */
   blocks: BlockRect[]
+  /** Every drawn link, in drawing order. */
+  edges: BlockPath[]
   size: { width: number; height: number }
 }
 
@@ -28,6 +36,8 @@ export interface BlockLayout {
 export interface BlockAgreement {
   blocks: number | null
   radii: number | null
+  /** Share of links whose path points and label place agree. */
+  edges: number | null
   /** 1 when the drawing size is within SIZE_TOLERANCE px, else 0. */
   frame: number
 }
@@ -52,7 +62,11 @@ export function parseBlockSvg(svg: string): BlockLayout {
   )
     .split(/\s+/)
     .map(Number)
-  const layout: BlockLayout = { blocks: [], size: { width: vw, height: vh } }
+  const layout: BlockLayout = {
+    blocks: [],
+    edges: [],
+    size: { width: vw, height: vh },
+  }
   // Ours wraps everything in translate(-vx, -vy) under a 0 0 viewBox; Mermaid
   // draws in viewBox space with a translate per node.
   const shift = /<g transform="translate\(([-\d.]+), ([-\d.]+)\)">/.exec(svg)
@@ -72,6 +86,33 @@ export function parseBlockSvg(svg: string): BlockLayout {
       height: num(attr(rect, 'height')),
       radius: num(attr(rect, 'rx')),
     })
+  }
+  // Links: a path (Mermaid: `flowchart-link`, ours: `edge-path`) and the label after it.
+  const pathRe =
+    /<path (?:class="edge-path[^"]*" d="([^"]*)"[^>]*|d="([^"]*)"[^>]*flowchart-link[^>]*)>/g
+  for (const m of svg.matchAll(pathRe)) {
+    const d = m[1] ?? m[2] ?? ''
+    const nums = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number)
+    const path = nums.map((n, i) => n + (i % 2 === 0 ? ox : oy))
+    const after = svg.slice((m.index ?? 0) + m[0].length)
+    const next = after.search(/<path |<g class="node/)
+    const chunk = next === -1 ? after : after.slice(0, next)
+    let label: BlockPath['label'] = null
+    const off =
+      /<g class="edgeLabel" transform="translate\(([-\d.]+), ([-\d.]+)\)"/.exec(
+        chunk,
+      )
+    if (off) label = { x: num(off[1]) + ox, y: num(off[2]) + oy }
+    const mine =
+      /<g class="edge-label"><rect[^>]* x="([-\d.]+)"[^>]* y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)"/.exec(
+        chunk,
+      )
+    if (mine)
+      label = {
+        x: num(mine[1]) + num(mine[3]) / 2 + ox,
+        y: num(mine[2]) + num(mine[4]) / 2 + oy,
+      }
+    layout.edges.push({ path, label })
   }
   return layout
 }
@@ -104,6 +145,18 @@ export function blockAgreement(
   return {
     blocks: share(official.blocks, ours.blocks, sameRect),
     radii: share(official.blocks, ours.blocks, (a, b) => a.radius === b.radius),
+    edges: share(
+      official.edges,
+      ours.edges,
+      (a, b) =>
+        a.path.length === b.path.length &&
+        a.path.every((n, i) => near(n, b.path[i]!)) &&
+        (a.label === null
+          ? b.label === null
+          : b.label !== null &&
+            near(a.label.x, b.label.x) &&
+            near(a.label.y, b.label.y)),
+    ),
     frame:
       near(official.size.width, ours.size.width, SIZE_TOLERANCE) &&
       near(official.size.height, ours.size.height, SIZE_TOLERANCE)

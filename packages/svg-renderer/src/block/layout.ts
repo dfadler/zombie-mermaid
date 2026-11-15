@@ -23,8 +23,10 @@
 
 import type {
   BlockDiagram,
+  BlockEdge,
   BlockNode,
   PositionedBlockDiagram,
+  PositionedBlockEdge,
   PositionedBlockNode,
 } from '@zombie-mermaid/mermaid-parser'
 import { textWidth } from '../timeline/layout.ts'
@@ -222,6 +224,183 @@ function layoutBlocks(cell: Cell, padding: number = BLOCK.padding): void {
   }
 }
 
+interface Pt {
+  x: number
+  y: number
+}
+interface Box {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** Mermaid's `intersectRect`: where the line from the box centre to `p` leaves the box. */
+function intersectRect(n: Box, p: Pt): Pt {
+  const dx = p.x - n.x
+  const dy = p.y - n.y
+  let w = n.width / 2
+  let h = n.height / 2
+  if (Math.abs(dy) * w > Math.abs(dx) * h) {
+    if (dy < 0) h = -h
+    return { x: n.x + (dy === 0 ? 0 : (h * dx) / dy), y: n.y + h }
+  }
+  if (dx < 0) w = -w
+  return { x: n.x + w, y: n.y + (dx === 0 ? 0 : (w * dy) / dx) }
+}
+
+const dist = (a: Pt, b: Pt): number => Math.hypot(b.x - a.x, b.y - a.y)
+
+/** Mermaid's `calcLabelPosition`: the point half-way along the polyline. */
+function halfway(points: Pt[]): Pt {
+  let total = 0
+  for (let i = 1; i < points.length; i++)
+    total += dist(points[i - 1]!, points[i]!)
+  let left = total / 2
+  let prev: Pt | undefined
+  for (const p of points) {
+    if (prev) {
+      const d = dist(p, prev)
+      if (d === 0) return prev
+      if (d < left) left -= d
+      else {
+        const t = left / d
+        if (t <= 0) return prev
+        if (t >= 1) return { x: p.x, y: p.y }
+        const r = (n: number) => Math.round(n * 1e5) / 1e5
+        return {
+          x: r((1 - t) * prev.x + t * p.x),
+          y: r((1 - t) * prev.y + t * p.y),
+        }
+      }
+    }
+    prev = p
+  }
+  return points[points.length - 1]!
+}
+
+/** Mermaid's `markerOffsets` for the arrow types a block edge can have. */
+const markerOffset = (type: string): number | undefined =>
+  type === 'arrow_point' ? 4 : undefined
+
+/** Mermaid's `getLineFunctionsWithOffset`: pull the ends back so an arrow head touches the block. */
+function withMarkerOffsets(data: Pt[], start: string, end: string): Pt[] {
+  const sOff = markerOffset(start)
+  const eOff = markerOffset(end)
+  const last = data.length - 1
+  const angle = (a: Pt, b: Pt) => Math.atan((b.y - a.y) / (b.x - a.x))
+  const right = data[0]!.x < data[last]!.x
+  const down = data[0]!.y < data[last]!.y
+  return data.map((d, i) => {
+    let ox = 0
+    let oy = 0
+    if (i === 0 && sOff !== undefined) {
+      const a = angle(data[0]!, data[1]!)
+      ox = sOff * Math.cos(a) * (data[1]!.x - data[0]!.x >= 0 ? 1 : -1)
+      oy =
+        sOff * Math.abs(Math.sin(a)) * (data[1]!.y - data[0]!.y >= 0 ? 1 : -1)
+    } else if (i === last && eOff !== undefined) {
+      const a = angle(data[last]!, data[last - 1]!)
+      ox =
+        eOff * Math.cos(a) * (data[last - 1]!.x - data[last]!.x >= 0 ? 1 : -1)
+      oy =
+        eOff *
+        Math.abs(Math.sin(a)) *
+        (data[last - 1]!.y - data[last]!.y >= 0 ? 1 : -1)
+    }
+    const toEndX = Math.abs(d.x - data[last]!.x)
+    const toEndY = Math.abs(d.y - data[last]!.y)
+    const toStartX = Math.abs(d.x - data[0]!.x)
+    const toStartY = Math.abs(d.y - data[0]!.y)
+    if (eOff !== undefined) {
+      if (toEndX < eOff && toEndX > 0 && toEndY < eOff)
+        ox -= (eOff + 1 - toEndX) * (right ? 1 : -1)
+      if (toEndY < eOff && toEndY > 0 && toEndX < eOff)
+        oy -= (eOff + 1 - toEndY) * (down ? 1 : -1)
+    }
+    if (sOff !== undefined) {
+      if (toStartX < sOff && toStartX > 0 && toStartY < sOff)
+        ox += (sOff + 1 - toStartX) * (right ? 1 : -1)
+      if (toStartY < sOff && toStartY > 0 && toStartX < sOff)
+        oy += (sOff + 1 - toStartY) * (down ? 1 : -1)
+    }
+    return { x: d.x + ox, y: d.y + oy }
+  })
+}
+
+const f3 = (n: number): string => String(Math.round(n * 1000) / 1000)
+
+/** D3's `curveBasis` path through `p` (3 digits, as Mermaid prints it). */
+function basisPath(p: Pt[]): string {
+  if (p.length < 3)
+    return p.map((q, i) => `${i ? 'L' : 'M'}${f3(q.x)},${f3(q.y)}`).join('')
+  let d = `M${f3(p[0]!.x)},${f3(p[0]!.y)}`
+  d += `L${f3((5 * p[0]!.x + p[1]!.x) / 6)},${f3((5 * p[0]!.y + p[1]!.y) / 6)}`
+  const bez = (a: Pt, b: Pt, c: Pt) =>
+    `C${f3((2 * a.x + b.x) / 3)},${f3((2 * a.y + b.y) / 3)},${f3((a.x + 2 * b.x) / 3)},${f3((a.y + 2 * b.y) / 3)},${f3((a.x + 4 * b.x + c.x) / 6)},${f3((a.y + 4 * b.y + c.y) / 6)}`
+  for (let i = 2; i < p.length; i++) d += bez(p[i - 2]!, p[i - 1]!, p[i]!)
+  const a = p[p.length - 2]!
+  const b = p[p.length - 1]!
+  d += bez(a, b, b)
+  return d + `L${f3(b.x)},${f3(b.y)}`
+}
+
+/** Mermaid's `isLabelCoordinateInPath`: false moves the label by how far clipping moved the path's middle. */
+function labelInPath(p: Pt, d: string): boolean {
+  const rounded = d.replace(/(\d+\.\d+)/g, (m) =>
+    String(Math.round(parseFloat(m))),
+  )
+  return (
+    rounded.includes(String(Math.round(p.x))) ||
+    rounded.includes(String(Math.round(p.y)))
+  )
+}
+
+/** Mermaid's `insertEdges`: start centre, midpoint, end centre, clipped to the two blocks. */
+function layoutEdges(
+  edges: BlockEdge[],
+  nodes: PositionedBlockNode[],
+): PositionedBlockEdge[] {
+  const byId = new Map<string, PositionedBlockNode>()
+  for (const n of nodes) if (!byId.has(n.id)) byId.set(n.id, n)
+  const out: PositionedBlockEdge[] = []
+  for (const e of edges) {
+    const a = byId.get(e.start)
+    const b = byId.get(e.end)
+    if (!a || !b) continue
+    const mid = { x: a.x + (b.x - a.x) / 2, y: a.y + (b.y - a.y) / 2 }
+    const original = [{ x: a.x, y: a.y }, mid, { x: b.x, y: b.y }]
+    const points = [intersectRect(a, mid), mid, intersectRect(b, mid)]
+    const path = basisPath(
+      withMarkerOffsets(points, e.arrowTypeStart, e.arrowTypeEnd),
+    )
+    let lx = mid.x
+    let ly = mid.y
+    if (!labelInPath(points[1]!, path)) {
+      const u = halfway(points)
+      const o = halfway(original)
+      lx = mid.x + (u.x - o.x)
+      ly = mid.y + (u.y - o.y)
+    }
+    out.push({
+      id: e.id,
+      points,
+      path,
+      label: e.label,
+      labelX: lx,
+      labelY: ly,
+      labelWidth: e.label
+        ? textWidth(e.label.replace(/\s+/g, ' ').trim(), BLOCK.fontSize)
+        : 0,
+      thickness: e.thickness,
+      pattern: e.pattern,
+      arrowTypeStart: e.arrowTypeStart,
+      arrowTypeEnd: e.arrowTypeEnd,
+    })
+  }
+  return out
+}
+
 /** Lay a block diagram out; all coordinates are in Mermaid's space, `viewBox` says where its origin is. */
 export function layoutBlock(diagram: BlockDiagram): PositionedBlockDiagram {
   const root = toCell(diagram.root)
@@ -259,10 +438,31 @@ export function layoutBlock(diagram: BlockDiagram): PositionedBlockDiagram {
     maxX = Math.max(maxX, n.x + n.width / 2)
     maxY = Math.max(maxY, n.y + n.height / 2)
   }
+  const edges = layoutEdges(diagram.edges, nodes)
+  // Mermaid sizes the drawing by the bounding box of everything drawn, edges and labels included.
+  for (const e of edges) {
+    for (const p of withMarkerOffsets(
+      e.points,
+      e.arrowTypeStart,
+      e.arrowTypeEnd,
+    )) {
+      minX = Math.min(minX, p.x)
+      maxX = Math.max(maxX, p.x)
+      minY = Math.min(minY, p.y)
+      maxY = Math.max(maxY, p.y)
+    }
+    if (e.label) {
+      minX = Math.min(minX, e.labelX - e.labelWidth / 2)
+      maxX = Math.max(maxX, e.labelX + e.labelWidth / 2)
+      minY = Math.min(minY, e.labelY - BLOCK.lineHeight / 2)
+      maxY = Math.max(maxY, e.labelY + BLOCK.lineHeight / 2)
+    }
+  }
   if (nodes.length === 0) minX = minY = maxX = maxY = 0
   const m = BLOCK.margin
   return {
     nodes,
+    edges,
     viewBox: {
       x: minX - m,
       y: minY - m,

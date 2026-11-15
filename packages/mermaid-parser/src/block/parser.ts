@@ -3,7 +3,13 @@ import {
   decodeMermaidEntities,
   stripFrontMatter,
 } from '@zombie-mermaid/core'
-import type { BlockDiagram, BlockNode, BlockShape } from './types.ts'
+import type {
+  BlockArrow,
+  BlockDiagram,
+  BlockEdge,
+  BlockNode,
+  BlockShape,
+} from './types.ts'
 
 // ============================================================================
 // Block diagram parser
@@ -27,9 +33,12 @@ import type { BlockDiagram, BlockNode, BlockShape } from './types.ts'
 // string with no space before the quote, and a repeated id changes the first
 // block's type and label instead of adding a block.
 //
-// Not supported yet, and rejected with an error naming the issue: links
-// (#3105), the other shapes and block arrows (#3106), classDef, class, style
-// and markdown strings (#3107).
+//     a --> b  a -- "text" --> b     links between two blocks (`==>`, `-.-`,
+//                                    `--x`, `--o`, `<-->`); both blocks are declared
+//
+// Not supported yet, and rejected with an error naming the issue: the other
+// shapes and block arrows (#3106), classDef, class, style and markdown strings
+// (#3107).
 // ============================================================================
 
 const SYNTAX_HELP =
@@ -42,6 +51,7 @@ type TokenKind =
   | 'COLUMNS'
   | 'SPACE'
   | 'ID'
+  | 'LINK'
   | 'SIZE'
   | 'NODE'
   | 'EOF'
@@ -51,6 +61,8 @@ interface Token {
   text: string
   /** `COLUMNS` / `SPACE` / `SIZE`: the number (`COLUMNS` -1 is `auto`). */
   num?: number
+  /** `LINK`: the label of `-- "text" -->`. */
+  linkLabel?: string
   /** `NODE`: the label and the opening + closing delimiters. */
   label?: string
   typeStr?: string
@@ -103,8 +115,18 @@ const SHAPE_ENDS = [
 
 /** Node ids: Mermaid's `[^\(\[\n\-\)\{\}\s\<\>:=]+`. */
 const ID_RE = /[^([\n\-){}\s<>:=]+/y
-/** What a link starts with (Mermaid's link rules, which this port does not draw yet). */
-const LINK_STARTS = ['--', '==', '-.', '<-', '<=']
+/** Mermaid's LINK rules: `--->`, `===>`, `-.->`, each with an optional `x`, `o` or `<` start. */
+const LINK_RES = [
+  /^\s*[xo<]?--+[-xo>]\s*/,
+  /^\s*[xo<]?==+[=xo>]\s*/,
+  /^\s*[xo<]?-?\.+-[xo>]?\s*/,
+]
+/** Mermaid's START_LINK rules, which expect a quoted label and then a LINK. */
+const START_LINK_RES = [
+  /^\s*[xo<]?--\s*/,
+  /^\s*[xo<]?==\s*/,
+  /^\s*[xo<]?-\.\s*/,
+]
 
 /** Mermaid's `cleanupComments`: whole-line `%%` comments, then `%%{...}%%` directives, front matter. */
 function preprocess(text: string): string {
@@ -227,8 +249,38 @@ function tokenize(source: string, lines: readonly string[]): Token[] {
         advance(id[0])
         continue
       }
-      if (LINK_STARTS.some((l) => here.startsWith(l)))
-        throw unsupported(lines, line, 'A link', 3105)
+      const link = LINK_RES.map((re) => re.exec(here)).find((x) => x !== null)
+      if (link) {
+        push({ kind: 'LINK', text: link[0], linkLabel: '' })
+        advance(link[0])
+        continue
+      }
+      const startLink = START_LINK_RES.map((re) => re.exec(here)).find(
+        (x) => x !== null,
+      )
+      if (startLink) {
+        // `-- "text" -->`: a quoted label, then the closing link (Mermaid's LLABEL state).
+        const after = here.slice(startLink[0].length)
+        if (after.startsWith('"`'))
+          throw unsupported(lines, line, 'A markdown string', 3107)
+        if (!after.startsWith('"'))
+          throw parseError(lines, line, 'Expected a quoted link label')
+        const close = after.indexOf('"', 1)
+        if (close === -1) throw parseError(lines, line, 'Unterminated string')
+        const label = after.slice(1, close)
+        const end = LINK_RES.map((re) => re.exec(after.slice(close + 1))).find(
+          (x) => x !== null,
+        )
+        if (!end)
+          throw parseError(lines, line, `Expected a link after "${label}"`)
+        const full = here.slice(
+          0,
+          startLink[0].length + close + 1 + end[0].length,
+        )
+        push({ kind: 'LINK', text: end[0], linkLabel: label })
+        advance(full)
+        continue
+      }
       if ((m = /^:(\d+)/.exec(here)) !== null) {
         push({ kind: 'SIZE', text: m[0], num: Number(m[1]) })
       } else {
@@ -253,13 +305,15 @@ interface RawBlock {
   id: string
   label?: string
   /** Mermaid's `type`: `na` for a bare id. */
-  type: BlockShape | 'na' | 'space' | 'composite'
+  type: BlockShape | 'na' | 'space' | 'composite' | 'edge'
   widthInColumns?: number
   /** Width of a `space` statement. */
   width?: number
   columns?: number
   children?: RawBlock[]
   columnSetting?: number
+  /** `edge`: the link. */
+  edge?: Omit<BlockEdge, 'id'>
 }
 
 /**
@@ -309,6 +363,49 @@ export function parseBlock(text: string): BlockDiagram {
     return block
   }
 
+  /** `a link b`, after `a`: Mermaid's `node link node` (both blocks are declared). */
+  const edgeStatement = (left: RawBlock): RawBlock[] => {
+    const link = peek()
+    i++
+    if (peek().kind !== 'ID') throw fail(peek(), 'a block id')
+    const right = nodeStatement()
+    if (right.widthInColumns !== 1)
+      throw fail(tokens[i - 1]!, 'the next statement')
+    const t = link.text.trim()
+    const last = t.slice(-1)
+    const first = t.charAt(0)
+    const arrow = (c: string, open: BlockArrow | 'arrow_open', tip: string) =>
+      c === 'x'
+        ? 'arrow_cross'
+        : c === 'o'
+          ? 'arrow_circle'
+          : c === tip
+            ? 'arrow_point'
+            : open
+    return [
+      left,
+      {
+        id: `${left.id}-${right.id}`,
+        type: 'edge',
+        label: link.linkLabel ?? '',
+        edge: {
+          start: left.id,
+          end: right.id,
+          label: link.linkLabel ?? '',
+          thickness: t.includes('==') ? 'thick' : 'normal',
+          pattern: t.includes('.-') ? 'dotted' : 'solid',
+          arrowTypeStart: arrow(
+            first,
+            'arrow_open',
+            '<',
+          ) as BlockEdge['arrowTypeStart'],
+          arrowTypeEnd: arrow(last, '', '>') as BlockArrow,
+        },
+      },
+      right,
+    ]
+  }
+
   const document = (): RawBlock[] => {
     const out: RawBlock[] = []
     for (;;) {
@@ -345,7 +442,10 @@ export function parseBlock(text: string): BlockDiagram {
           children,
         })
       } else if (t.kind === 'ID') {
-        out.push(nodeStatement())
+        const head = nodeStatement()
+        if (peek().kind === 'LINK' && head.widthInColumns === 1)
+          out.push(...edgeStatement(head))
+        else out.push(head)
       } else {
         throw fail(t, 'a block')
       }
@@ -359,9 +459,17 @@ export function parseBlock(text: string): BlockDiagram {
   const db = new Map<string, RawBlock>()
   const root: RawBlock = { id: 'root', type: 'composite', columns: -1 }
   db.set('root', root)
+  const edges: BlockEdge[] = []
+  const edgeCount = new Map<string, number>()
   const populate = (blockList: RawBlock[], parent: RawBlock): void => {
     const children: RawBlock[] = []
     for (const block of blockList) {
+      if (block.type === 'edge') {
+        const n = (edgeCount.get(block.id) ?? 0) + 1
+        edgeCount.set(block.id, n)
+        edges.push({ id: `${n}-${block.id}`, ...block.edge! })
+        continue
+      }
       if (block.columnSetting !== undefined) {
         if (block.columnSetting === 0)
           throw new MermaidParseError(
@@ -412,5 +520,5 @@ export function parseBlock(text: string): BlockDiagram {
     if (b.columns !== undefined) node.columns = b.columns
     return node
   }
-  return { root: convert(root) }
+  return { root: convert(root), edges }
 }

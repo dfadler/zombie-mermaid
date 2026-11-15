@@ -1041,7 +1041,7 @@ rectangles, lane labels, arrows and the drawing size agree on every gallery samp
 ## Block diagrams
 
 Checked against mermaid 12.3.0 with `pnpm run block:oracle`: every block's rectangle, its corner
-radius and the drawing size agree on every gallery sample.
+radius, every link's path and label place, and the drawing size agree on every gallery sample.
 
 - **Text widths.** Mermaid measures labels in the browser; this library sums Trebuchet MS advances
   and ignores kerning, so a label can differ by about a pixel (`A label` measures 0.9px wider
@@ -1049,8 +1049,9 @@ radius and the drawing size agree on every gallery sample.
 - **Palette.** Blocks use the theme's node fill and border; a group is a light mix of the border
   colour into the background. Mermaid uses its own purple and yellow.
 - **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; the text is the same.
-- **Not drawn yet.** Links, the other shapes, styling and markdown strings: see
-  [#3105](https://github.com/dfadler/zombie-mermaid/issues/3105),
+- **Link labels** are not wrapped at 200px as Mermaid does, and sit on a half-transparent patch of
+  the background instead of its `labelBkg` box.
+- **Not drawn yet.** The other shapes, styling and markdown strings: see
   [#3106](https://github.com/dfadler/zombie-mermaid/issues/3106),
   [#3107](https://github.com/dfadler/zombie-mermaid/issues/3107).
 - **`~~~`.** Mermaid's lexer reads `~~~` as a block id (its id rule comes before the invisible-link rule); so does this parser.
