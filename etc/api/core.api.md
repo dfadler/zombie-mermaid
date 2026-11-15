@@ -446,6 +446,7 @@ export interface InitConfig {
     themeVariables?: ThemeVariables;
     timeline?: TimelineInitConfig;
     treemap?: TreemapInitConfig;
+    wardleyTheme?: Partial<Record<WardleyThemeKey, string>>;
     xyChart?: XyChartInitConfig;
 }
 
@@ -1127,6 +1128,12 @@ export function tryApplyCssClass(line: string, target: StyleDirectives): boolean
 
 // @public
 export function tryApplyStyleStatement(line: string, target: StyleDirectives): boolean;
+
+// @public
+export const WARDLEY_THEME_KEYS: readonly ["backgroundColor", "axisColor", "axisTextColor", "componentFill", "componentStroke", "componentLabelColor", "linkStroke", "evolutionStroke", "annotationStroke", "annotationTextColor", "annotationFill"];
+
+// @public (undocumented)
+export type WardleyThemeKey = (typeof WARDLEY_THEME_KEYS)[number];
 
 // @public
 export function withDirectionOverride<T extends {
