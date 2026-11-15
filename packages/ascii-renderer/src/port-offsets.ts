@@ -724,7 +724,14 @@ export function withPortShifts<T>(graph: AsciiGraph, run: () => T): T {
 
 function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   const result = new Map<AsciiEdge, PortShift>()
-  if (graph.edges.length < 2) return result
+  // #3158: a lone self-loop on a decision still gets its ends placed, on the
+  // two slants beside the vertex, not on the vertex row and the row below.
+  const [only] = graph.edges
+  if (
+    graph.edges.length < 2 &&
+    !(only?.from === only?.to && only?.from.shape === 'diamond')
+  )
+    return result
   const shiftedRun = (run: PortRun): ShiftedRun => ({
     axis: run.axis,
     line: run.line,

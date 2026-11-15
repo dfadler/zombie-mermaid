@@ -26,20 +26,20 @@ describe('#3158 self-loop label sits left of the hook, strokes intact', () => {
   it('TD decision, label of four characters', () => {
     expect(lines('flowchart TD\n  n0{"call"}\n  n0 -->|A0aA| n0')).toEqual([
       '           ╱╲',
-      '          ╱  ╲',
-      '     ┌──< call >',
-      'A0aA │    ╲  ╱',
-      '     └─►   ╲╱',
+      '     ┌────╱  ╲',
+      'A0aA │  < call >',
+      '     └───►╲  ╱',
+      '           ╲╱',
     ])
   })
 
   it('TD decision, label of three characters', () => {
     expect(lines('flowchart TD\n  n0{"call"}\n  n0 -->|A0a| n0')).toEqual([
       '          ╱╲',
-      '         ╱  ╲',
-      '    ┌──< call >',
-      'A0a │    ╲  ╱',
-      '    └─►   ╲╱',
+      '    ┌────╱  ╲',
+      'A0a │  < call >',
+      '    └───►╲  ╱',
+      '          ╲╱',
     ])
   })
 
