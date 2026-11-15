@@ -3,7 +3,9 @@
  * Mermaid's `%%{init: {"themeVariables": ...}}%%` onto our colour tokens.
  *
  * Mermaid behaviour relied on (measured, mermaid 12.1.0 and 12.2.0, headless
- * Chromium, computed paint): `primaryColor`/`primaryBorderColor`/
+ * Chromium, computed paint; the border derivation, re-measured on 12.3.0, #3165:
+ * `primaryColor` alone gives the border `hsl(h, s-40%, l-10%)` of it, and leaves
+ * the flowchart line (#0b0b0b) and text (#333) at their defaults): `primaryColor`/`primaryBorderColor`/
  * `primaryTextColor` apply under `theme: base` only; `lineColor` and
  * `pie1`..`pie12` apply under every theme; `pieN` maps to the Nth slice in
  * source order and wraps after 12; an invalid pie colour paints #333.
@@ -52,6 +54,11 @@ const cases: Array<
   [
     'flowchart-unsafe-ignored',
     flow({ primaryColor: 'url(#x)', lineColor: 'red;}' }, 'base'),
+    ON,
+  ],
+  [
+    'flowchart-primary-only-derives-border',
+    flow({ primaryColor: '#ffcc00' }, 'base'),
     ON,
   ],
   ['flowchart-named-colour', flow({ primaryColor: 'red' }, 'base'), ON],

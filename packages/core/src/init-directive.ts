@@ -16,6 +16,7 @@
 // should not be able to override the host application's rendering choices.
 // ============================================================================
 
+import { deriveBorderColor } from './color-utils.ts'
 import { isValidCssColor } from './css-color.ts'
 import type { C4InitLayout } from './c4-metrics.ts'
 import type { RenderOptions } from './types.ts'
@@ -1173,7 +1174,12 @@ export function applyThemeVariables(
   if (!tv) return options
   const out = { ...options }
   out.surface ??= tv.primaryColor
-  out.border ??= tv.primaryBorderColor
+  // Mermaid derives the border from primaryColor when none is given (#3165).
+  out.border ??=
+    tv.primaryBorderColor ??
+    (tv.primaryColor
+      ? (deriveBorderColor(tv.primaryColor) ?? undefined)
+      : undefined)
   out.fg ??= tv.primaryTextColor
   out.line ??= tv.lineColor
   return out

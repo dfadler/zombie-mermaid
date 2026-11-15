@@ -203,3 +203,49 @@ export function formatCssColor(c: RgbaColor): string {
   }
   return `rgba(${r}, ${g}, ${b}, ${Number(a.toFixed(3))})`
 }
+
+const HSL_FUNC_RE =
+  /^hsla?\(\s*(-?[\d.]+)(?:deg)?\s*[, ]\s*([\d.]+)%\s*[, ]\s*([\d.]+)%\s*(?:[,/]\s*[\d.]+%?\s*)?\)$/i
+
+/** HSL (h in degrees, s/l in 0-100) of a hex, `rgb()` or `hsl()` colour. */
+function toHsl(value: string): { h: number; s: number; l: number } | null {
+  const hsl = HSL_FUNC_RE.exec(value.trim())
+  if (hsl) return { h: Number(hsl[1]), s: Number(hsl[2]), l: Number(hsl[3]) }
+  const c = parseCssColor(value)
+  if (!c) return null
+  const [r, g, b] = [c.r / 255, c.g / 255, c.b / 255]
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const l = (max + min) / 2
+  const d = max - min
+  if (d === 0) return { h: 0, s: 0, l: l * 100 }
+  const s = d / (1 - Math.abs(2 * l - 1))
+  const h =
+    max === r
+      ? ((g - b) / d + 6) % 6
+      : max === g
+        ? (b - r) / d + 2
+        : (r - g) / d + 4
+  return { h: h * 60, s: s * 100, l: l * 100 }
+}
+
+/**
+ * Mermaid's `theme: base` node border when `primaryBorderColor` is unset:
+ * `mkBorder(primaryColor)` = khroma `adjust(color, { s: -40, l: -10 })`
+ * (mermaid 12.3.0, light mode). Saturation and lightness are clamped to
+ * 0-100. Returns `#rrggbb`, or null when `value` is not a hex, `rgb()` or
+ * `hsl()` colour (named colours are not resolved).
+ */
+export function deriveBorderColor(value: string): string | null {
+  const hsl = toHsl(value)
+  if (!hsl) return null
+  const clamp = (n: number) => Math.min(100, Math.max(0, n))
+  const s = clamp(hsl.s - 40) / 100
+  const l = clamp(hsl.l - 10) / 100
+  const a = s * Math.min(l, 1 - l)
+  const f = (n: number) => {
+    const k = (n + hsl.h / 30) % 12
+    return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))
+  }
+  return formatCssColor({ r: f(0) * 255, g: f(8) * 255, b: f(4) * 255, a: 1 })
+}

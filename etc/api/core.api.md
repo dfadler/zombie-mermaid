@@ -203,6 +203,9 @@ export const DEFAULTS: Readonly<{
 }>;
 
 // @public
+export function deriveBorderColor(value: string): string | null;
+
+// @public
 export function describeIgnored(config: InitConfig): string[];
 
 // @public
