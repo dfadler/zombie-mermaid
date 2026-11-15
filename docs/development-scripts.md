@@ -68,6 +68,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 
 - `pnpm run bench` — render benchmarks (full end-to-end SVG + ASCII render time)
 - `pnpm run metrics:history:append` — append a snapshot of GitHub stars, npm weekly downloads, latest package versions and unpacked package sizes to `metrics-history.jsonl`; wired into `.github/workflows/dashboard-refresh.yml`'s weekly schedule — you shouldn't normally need to run this by hand
+- `pnpm run stage:plugin-evals` — copy `.claude` without `worktrees/` into a temp dir and print its path, so `claude plugin eval` skips stale worktree symlinks (#3170)
 - `pnpm run sync:plugin-skill` — regenerate `plugins/claude/skills/zombie-mermaid/SKILL.md` from `skills/zombie-mermaid/SKILL.md` for the Claude Code plugin (#2206)
 - `pnpm run mcp:server-json` — print the MCP Registry `server.json` for the current `package.json` version (npm package, `mcpName`, `packageArguments` `mcp`), validated against the registry schema; `-- --out <file>` writes it (logic in `scripts/lib/mcp-server-json.ts`; see "MCP Registry" in [RELEASING.md](RELEASING.md))
 - `pnpm run smoke:packed` — pack every public package, install the tarballs into clean temp projects and smoke-test them as a consumer would (run `pnpm run build` first; what CI's "Packed tarball smoke test" job and publish.yml run)
