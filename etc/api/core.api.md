@@ -422,6 +422,7 @@ export interface InitConfig {
     erLayout?: ErInitLayout;
     gitGraph?: GitGraphInitConfig;
     ignored: string[];
+    ishikawaPadding?: number;
     journey?: JourneyInitConfig;
     kanban?: KanbanInitConfig;
     look?: string;

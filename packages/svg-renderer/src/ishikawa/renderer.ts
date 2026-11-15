@@ -11,7 +11,7 @@
 //   textColor               var(--_text)
 //
 // There is no hover or interactivity: Mermaid has none for this type, and the
-// `handDrawn` look is not drawn.
+// `handDrawn` look is not drawn (see docs/known-differences.md).
 // ============================================================================
 
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'

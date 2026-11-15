@@ -485,6 +485,8 @@ export interface InitConfig {
   timeline?: TimelineInitConfig
   /** `radar.*` keys ({@link RadarInitConfig}); other keys and bad values are dropped. */
   radar?: RadarInitConfig
+  /** `ishikawa.diagramPadding` (a number or numeric string, negative allowed, as mermaid 12.3.0 takes it). */
+  ishikawaPadding?: number
   /** `themeVariables.radar` sizes and opacities ({@link RadarStyleConfig}); 0 is kept, as mermaid does. */
   radarTheme?: RadarStyleConfig
   /** `journey.*` geometry keys ({@link JourneyInitConfig}); other keys and bad values are dropped. */
@@ -922,6 +924,13 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'ishikawa' && typeof value === 'object' && value !== null) {
+      const v = numeric((value as Record<string, unknown>).diagramPadding)
+      if (typeof v === 'number' && Number.isFinite(v))
+        config.ishikawaPadding = v
+      continue
+    }
+
     if (lower === 'radar' && typeof value === 'object' && value !== null) {
       const rec: Record<string, unknown> = { ...value }
       const r = radarNumbers(rec, RADAR_GEOMETRY_KEYS)
@@ -1142,6 +1151,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
     if (config.radar) merged.radar = { ...merged.radar, ...config.radar }
+    if (config.ishikawaPadding !== undefined)
+      merged.ishikawaPadding = config.ishikawaPadding
     if (config.radarTheme)
       merged.radarTheme = { ...merged.radarTheme, ...config.radarTheme }
     if (config.journey)

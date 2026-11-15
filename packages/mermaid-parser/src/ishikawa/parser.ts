@@ -1,4 +1,4 @@
-import { MermaidParseError } from '@zombie-mermaid/core'
+import { extractInitConfig, MermaidParseError } from '@zombie-mermaid/core'
 import { sanitizeTitle } from '../sanitize-title.ts'
 import type { Ishikawa, IshikawaNode } from './types.ts'
 
@@ -27,10 +27,13 @@ import type { Ishikawa, IshikawaNode } from './types.ts'
 //   - `;` is not a separator. A label goes through Mermaid's HTML sanitizer
 //     (see sanitize-title.ts), so `<x>` disappears and `&` is kept as `&amp;`;
 //     `<br>` breaks a label at render time.
-//   - Not ported: Mermaid's grammar rejects a header with trailing spaces, a
-//     header with no newline after it and some blank lines straight after the
-//     header; this parser accepts them. `accTitle` / `accDescr` lines are
-//     stripped by the front door, where Mermaid would draw them as causes.
+//   - Rejected as Mermaid's grammar rejects them (measured on 12.3.0): a
+//     header followed only by whitespace, a header with no newline after it
+//     and nothing else, and a whitespace-only line directly before the first
+//     node (a comment line may come between). `ishikawa.diagramPadding` is read
+//     from `%%{init}%%`.
+//   - Not ported: `accTitle` / `accDescr` lines are stripped by the front
+//     door, where Mermaid would draw them as causes.
 // ============================================================================
 
 /** Anything the jison lexer would read as a comment line. */
@@ -52,6 +55,15 @@ export function parseIshikawa(text: string): Ishikawa {
       'Invalid ishikawa header: expected "ishikawa" or "ishikawa-beta"',
       { line: i + 1, diagramType: 'ishikawa' },
     )
+
+  const rest0 = lines[i]!.slice(header[0].length)
+  const err = (message: string, line: number): never => {
+    throw new MermaidParseError(message, { line, diagramType: 'ishikawa' })
+  }
+  if (rest0 !== '' && rest0.trim() === '')
+    err('Unexpected whitespace after the ishikawa header', i + 1)
+  if (rest0 === '' && i === lines.length - 1)
+    err('Expected a newline after the ishikawa header', i + 1)
 
   let root: IshikawaNode | undefined
   let stack: Array<{ level: number; node: IshikawaNode }> = []
@@ -78,7 +90,10 @@ export function parseIshikawa(text: string): Ishikawa {
   for (i++; i < lines.length; i++) {
     const line = lines[i]!
     if (line.trim() === '' || COMMENT.test(line)) continue
+    if (!root && i > 0 && lines[i - 1]!.trim() === '')
+      err('Unexpected blank line before the ishikawa effect', i)
     add(/^\s*/.exec(line)![0].length, line)
   }
-  return { root }
+  const diagramPadding = extractInitConfig(lines).ishikawaPadding
+  return diagramPadding === undefined ? { root } : { root, diagramPadding }
 }
