@@ -891,9 +891,672 @@ accelerators, comments, front matter).
 - **Annotations box.** Mermaid sizes it from the text's measured width in the browser; this
   library estimates the width, so the box can differ by a few percent (and where it is clamped
   against the right edge, move with it).
-- **Not read.** The `wardley-beta` config keys (`width`, `height`, `padding`, `nodeRadius`,
-  `showGrid`, ...) and `themeVariables.wardley` do not change the drawing; mermaid's defaults are
-  used, and `size [w, h]` in the source is honoured. `showGrid` defaults to off in mermaid too.
+- **`themeVariables.wardley`.** The eleven colours mermaid 12.3.0 reads from a directive or front
+  matter (`backgroundColor`, `axisColor`, `axisTextColor`, `componentFill`, `componentStroke`,
+  `componentLabelColor`, `linkStroke`, `evolutionStroke`, `annotationStroke`, `annotationTextColor`,
+  `annotationFill`) recolour the drawing; a value that is not a plain colour (`url()`, `var()`) is dropped.
+  The oracle compares geometry only, so these are covered by unit tests, not `wardley:oracle`.
+- **`wardley-beta` config keys are not read, and mermaid 12.3.0 does not read them either from a
+  directive.** `width`, `height`, `padding`, `nodeRadius`, `nodeLabelOffset`, `axisFontSize`,
+  `labelFontSize`, `showGrid` and `gridColor` only take effect through `mermaid.initialize({ 'wardley-beta': ... })`;
+  in `%%{init}%%` and front matter `config:` mermaid drops the key (probed in headless 12.3.0: the viewBox stays
+  900 x 600 and no grid is drawn). This library has no site-config option, so they are not applied. `size [w, h]`
+  in the source is honoured, as in mermaid. `showGrid` defaults to off in mermaid too.
+- **Degenerate links.** Two nodes on one spot draw no link; mermaid writes `NaN` coordinates.
+- **mermaid.live and GitHub.** Checked 2026-11-14 with Playwright. mermaid.live renders with 12.3.0 (an
+  `info` diagram prints `v12.3.0`), the pin's version: all six gallery samples agree with this library's
+  SVG to 0.01px, in drawing order. GitHub's ` ```mermaid ` renderer calls `draw` with 12.2.0 (the constant in
+  its `mermaidMarkdown` bundle); the Tea Shop block in `docs/diagrams.md` agrees the same way. The other five
+  samples were not rendered on GitHub (that needs a block in a published issue or file), so 12.2.0 against
+  12.3.0 is checked on that one sample only.
+- **ASCII.** Mermaid has no ASCII output. The x axis is always below the grid (mermaid's
+  SVG puts it on top of a chart with no points), and point labels are in a legend, not
+  next to the markers.
+
+## Mindmaps
+
+Checked on mermaid 12.3.0 (npm `latest`, 2026-11-06), 12.2.0 (the pin, mermaid.live) and
+12.1.0 (what GitHub renders, #2184): the three place the sample mindmaps identically
+(node positions equal to the last digit). `pnpm run mindmap:oracle` renders every `Mindmap:`
+sample through real mermaid and compares structure (text, shape, section, classes, parents,
+edge classes) exactly, our shape sizes from mermaid's measured label boxes, and our
+layout and edge paths from mermaid's measured node sizes (0.01px); the weekly layout-oracle
+workflow fails on a drift. The layout is a dependency-free port of the CoSE-Bilkent force
+layout mermaid runs through cytoscape, bit-identical to it for a tree.
+
+Mermaid's layout itself is not reproducible across JavaScript engines for some inputs: V8's
+`Math.pow` changed its last digit between the V8 versions of the two Node releases CI runs, which is enough to rearrange
+`Mindmap: Many Branches` (12 leaves on one root). The port tabulates the one `pow` it needs
+with the newer V8's values (current Chromium's), so it renders the same on every Node version and
+agrees with a current Chromium; a browser with an older V8 can draw such a mindmap
+differently in mermaid itself.
+
+- **Label widths, and so positions.** Mermaid measures labels in "trebuchet ms"; this
+  library uses its own font's metrics. Node sizes differ by the text-width difference and,
+  the layout being a physics simulation, node positions move with them: a gallery sample with
+  similar-sized leaves (`Mindmap: Shapes`) comes out with the same shapes and sections but the
+  leaves arranged around the root in a different order, as it would with another font in
+  mermaid itself. The oracle feeds the layout mermaid's
+  own sizes, so it measures the algorithm, not the font.
+- **Colours.** Sections use the theme accent and its shades mixed into the background (root
+  in the foreground colour), not mermaid's default-theme hsl palette with black or white
+  labels. The underline of the default shape follows its section colour.
+- **Icons.** `::icon()` is parsed and kept on the node; mermaid 12.3.0 draws nothing for
+  it without an icon font (a node with an icon only gets a `labelBkg` class), and neither
+  do we. `:::class` names are added to the node's `class` attribute, but there is no
+  stylesheet to define them.
+- **Not read.** The `mindmap` block of `%%{init}%%` (`padding`, `maxNodeWidth`, `colorBy`),
+  `layout`, `look` and the theme variables. Labels keep bold, italic and line breaks;
+  other HTML tags are dropped.
+- **Empty and header-only.** `mindmap` followed only by blank lines renders nothing in
+  mermaid; here it is a parse error naming the missing node.
+- **ASCII.** Mermaid has no ASCII output. The tree is indented rather than radial, and a
+  node's shape shows as its delimiters.
+
+## Gantt charts
+
+Checked on mermaid 12.3.0 (npm `latest`; mermaid.live's 12.2.0 renders the same
+figures). `pnpm run gantt:oracle` renders every `Gantt:` sample through real mermaid
+and compares exclude ranges, stripes, bars, task-label rows and classes, axis ticks
+and labels, section labels and the title with `layoutGantt` at the same width; they
+match exactly, and the weekly layout-oracle workflow fails on a drift.
+
+- **Width.** Mermaid sizes the chart to its container (and fills it with
+  `width="100%"`); this library draws a fixed 1200px frame, Mermaid's own fallback.
+  The oracle compares at 1264, the headless page's width.
+- **Time zone.** Mermaid reads and draws dates in the viewer's time zone; this library
+  uses UTC. They differ only for charts spanning a daylight-saving change (a day is
+  then 23 or 25 hours there, shifting bars by a pixel) and for a date `dateFormat`
+  does not match, which is read by `new Date()`.
+- **`topAxis`.** Mermaid 12.3.0 (and 12.2.0) fails on the `topAxis` statement with
+  `TopAxis is not a function` (the grammar calls a method ganttDb does not have),
+  so there is nothing to match; the statement works here, and the `topAxis` config
+  key works in both.
+- **Today line.** Mermaid always draws it; here it is drawn only while today is
+  inside the chart's dates, so a chart in the past or future is byte-stable.
+- **Task labels.** Whether a label sits inside its bar, or to its right or left,
+  depends on its measured width, which differs between this library's font and
+  mermaid's `trebuchet ms`; the oracle reports such a difference as a note, not a
+  mismatch. Labels are trimmed (Mermaid keeps trailing blanks, which SVG collapses).
+- **Palette.** Colours come from the theme (accent bars, foreground-tinted done
+  tasks and grid); the third section keeps Mermaid's yellow stripe and critical tasks
+  keep its red. Mermaid's other theme-derived colours are not computed.
+- **Ids.** Mermaid gives each bar and label an `id` made of the diagram id and the
+  task id, which collide when two diagrams share a page; here they are
+  `data-task` attributes, and exclude ranges carry `data-date`.
+- **Unscheduled tasks.** A task whose `after` chain never resolves (a cycle), or
+  whose first task has no start date, is a parse error here; Mermaid renders a
+  broken chart.
+- **Config.** The `gantt` keys of `%%{init}%%` that change what is drawn are read
+  (see [Gantt Charts](diagrams.md#gantt-charts)), the size keys included (checked
+  against mermaid 12.3.0); only `useWidth` is ignored, as the frame is a fixed 1200px.
+- **`excludes` at the end of a chart.** A run of excluded days still open at the
+  last day is not shaded, as in Mermaid.
+- **ASCII.** Mermaid has no ASCII output; see [ASCII Gantt Charts](diagrams.md#ascii-gantt-charts).
+
+## XY charts
+
+Found in the #1592 snapshot audit and re-checked on mermaid 12.2.0 for #2314 (the audit
+also covered 12.1.0). Unless noted, these are choices, not bugs.
+
+- **SVG styling.** Matches mermaid 12.3.0 ([#2857](https://github.com/dfadler/zombie-mermaid/issues/2857)):
+  square bars, no legend, and a second bar series drawn over the first. Lines are straight
+  segments with no point markers, there is no grid, and each axis has a line and tick marks
+  (mermaid has no option for curved lines in 12.2.0, 12.3.0 or on `develop`).
+- **Bar thickness.** Bars follow mermaid 12.2.0's band formula ([#2515](https://github.com/dfadler/zombie-mermaid/issues/2515)):
+  95% of the smaller of twice the axis padding and the tick distance. Mermaid pads by
+  half the widest category label as it measures it in the browser, on a plot about 660 px
+  wide; ours estimates the text on a 600 px plot, so with long labels (the Product Sales
+  sample) a bar's share of the spacing can differ by up to about 0.13. The oracle allows 0.15.
+- **Numeric x-axis range.** SVG uses mermaid's linear axis: a label at every d3 tick,
+  points placed by value, a horizontal chart's range running bottom-up
+  ([#1592](https://github.com/dfadler/zombie-mermaid/issues/1592)). The ASCII renderer
+  has its own layout and still treats the range as evenly spaced labels at the data
+  points, so `0 --> 100` with 5 bars labels 0, 25, 50, 75, 100 there.
+- **Unquoted titles and labels drop their spaces, as in mermaid 12.3.0.** `title Week 1 sales`
+  reads `Week1sales`, `x-axis [New Users]` reads `NewUsers`, `y-axis Y Z 0 --> 5` reads `YZ`
+  (letters and digits only for titles; categories also allow `+ = * # _ . & -`). A one-word
+  `x-axis Foo [a, b]` title works; `x-axis Foo Bar [a, b]` is rejected by mermaid and is
+  not special-cased here. Quote a label (`"New Users"`) to keep its spaces.
+- **Rejected input fails with our own error text, not mermaid's** ([#2785](https://github.com/dfadler/zombie-mermaid/issues/2785), checked against mermaid 12.3.0). Both reject the same sources (`x-axis [a;b, c]`, `x-axis [/users, b]`, `x-axis [a, , b]`, `x-axis [a, b`, `bar [1, x, 3]`, `bar [1, 2`, `line [1,,3]`, `title "unclosed`, `y-axis 0 --> x`, `bar 1,2,3`); nothing renders either way. Mermaid's message is its jison lexer/parser text: `Parse error on line N:`, a clipped source excerpt with a caret, and `Expecting 'SQUARE_BRACES_END', 'COMMA', got 'SEMI'` (or `Lexical error on line N. Unrecognized text.`). The expected-token list comes from its LALR tables and the excerpt is not reliable (it runs the header into the first line, `...chart-betax-axis [a;b, c]`), so it is not reproduced. Ours is `Line N: ...` naming the directive or value and what is allowed. Tools that match on mermaid's message text will not match ours. One accept/reject difference is not about text: `x-axis [a, b] extra` is rejected by mermaid (`got 'ALPHA'`) and accepted here, the trailing text ignored.
+- **Negative and mixed-sign bars match mermaid 12.3.0** ([#2880](https://github.com/dfadler/zombie-mermaid/issues/2880), after #2772 for flat series). Mermaid draws every bar from the start of the value axis (the bottom, or the left edge when horizontal) to the value, never from zero. `bar [-5, 5]` is an 8 px stub next to a full-height bar, and `bar [-2, -5, -8]` gives three steps down (full, half, stub); horizontal bar lengths are linear in value from the left edge. Both SVG and ASCII do the same. A bar at the axis minimum is the stub, not nothing.
+- **Value-axis padding and x labels match mermaid in SVG only; flat data matches in both**
+  ([#2567](https://github.com/dfadler/zombie-mermaid/pull/2567), checked on mermaid 12.2.0;
+  flat data in ASCII: [#2727](https://github.com/dfadler/zombie-mermaid/issues/2727), checked
+  on mermaid 12.3.0). The value axis keeps half a label's height (half its width, horizontally)
+  of padding inside its line, so the smallest bar and the lowest line point stay visible. A flat
+  series (`bar [42]`, `[0, 0, 0]`: every value across all series equal, with no explicit
+  `y-axis` range) gets one tick in the middle of the axis, as mermaid does, in both SVG and ASCII.
+  Differing flat series (`bar [42, 42]` with `line [10, 10]`) and explicit ranges keep several ticks. Every x-axis category is labelled, even when neighbouring labels touch,
+  as mermaid does (the #1243 thinning is gone from SVG). ASCII widens the plot instead (see the
+  ASCII tick entry below).
+- **ASCII category labels widen the chart; they are never cut** ([#2698](https://github.com/dfadler/zombie-mermaid/issues/2698), checked against mermaid 12.3.0). Mermaid prints every category in full on a plot of fixed width and lets neighbours overlap; it does not truncate or rotate (`Engineering`, `ProductManagement`, `CustomerSuccess`, `HumanResources` in the long-label gallery sample). A terminal cannot overlap text, so the ASCII renderer widens every band until no two neighbouring words touch (one blank cell between them). A 60-column plot gives each of up to 10 categories `60 / n` columns, and `6` columns each beyond that; the bands only grow once a word label leaves less than one blank cell to its neighbour, so eight categories fit labels up to 6 characters and `Marketing` makes the whole chart wider. The chart is as wide as its labels need, with no cap. Numbers and dates are still thinned (every n-th shown) rather than widening the chart, where mermaid shows them all. Words in a horizontal chart already get a gutter as wide as the longest label.
+- **ASCII value and numeric-axis ticks: every mermaid tick is labelled**
+  ([#2310](https://github.com/dfadler/zombie-mermaid/issues/2310), checked on mermaid 12.3.0;
+  not checked on GitHub / mermaid.live). Mermaid has no ASCII output, so the comparison is the
+  list of tick labels and their order. A label needs its own row and a blank row after it, so a
+  vertical chart's plot is `max(20, 2 * (ticks - 1) + 1)` rows tall (21 rows for the usual 11
+  ticks `0, 100 ... 1000`; at most ~41 for d3's largest tick counts) instead of dropping every
+  other tick. A horizontal chart's value axis and a numeric x range are widened the same way
+  until no tick label touches its neighbour. A horizontal chart with a numeric x range
+  (`x-axis 2020 --> 2024`) draws it as mermaid does: a tick at every nice value up the left
+  edge, the first point at the bottom. Horizontal charts also draw the category axis title,
+  rotated down the left edge (`Month` in the init-config sample), which was missing
+  ([#2678](https://github.com/dfadler/zombie-mermaid/issues/2678)).
+
+## ASCII: LR/RL sibling gap is `paddingY - 1` ([#2350](https://github.com/dfadler/zombie-mermaid/issues/2350))
+
+Intentional. In LR (and RL) layouts the blank-row gap between sibling nodes is `paddingY - 1` (never below 1),
+4 rows at the default of 5, against mermaid 12.2.0's 40 px gap between 48 px nodes. TD keeps
+`paddingY` as is. Because of the offset, `-y 5` no longer gives the old LR gap; pass `-y 6`
+for it.
+
+## ASCII: several sources into one target share the target's face
+
+Intentional ([#1826](https://github.com/dfadler/zombie-mermaid/issues/1826)). The ASCII
+renderer gives each of several edges between the _same pair_ of nodes its own lane and
+arrowhead (`assignParallelEdgeLanes`, `packages/ascii-renderer/src/edge-routing.ts`), and
+lengthens the box face when there are more than three. Edges from _different sources_ into
+one target are left out of that: they keep merging onto the target's face. Giving each
+its own face cell would change `Labeled Fan-In (LR)` and widen every fan-in diagram. No
+output target (charset, width, markdown profile, MCP) forces this; it is a choice.
+
+```mermaid
+flowchart LR
+  A -->|one| T
+  B -->|two| T
+  C -->|three| T
+  D -->|four| T
+```
+
+- **zombie-mermaid (ASCII).** The four edges join into one trunk ending in a single
+  arrowhead on `T` (`TD` does the same, one head per side). Each label stays on its own
+  source's stroke, so every edge is still readable and attributable, but a reader cannot
+  count four heads.
+- **mermaid.js.** Four separate paths, each with its own arrowhead, stacked against the
+  same face of `T`. The heads overlap and the stack looks cramped, but there are four.
+
+Checked on mermaid 12.1.0 (the pinned `node_modules` build, rendered headless in Playwright
+Chromium through `scripts/lib/real-mermaid.ts`; four `flowchart-link` paths, four
+`marker-end` arrowheads, both `LR` and `TD`) and on the current renderer's ASCII output
+(unicode charset). Not checked: mermaid 11.x, mermaid 12.2.0 or later, mermaid.live and
+GitHub for this sample, the `ascii` charset, and fan-ins with more than the four sources
+above.
+
+## ASCII: a self-loop sits on the flow-side faces, not where mermaid puts it
+
+Not fixed ([#2101](https://github.com/dfadler/zombie-mermaid/issues/2101)). Mermaid
+12.1.0 and 12.2.0 (and mermaid.live, which runs 12.2.0) draw `a --> a` as a small loop on
+the node's **left** face in `TD` and `BT`, and on its **top** face in `LR` and `RL`,
+alone or beside other edges. The ASCII renderer draws it on the flow-side faces: out of
+the bottom and back in at the right in `TD`/`BT`, out of the right and back in at the
+bottom in `LR`/`RL` (`selfReferenceDirection`, `edge-routing.ts`). The SVG renderer does
+match mermaid 12.3.0 here ([#2740](https://github.com/dfadler/zombie-mermaid/issues/2740)).
+
+```mermaid
+flowchart TD
+  a --> a
+  b --> a
+  a --> c
+  b --> c
+  c --> a
+```
+
+- **Why not moved.** The left (`TD`/`BT`) or top (`LR`/`RL`) face of a node in the first
+  grid column or row has no gutter beside it, so the layout would have to grow a leading
+  column or row for it, and in the middle of a diagram that face is usually another
+  edge's. The loop's legs, its arrowhead cell, duplicate loops, hugging a neighbour's lane
+  (`hugLoop`, #2025/#2070) and labelled loops are all built around the current faces, so
+  the move touches every self-loop, for a difference in where a small loop is drawn.
+- **What does hold.** The loop shares no stroke with another edge ([#2098](https://github.com/dfadler/zombie-mermaid/pull/2098)),
+  and the edges around it get a stroke and an arrowhead each ([#2100](https://github.com/dfadler/zombie-mermaid/issues/2100)).
+- **Layout.** The two samples sit under the default 85% oracle floor for a placement
+  reason that has nothing to do with the loop: mermaid staggers the three nodes
+  (`SAMPLE_FLOORS`, `scripts/lib/layout-agreement.ts`).
+
+Checked on mermaid 12.1.0 and 12.2.0 (headless Playwright) and mermaid.live (12.2.0, `TD`
+only); GitHub's render was not reachable. See the comment on #2101 for the numbers.
+
+## ASCII: node shapes are character-cell silhouettes ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164))
+
+The owner decided nodes may grow (width or rows) to get a mermaid silhouette, one shape
+family per PR. Done: **stadium**, **hexagon**, **diamond**, **circle**, **subroutine**, **asymmetric**, **trapezoid**, **parallelogram** and **double circle**. Mermaid 12.2.0 (the pin and npm latest
+agree) draws a stadium as a pill with semicircular ends and a hexagon with points at the
+left and right middle.
+
+- **Stadium.** Rounded top and bottom rows (`╭─╮` / `╰─╯`, `.-.` / `'-'` in ASCII) with `(` `)` on
+  every row between. Same grid cell as before. The grid could draw a semicircular end (the
+  circle's), but at the default 5 rows that end is two columns deep, the same as the circle's, so a
+  pill drawn that way would be the circle one column wider and the two shapes could not be
+  told apart; the `(` `)` rows keep them distinct.
+- **Hexagon.** Diagonals `╱ ╲` (`/ \`) cost one column per row and meet at `<` `>` on the
+  middle row. A one-line label keeps the rectangle's width; a taller label, or a narrow one
+  next to a tall one, grows the node so the diagonal stays a cell clear of the text.
+  When a neighbour makes the row count even there are two point rows.
+- **Charsets and wide glyphs.** No fallback to the old corner glyphs was needed: every
+  border glyph is one cell wide in both charsets, so a CJK or emoji label (two cells per
+  glyph) never moves the border, and `/ \ < >` read as a hexagon in ASCII.
+- **Edges.** They still attach at the box faces (middle row on the sides, middle column on
+  top and bottom); a side edge starts beside the `(`/`)`/`<`/`>` point instead of replacing it.
+- **Diamond** (`{x}`). A rhombus with `<` `>` at the left and right middle and the top and
+  bottom rows as a point (`╱╲` / `╲╱`, `/\` / `\/` in ASCII). Mermaid 12.3.0's diamond is as
+  tall as it is wide at every label size, so the node grows rows with its width: about
+  `columns / 2` (a cell is about twice as tall as wide), rounded to an odd count so one middle
+  row carries the `<` `>` and the edges, and never fewer than the box's 5. A short label stays at 5
+  rows; a 24-column diamond is 11 rows (#2707). Widths are rounded up to an even count so the top point is two
+  glyphs; when a neighbour makes the width odd the point has a `─` between them. An edge
+  leaving the top or bottom starts beside the point glyph rather than replacing it.
+- **Circle** (`((x))`). An ellipse: rounded top and bottom rows, `╱ ╲` on the rows between,
+  `(` `)` on the middle row (`.-.` / `'-'`, `/ \` in ASCII). Mermaid's circle is round in
+  pixels and so is ours: rows grow with the width as for the diamond (#2707), so it is a
+  7-column, 5-row minimum shape, and a 22-column one is 11 rows. Edges attach as for the stadium.
+- **Corner glyphs of the outline.** `╭ ╮ ╰ ╯ . '` and the diagonals are now protected from
+  an edge stroke like `( ) < >` are, so a port on a corner column starts beside it.
+- **Cylinder** (`[(x)]`). Mermaid 12.3.0 (neo and classic looks) draws a full ellipse on top
+  (back and front rim) and a single arc at the bottom. Ours has the rim rule `│───│` under
+  the top edge and nothing above the bottom edge (`╰───╯` is the bottom arc), so a cylinder is
+  as tall as a plain box. It used to draw a second rule above the bottom edge
+  ([#2164](https://github.com/dfadler/zombie-mermaid/issues/2164)). The horizontal cylinder
+  (`h-cyl`) shares this glyph set, so it lost the lower rule as well.
+- **Subroutine** (`[[x]]`). Mermaid 12.2.0 draws a rectangle with a second vertical line
+  just inside each side. Ours is the same: `┌┬──┬┐` / `││ x ││` / `└┴──┴┘` (`+` and `|` in
+  ASCII), two columns wider than a plain box. The inner bars are on the node's own columns,
+  so edges still attach at the outer border and the invariants are unchanged.
+- **Asymmetric** (`>x]`, partial match). Mermaid 12.2.0 (also the npm latest) draws a
+  rectangle with an inward point on the left side, in every direction (RL does not mirror
+  it). Ours is a plain box whose left wall is blank on the middle row with a `>` tip one
+  cell in and `╲` / `╱` on the rows beside it (`\` / `/` in ASCII; they replace the left
+  corners in a 3-row box), widened by a column so the label clears the tip.
+  Edges still attach at the outer border, so an edge arriving on the notch stops one cell
+  short of the tip (`►` then a blank, then `>`); an edge leaving from the notch face in RL
+  starts at the tip's neighbour (`┤>`). Mermaid's diagonal sides are not drawn.
+- **Trapezoid** (`[/x\]`, `[\x/]`). Mermaid 12.2.0 (also the npm latest) slants both sides
+  by half the node's height over its height, wide edge at the bottom for `[/x\]` and at
+  the top for `[\x/]`, in every direction (BT does not flip it). Ours slants one column
+  per row (`╱ ╲` / `/ \`; a cell is about half as wide as tall, so the slope matches),
+  and the base row is `╱──╲` like the narrow one, so a node is wider by its slant (at
+  least `2 × rows + 1` columns). A label row that would touch the slant flattens it
+  there. A node a neighbour stretches taller than that width allows spreads the same
+  slant over every row (a column may repeat) rather than losing it. Side edges attach at the node's outer face, then a post-pass extends the stroke
+  (and moves an arrowhead) across the blank cells to the slanted wall.
+- **Parallelogram** (`[/x/]`, `[\x\]`). Mermaid 12.2.0 (also the npm latest) leans both
+  sides the same way, top edge shifted right for `[/x/]` and left for `[\x\]`, in every
+  direction (BT and RL do not flip or mirror it). Ours leans one column per row (`╱` / `╲`,
+  `/` / `\`) with `╱──╱` on the top and bottom rows, so a node is wider by its slant (at
+  least `2 × rows + 1` columns). A wall that would touch a label row stops short of it.
+  A node stretched taller than that width allows spreads the lean over every row.
+  Edges attach as for the trapezoid: at the outer face, with a post-pass that extends the
+  stroke (and moves an arrowhead) across the blank cells to the slanted wall. Under RL the
+  outline is mirrored back within its own rect so the lean matches LR (#1701).
+- **Double circle** (`(((x)))`). Mermaid 12.2.0 (also the npm latest) draws two
+  concentric circles with a small gap, in every direction. Ours is the circle outline
+  twice: the outer ring over the whole node, the inner one two columns and one row in
+  (`╭╮ ╱╲ ( )` and `.'` `/\` in ASCII), so `( ( x ) )` on the middle row. The node is two
+  rows taller and four columns wider than a circle, so a one-line label is 7 rows with a
+  5-row inner circle (5 rows with a 3-row inner pill at `boxBorderPadding: 0`), the rows
+  of every node on the same layout row grow with it, and the label rows keep the inner ring a cell clear of the text. Edges
+  attach at the outer ring as for the circle. The ring gap is one cell, not mermaid's
+  proportional gap. The outer ring grows rows with its width as for the circle (#2707),
+  so 7 rows is the minimum and a wide label's node is about `columns / 2` rows.
+- **Re-checked against 12.3.0.** Every shape above was rendered again in mermaid 12.3.0
+  (`look: neo` and `look: classic`): same silhouette class as 12.2.0, except the
+  cylinder's bottom (above). Circle, double circle and diamond are 1:1 in 12.3.0 at every
+  label size, and ours now matches to within one row (#2707).
+- Every shape in the issue is now drawn as a silhouette; the remaining differences are the
+  ones listed per shape above (diagonals and curves quantised to cells).
+
+## ASCII: LR skip edge beside a reciprocal pair (partial match)
+
+[#2100](https://github.com/dfadler/zombie-mermaid/issues/2100). For the `LR`/`RL` form
+of the sample above, the renderer now follows mermaid 12.2.0's topology: `b --> a` and
+`b --> c` leave `b` on separate rows, `b --> c` runs under `a` with an arrowhead of its
+own at `c`, the loop on `a` sits above it, and `a --> c` / `c --> a` are two strokes
+between `a` and `c`. It is not a full match:
+
+- **`b --> c` enters `c`'s bottom face.** Mermaid enters `c`'s left face. A second
+  stroke on the left face would need a taller box.
+- **The loop leaves `a`'s right face and re-enters its top.** Mermaid leaves and
+  re-enters the top. The first row gets a blank margin row for it.
+- **Narrow trigger** (`backStraight`, `edge-routing.ts`): `LR`/`RL`, no subgraphs, no
+  labels on the pair, a skip edge sharing an end with the pair, no loop on that skip
+  edge's ends, and at most 3 non-loop edges in total on each node of the pair (the
+  pair's own two edges plus one more, the skip edge). Busier shapes and every other
+  reciprocal pair keep the U under the row.
+- **Boxes on the pair take 5 rows.** The two strokes need three cells on each side
+  face (a 3-row box has one), so the pair's nodes grow, as boxes with several side-face
+  edges already do. Mermaid's boxes do not change height.
+
+Checked against mermaid 12.2.0 (the pin and npm latest), headless via
+`scripts/lib/real-mermaid.ts`.
+
+## Class: lollipop interfaces
+
+Not a difference any more for one-ended lollipops
+([#2117](https://github.com/dfadler/zombie-mermaid/issues/2117),
+[#2135](https://github.com/dfadler/zombie-mermaid/issues/2135)): `A ()-- B` / `B --() A` draw
+the name beside a small circle joined to `B` by a stem, with no `A` box unless `A` has
+members, an annotation, another relationship, a note or a namespace, in both SVG and ASCII,
+as mermaid.js does (12.1.0 and 12.2.0 agree). `()--()` is an ordinary boxed line with a
+circle at both ends, in mermaid and here.
+
+Dotted lollipops (`()..`, `..()`, `()..()`) parse and draw a dashed stem, as in mermaid
+12.3.0.
+
+## Class: edge corners in SVG
+
+mermaid 12.1.0 and 12.2.0 draw class edges orthogonally with 7 px rounded corners (not
+smooth curves, [#2104](https://github.com/dfadler/zombie-mermaid/issues/2104)); ours has
+sharp corners. Relationship labels sit on the edge over a background plate in both.
+
+## Class: LR and RL in ASCII
+
+Class diagrams with `direction LR` or `direction RL` are drawn in ASCII like the SVG, with
+each level in a column and `RL` as the mirror
+([#2158](https://github.com/dfadler/zombie-mermaid/issues/2158); mermaid.js 12.1.0 and 12.2.0
+agree on the arrangement). The top-down and `BT` drawings are the class renderer's own level
+rows; `LR` and `RL` are lowered onto the flowchart ASCII grid instead (classes become boxed
+nodes, relationships become edges, namespaces become frames), so a few things follow the
+flowchart, not mermaid:
+
+- Boxes in a column share one width and boxes on a row share one height; the extra rows stay
+  empty at the bottom of the last compartment (a box with one compartment is centred).
+  mermaid.js keeps each box at its own size.
+- A parent with several children leaves by one face and branches off a shared trunk, instead
+  of one line per child from the parent's flow-side face.
+- A line that meets a box side on a compartment divider row is joined to it (`┼`); it can
+  look as if it crosses the box.
+- Namespace frames, labels and routing around obstacles are the flowchart's, so they differ
+  in detail from the top-down class drawing.
+
+`RenderOptions.direction` still does not apply to class diagrams.
+
+## `themeVariables` are honoured by default, and only a subset
+
+Added opt-in in [#2108](https://github.com/dfadler/zombie-mermaid/issues/2108), on by
+default since [#2856](https://github.com/dfadler/zombie-mermaid/issues/2856) to match
+mermaid 12.3.0 (`primaryColor` under `theme: base`, `lineColor` and `pie1` render the same
+paint). Mermaid applies `%%{init: {"themeVariables": {...}}}%%`; zombie-mermaid maps a
+subset onto its tokens, and a caller who wants the host's `bg`/`fg` theme to win over text
+inside the diagram sets `honorThemeVariables: false`. Checked on mermaid 12.1.0 and 12.2.0 (headless Chromium, computed
+paint, identical results):
+
+| Input                                                                                             | mermaid.js 12.1.0 / 12.2.0              | zombie-mermaid                                   |
+| ------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------ |
+| `theme: base` + `primaryColor`, flowchart                                                         | node fill follows it                    | ignored; with the option: node fill (`surface`)  |
+| `primaryColor` under the default, `dark`, `forest`, `neutral` themes                              | ignored                                 | same                                             |
+| `primaryTextColor`, `primaryBorderColor` (`base`)                                                 | text colour; start of a border gradient | ignored; with the option: `fg`; a solid `border` |
+| `lineColor`, any theme                                                                            | edge and arrowhead colour               | ignored; with the option: `line`                 |
+| `pie1`..`pie12`, any theme                                                                        | the Nth slice in source order, wrapping | ignored; with the option: same                   |
+| invalid `primaryColor` (`#12345`)                                                                 | throws `Unsupported color format`       | ignored, renders                                 |
+| invalid `pie1` (`notacolor`)                                                                      | slice painted `#333`                    | ignored, theme colour kept                       |
+| `secondaryColor`, `tertiaryColor`, `background`, `fontFamily`, `nodeBorder`, `pie*TextColor`, ... | applied or used to derive other colours | not supported, listed in `InitConfig.ignored`    |
+
+Mermaid derives many colours from `primaryColor` (secondary/tertiary, subgraph
+fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
+`base` diagram with only `primaryColor` set does not look the same in both. Only
+flowchart, state and pie read the directive. Details and the opt-in table:
+[Configuration directives](diagrams.md#themevariables).
+
+## Invalid colours are ignored, not refused
+
+Decided in [#2345](https://github.com/dfadler/zombie-mermaid/issues/2345) (policy from
+[#1523](https://github.com/dfadler/zombie-mermaid/issues/1523)). An invalid colour in a
+`style`/`classDef` line (`fill:notacolor`, `stroke:#zzz`) does not fail the render:
+mermaid.js 12.1.0 and 12.2.0 render the diagram without raising, and the browser drops
+the bad declaration, so the default paint stays. zombie-mermaid also renders and drops
+the value (it never reaches the SVG). The agentic-mermaid project refuses such input by
+name instead. The difference is deliberate, not a gap: parity with mermaid.js here means
+tolerating the input. (An invalid `themeVariables` colour is a separate case, listed in
+the table above, where mermaid itself throws.)
+
+## ASCII: opt-in layout-faithful mode (`--layout mermaid`)
+
+The default ASCII renderer lays flowcharts out on its own grid, so node order and spacing
+differ from mermaid's. `zombie-mermaid render <file> --ascii --layout mermaid` (library:
+`renderMermaidASCIIWithLayout(src, { layout: 'mermaid' })` from `zombie-mermaid/ascii-layout`)
+instead draws mermaid's own ELK layout (`packages/elk-layout`, `packages/ascii-layout`; #2177).
+Opt-in only: without the flag the output is byte-identical to before.
+
+- **Fallback, never silent.** Subgraphs, shapes the layout does not model, non-flowchart
+  diagrams, a layout error, or a missing `elkjs-0.12.0` make it use the standard renderer; the
+  CLI prints `layout-faithful: <reason>; used standard renderer` on stderr and the API returns
+  `path: 'standard'` plus `fallbackReason`. On success stderr says `layout-faithful: used
+  mermaid's ELK layout` and the result carries a `note`.
+- **Width cap and fallback.** The drawing is capped at 120 columns (`--max-width <n>` /
+  `maxCols` sets another cap): blank gaps between node groups are shrunk to fit, boxes never
+  are. A diagram whose boxes alone exceed the cap (e.g. a long LR chain of wide labels) falls
+  back to the standard renderer by default, with `layout-faithful: layout-faithful output is N
+  columns, over the 120-column cap; used standard renderer` on stderr (API: `fallbackReason`).
+  To get the wide layout-faithful text anyway, use `--layout mermaid-wide` (API:
+  `maxCols: Infinity`).
+- **Crowded faces grow the box.** Every parallel edge is drawn (mermaid@12.3.0 draws them all),
+  one per character row or column, so a node with many edges on one face is taller or wider than
+  mermaid's box: a character cell holds one line, so eight lanes need eight rows. The older
+  merged drawing is opt-in (`facePolicy: 'merge-then-grow'` in `@zombie-mermaid/ascii-layout`).
+- **Plain drawing at a fixed scale.** `-x/-y/-p`, `--coords`, `--theme` colors, `--hyperlinks`
+  and `--max-width` compaction (it is the column cap instead) do not apply to it (they apply to a fallback render).
+- **Pinned to mermaid 12.3.0 + elkjs 0.12.0.** The layout is only faithful to that pair, which
+  matches the repo's oracle pin (`pnpm run elk-layout:oracle`; the flat gallery differences that
+  remain are listed in `packages/elk-layout/README.md`, "Known gaps").
+- **Dependency.** `elkjs-0.12.0` (`npm:elkjs@0.12.0`) is an optional peer dependency of
+  `zombie-mermaid`, kept separate from the `elkjs` the SVG renderer uses. The layout
+  code is bundled into lazy chunks that load only when the option is used. The MCP tool does not
+  expose it.
+
+## C4: a title-only diagram draws its title
+
+`C4Context` with a `title` and no elements: mermaid.js 12.1.0 and 12.2.0 both emit
+`viewBox="0 -70 200 187"` with the title at `x="-150"`, which is left of the
+viewBox, so the title is clipped and invisible (checked headless in Chromium, #2282).
+zombie-mermaid deliberately draws it: the SVG canvas is `2 * 50 + title width` by 80,
+with the title inside, and the ASCII output prints the title (mermaid has no ASCII
+output). A diagram with no title, elements, or boundaries still renders nothing.
+
+## Flowchart SVG presentation (#2476, #2493)
+
+Re-measured on current main against mermaid 12.3.0 (headless, `scripts/lib/real-mermaid.ts`
+with a scratch `npm i mermaid@12.3.0`). Head colour, dotted pattern, thick width, arrowhead
+size and shape, separate heads for edges into one node (spaced about a sixth of the node
+width apart, as mermaid does), a `classDef`/`style` fill with no `color:` keeping the
+default dark text ([#2637](https://github.com/dfadler/zombie-mermaid/issues/2637)), the
+hexagon's angled-side inset (height / 3.5), and the LR/RL parallelogram yes/no routing
+(including the `D --> B` back-edge, which enters the diamond's lower side) all match. The
+edge-label background matches too: a box the size of the text, no border, no padding
+([#2854](https://github.com/dfadler/zombie-mermaid/issues/2854)); only the fill colour is ours.
+
+## Flowchart `curve` directive is ignored ([#2729](https://github.com/dfadler/zombie-mermaid/issues/2729))
+
+mermaid 12.3.0 draws the same rounded orthogonal ELK edges for every
+`%%{init: {"flowchart": {"curve": ...}}}%%` value (basis, linear, step, stepBefore,
+stepAfter, natural, cardinal, monotoneX, bumpX, catmullRom: identical edge paths, checked
+headless with a scratch `npm i mermaid@12.3.0`). So do we: the directive and front-matter
+`config.flowchart.curve` are ignored. The `curve` render option still applies.
+
+## Known limitations (not intentional, not yet fixed)
+
+## ER diagrams
+
+zombie-mermaid's ER parser (`packages/mermaid-parser/src/er/parser.ts`) is a
+line-oriented parser rather than mermaid.js's grammar, so it is more lenient in
+some places and stricter in others.
+
+**Unquoted relationship labels.** Matches mermaid 12.3.0 ([#2853](https://github.com/dfadler/zombie-mermaid/issues/2853)):
+an unquoted label is word tokens, and a word that starts with `one`, `many` or `to`
+(also `only one`, `zero or more`, `many(0)`), a number, or a character such as `,` `(` `<`
+is a parse error in both. Quote the label (`: "one-to-one"`) to keep it. `opt-to-many`,
+`a-to-b`, `has owns` and `"one-to-one"` parse in both.
+
+## YAML front matter: a subset ([#2585](https://github.com/dfadler/zombie-mermaid/issues/2585))
+
+Checked against mermaid 12.3.0. A leading `---` ... `---` block is accepted on every diagram type, and `config:` is applied like the matching `%%{init}%%` directive (a later in-body init wins, as in mermaid). Differences:
+
+- `title:` is drawn as in mermaid 12.3.0: above flowchart, state, class and ER (a 54px band, 18px centred text), and as the chart title of sequence, pie, xychart and quadrant, where the diagram's own `title` wins. C4 and architecture draw nothing, as in mermaid. In ASCII the title is a centred row above the diagram for flowchart, state, class and ER (mermaid has no ASCII output to compare).
+- The YAML is a small indentation-based subset: nested `key: value` maps under `config:`, quoted and bare scalars, numbers, booleans, `#` comments. Flow style (`{a: 1}`), lists and multi-line scalars are skipped silently; mermaid parses full YAML and rejects malformed YAML with an error, we do not.
+- Like mermaid, the opening `---` must be the very first line (a blank line, BOM, spaces or `%%` comment before it is not front matter) and an empty block is not accepted. An unterminated block errors at the opening line.
+
+## Class, ER and state `%%{init}%%` / front-matter config ([#2786](https://github.com/dfadler/zombie-mermaid/issues/2786))
+
+Measured on mermaid 12.3.0 (headless Chromium, each key rendered with and without). Init and front
+matter share one code path. SVG only: ASCII has no pixel padding, so these keys do nothing there.
+
+- **Read: `class.padding`** (default 12), as a delta from the default: box width gains 2 per unit,
+  each compartment gains 2 above and below (mermaid: 6 per unit over three compartments). **`class.hideEmptyMembersBox`**
+  drops both empty compartments of a class with no members (a class with one empty compartment keeps it, as in mermaid).
+- **Read: `er.diagramPadding`** (default 20), **`er.entityPadding`** (default 15) and **`er.minEntityWidth`** (default 100),
+  as deltas from the default on our scale: a bare entity grows 2 wide and 3 tall per unit of `diagramPadding`, each attribute
+  column 1.25 wide; the header and every row grow 1.25 tall per unit of `entityPadding`; `minEntityWidth` floors the width of
+  every entity (ours already floors a table at 140).
+- **Not read, no effect in mermaid 12.3.0:** `class.titleTopMargin`, `dividerMargin`, `textHeight`, `nodeSpacing`, `rankSpacing`,
+  `diagramPadding`; `er.layoutDirection`, `minEntityHeight`, `nodeSpacing`, `rankSpacing`, `stroke`, `fill`, `fontSize`;
+  every `state` key except `useMaxWidth` (`padding`, `nodeSpacing`, `rankSpacing`, `fontSize`, `forkWidth`, `compositTitleSize`,
+  `radius`, ...). The `state` block is reported as ignored.
+- **Not read:** `class.layout` (changes the engine, see ELK note above) and `useMaxWidth` (only the `<svg>` sizing attributes).
+- **Also measured:** the `architecture`, `xyChart` and `c4` blocks, in the sections below.
+
+## Architecture `%%{init}%%` / front-matter config ([#2907](https://github.com/dfadler/zombie-mermaid/issues/2907))
+
+Measured on mermaid 12.3.0 (headless Chromium, each key rendered with and without; its layout is
+deterministic, two default renders agree exactly). Init and front matter share one code path. SVG only: ASCII
+has no pixel units, so these keys do nothing there.
+
+- **Read: `architecture.padding`** (default 40) pads the page and every group: the canvas grows 4 per unit on each
+  axis, a group's border sits `padding + 2.5` from the services it holds. The `padding` render option still sets
+  the page margin when the caller passes it; the group padding always follows the config.
+- **Read: `architecture.iconSize`** (default 80) is the tile edge. The icon glyph and the empty-service box scale with it,
+  a label wraps at 1.5 tiles. The group's corner icon is not tied to it: it is `padding * 0.75` (30 by default).
+- **Read: `architecture.fontSize`** (default 16) only sets the room under a label: a group's bottom edge sits `fontSize + 1`
+  below the tile, and the label is measured at that size. The text is still drawn at the same size, as in mermaid.
+- **Read: `architecture.idealEdgeLengthMultiplier`** (default 1.5, values 0.1 to 100) puts neighbouring cells
+  `iconSize * (1 + multiplier)` apart. Across a group border the gap is fcose's own separation (about 77 between boxes at
+  the default tile), which follows `padding` and `iconSize`; we fit it to tiles 20 to 120 and it is within 8px, not exact.
+- **Differences left:** below a multiplier of 1.5 mermaid's force layout compresses the pitch a little (up to 6px at
+  0.1 to 1). Label widths come from our font metrics, so a label wider than its tile (`iconSize: 40`, `fontSize: 24`) can
+  differ by a few pixels. A word wider than the wrap width stays whole, where mermaid cuts it mid-word.
+- **Not read, no effect on mermaid 12.3.0 output:** `nodeSeparation`, `seed`, `randomize` (under 0.2px) and `useMaxWidth`
+  (only the `<svg>` sizing). **`edgeElasticity`** and **`numIter`** only move the force layout's resting positions by a
+  few pixels (`edgeElasticity` 0.1 shifts the rows about 2px; `numIter` 50 shifts the columns about 15px), which needs
+  fcose itself to reproduce, so they are not read.
+
+## Architecture ASCII labels ([#2678](https://github.com/dfadler/zombie-mermaid/issues/2678))
+
+Checked against mermaid 12.3.0 (headless, `scripts/lib/real-mermaid.ts`) for the gallery architecture samples and the
+fork-fix architecture sources; not checked on GitHub (renders 12.2.0) or mermaid.live.
+
+- **Every service and group title is drawn.** An icon mermaid has no art for (`general-94`'s `not-a-real-icon`) shows its
+  `?` as the first line of the box, above the label, where mermaid puts the glyph above the text. Known icons
+  (`database`, `disk`, `server`, `cloud`, `internet`, `blank`) draw no glyph in ASCII: the grid has no icon art, so the
+  shape (cylinder, stadium, circle) stands for it.
+- **A group that the ports would fold into another keeps its box** (`general-96`: `jobs:R -- L:db` and `api:B -- T:db`
+  make Backend L-shaped, which swallowed Storage). The group is stacked on its last layer and the foreign service steps
+  one layer past it, which is the column mermaid draws. Group positions in ASCII follow the ports, not fcose, so a
+  group's exact slot can differ (#2682, SVG layout, is decided separately).
+- **Left ([#3043](https://github.com/dfadler/zombie-mermaid/issues/3043)):** an edge with no arrowhead that ends at a group (`api:B -- T:db{group}`) runs down the source
+  group's wall. The same happens for `A --- Sub` in a flowchart, so it is the edge router's cluster-entry shape, not the
+  architecture lowering. C4's text order differs from mermaid's only in DOM order; every label is present and reads in
+  the same places.
+
+## xyChart `%%{init}%%` / front-matter config ([#2905](https://github.com/dfadler/zombie-mermaid/issues/2905))
+
+Measured on mermaid 12.3.0 (headless Chromium, each key of the `xyChart` block rendered with and without,
+normalised SVG compared): every key changes mermaid's output except `showLegend`, `legendFontSize`,
+`legendPadding` (no legend is drawn), `useMaxWidth` (only the `<svg>` sizing attributes) and `yAxis.labelRotation`.
+Init and front matter share one code path.
+
+- **Read, SVG and ASCII:** `chartOrientation` (`horizontal` overrides the header), `showTitle`, and `xAxis.showTitle` /
+  `yAxis.showTitle` (drop the chart or axis title). `xAxis` is mermaid's category-or-x axis and `yAxis` its value axis,
+  whatever the orientation.
+- **Read, SVG only:** `width` and `height` (mermaid default 700 x 500): the canvas is exactly `width` x `height`, as in
+  mermaid 12.3.0 (viewBox checked for every combination of hidden chart title, axis titles and axis labels, both
+  orientations), and the plot takes the room the margins leave (minimum 50px), so a hidden title, label or axis title
+  widens or heightens it. ASCII has no pixel sizes. Per axis `showLabel`, `showTick` and `showAxisLine` are read in
+  SVG and ASCII (every combination of the four per-axis keys checked against 12.3.0, both orientations, band and linear x,
+  with and without axis titles): a hidden label leaves no row or column, a tick without its axis line is a lone stub. The margins are our own (the plot rectangle is not mermaid's to the pixel; tick
+  and data positions as fractions of each axis match, `pnpm run xychart:oracle`).
+- **Read, SVG only** ([#3010](https://github.com/dfadler/zombie-mermaid/issues/3010)): `titleFontSize`, `titlePadding`,
+  `plotReservedSpacePercent`, `showDataLabel`, `showDataLabelOutsideBar`, and per axis `labelFontSize`, `labelPadding`,
+  `titleFontSize`, `titlePadding`, `tickLength`, `tickWidth`, `axisLineWidth` and `labelRotation` (the bottom axis of a
+  vertical chart only, as in mermaid). A set key moves our fixed margins by its difference from mermaid 12.3.0's
+  default and draws at its value; checked against 12.3.0 for each key, both orientations: the plot rectangle's edges
+  move within 1px (a title or axis title font within 1px; 4px for a larger label font on the value axis, because text widths are
+  estimated; 2px for a rotated label's room). Unset keys leave the output as it was, so the plot rectangle at the defaults is still our own.
+  `showDataLabel` takes mermaid's font-size rule and positions (values from the first series, as mermaid does, one size per
+  series), placed on our bars. `plotReservedSpacePercent` drops a title, axis title or label that does not fit in
+  the share it leaves, only when set. ASCII reads none of these: a character grid has no pixel sizes.
+
+## C4 `%%{init}%%` / front-matter config ([#2906](https://github.com/dfadler/zombie-mermaid/issues/2906))
+
+Measured on mermaid 12.3.0 (headless Chromium, each `c4` key rendered with and without it; a
+container diagram with a boundary, a db, a queue and wrapped labels). Init and front matter share
+one code path. Row wrapping is the width-limit rule of [#2790](https://github.com/dfadler/zombie-mermaid/issues/2790).
+
+- **Read, SVG and ASCII row wrapping:** `diagramMarginX`, `diagramMarginY`, `c4ShapeMargin`, `c4ShapePadding`,
+  `width` (minimum shape width, and the width text wraps to less twice the padding), `nextLinePaddingX` and
+  `wrap: false` (names, descriptions and relationship labels are not wrapped, so a shape widens to its longest line).
+  `c4ShapePadding` grows a rectangle 2 per unit, a database 1 and a queue 0.5, as mermaid does. In ASCII only the
+  row-breaking effect applies (shape widths, margins), since a character grid has no pixel padding.
+- **Not read, no effect in mermaid 12.3.0:** `c4ShapeInRow` and `c4BoundaryInRow` (only the `UpdateLayoutConfig` statement
+  changes them), `height`, `boxMargin`, `wrapPadding`, and `systemFontSize` and its siblings for kinds the diagram does not use.
+- **Not read:** the per-kind `*FontSize`, `*FontFamily` and `*FontWeight` keys (they change mermaid's text measurement; ours uses
+  its own Arial advance table, set with the `font` option), the `*_bg_color` / `*_border_color` colours (palette, [#2617](https://github.com/dfadler/zombie-mermaid/issues/2617))
+  and `useMaxWidth` (only the `<svg>` sizing attributes).
+
+## Radar charts
+
+Checked against mermaid 12.3.0 with `pnpm run radar:oracle` (the pin, 12.2.0, has the same radar
+code): the viewBox, rings, spokes, labels, curves, legend rows and title agree to 0.01px on every
+gallery sample, eight edge cases and four init/front matter samples (one axis, two axes, fractional and zero ticks, a minimum above
+the values, markup in labels).
+
+- **Palette.** Curve and legend colours are the theme accent and its series shades; mermaid uses
+  its `cScale` hues. Axis and graticule colours come from the theme too.
+- **Rounding.** Coordinates are written to two decimals; mermaid writes the full float (`1.8e-14`
+  for a coordinate that is zero).
+- **Config.** `%%{init}%%` and front matter `radar` geometry keys (`width`, `height`, the four
+  margins, `axisScaleFactor`, `axisLabelFactor`, `curveTension`) move the viewBox, rings, spokes,
+  labels, curves, legend and title as in mermaid 12.3.0 (checked by `radar:oracle`). The
+  `themeVariables.radar` sizes and opacities (`axisStrokeWidth`, `axisLabelFontSize`,
+  `curveOpacity`, `curveStrokeWidth`, `graticuleOpacity`, `graticuleStrokeWidth`,
+  `legendFontSize`) reach the CSS; mermaid 12.3.0 ignores those same keys under `radar`, so
+  this library does too. A number outside 0..100000 or a string is dropped. `legendBoxSize`
+  changes nothing in mermaid 12.3.0 (the box is always 12px). `useMaxWidth` only sets the
+  `<svg>` sizing attributes. Colours (`axisColor`, `graticuleColor`) are palette, not read.
+  ASCII ignores the config (no text mode).
+- **Title element.** Written even when empty, as mermaid does.
+- **Looks and themes.** Mermaid 12.3.0 draws radar identically under `look` `neo` and `redux`
+  (`%%{init}%%`, `theme` `neo-dark`/`redux-dark` too): the SVG structure and the radar CSS equal
+  the default look's. Other themes (`dark`, `forest`) change only the CSS colours, never the
+  structure. This library ignores `look` for radar as well, so there is nothing to match.
+- **mermaid.live.** Checked 2026-11-13 with the Radar: Grades sample: the diagram SVG equals the
+  mermaid 12.3.0 render element for element (only the site's pan/zoom wrapper and `viewBox`
+  differ). GitHub's ` ```mermaid ` block was not checked: it needs a published page.
+- **ASCII.** Mermaid has no ASCII output; the bar layout is this library's own.
+
+## Wardley maps
+
+Checked against mermaid 12.3.0 with `pnpm run wardley:oracle` (the repo's pin, `mermaid` in `package.json`, is 12.3.0): the viewBox and every line, circle, rectangle, path and text agree to 0.01px, in drawing
+order, on the six gallery samples and twenty-eight edge cases (percentages above 1, a value of exactly 1,
+custom stages with and without boundaries, quoted names, label offsets, every inertia and flow
+form, links to unknown names, repeated evolves and components, pipelines, annotations, notes,
+accelerators, comments, front matter).
+
+- **Palette.** Strokes and text are the theme's `--fg` and `--_text`; the evolve arrows
+  (mermaid's `#dc3545`) use the theme accent; the build, buy and outsource overlays (mermaid's
+  `#eee`, `#ccc`, `#666`) are mixes of `--fg` into `--bg`. Mermaid draws its default theme's colours.
+- **Rounding.** Coordinates are written to two decimals; mermaid writes the full float.
+- **Annotations box.** Mermaid sizes it from the text's measured width in the browser; this
+  library estimates the width, so the box can differ by a few percent (and where it is clamped
+  against the right edge, move with it).
+- **`themeVariables.wardley`.** The eleven colours mermaid 12.3.0 reads from a directive or front
+  matter (`backgroundColor`, `axisColor`, `axisTextColor`, `componentFill`, `componentStroke`,
+  `componentLabelColor`, `linkStroke`, `evolutionStroke`, `annotationStroke`, `annotationTextColor`,
+  `annotationFill`) recolour the drawing; a value that is not a plain colour (`url()`, `var()`) is dropped.
+  The oracle compares geometry only, so these are covered by unit tests, not `wardley:oracle`.
+- **`wardley-beta` config keys are not read, and mermaid 12.3.0 does not read them either from a
+  directive.** `width`, `height`, `padding`, `nodeRadius`, `nodeLabelOffset`, `axisFontSize`,
+  `labelFontSize`, `showGrid` and `gridColor` only take effect through `mermaid.initialize({ 'wardley-beta': ... })`;
+  in `%%{init}%%` and front matter `config:` mermaid drops the key (probed in headless 12.3.0: the viewBox stays
+  900 x 600 and no grid is drawn). This library has no site-config option, so they are not applied. `size [w, h]`
+  in the source is honoured, as in mermaid. `showGrid` defaults to off in mermaid too.
 - **Degenerate links.** Two nodes on one spot draw no link; mermaid writes `NaN` coordinates.
 - **Not checked.** mermaid.live (12.2.0 today) and a GitHub block were not compared; both are
   older than 12.3.0, so the pin's agreement with 12.3.0 is the reference.

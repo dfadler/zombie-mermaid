@@ -29,8 +29,8 @@ Checking one to satisfy the gate defeats it, so:
    `gh pr view --json body`. Not `git diff --stat` or the working tree: they
    list changes that are not in the PR and do not show the entry is present.
    For the `Visual verification` item, run `pr-visual-verification` first; the
-   box is checked only when the saved body has the `mermaid` block and every
-   image the diff calls for.
+   box is checked only when the saved body passes the "Check before reporting
+   done" list in `pr-visual-verification`.
 3. **N/A needs a reason.** If an item does not apply, check it and write
    `N/A: <one-line reason tied to this diff>` on the same line (for example
    `N/A: no ASCII output change, only demo/ CSS`). Don't mark N/A to skip work

@@ -1,4 +1,4 @@
-# target sentence: the description's scope, "Build the complete Visual verification section of a PR or issue body"; this prompt shares the SVG/ASCII vocabulary but is a usage question, not a PR body.
+# target sentence: the description's scope, "Build the \"Visual verification\" section of a PR or issue body"; this prompt shares the SVG/ASCII vocabulary but is a usage question, not a PR body.
 schema_version: '1.1'
 name: pr-visual-verification-quiet-on-svg-vs-ascii-question
 description: >

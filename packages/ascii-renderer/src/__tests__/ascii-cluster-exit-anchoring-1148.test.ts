@@ -228,13 +228,24 @@ describe('cluster-exit anchoring: engagement and fallbacks', () => {
     expect(graph.clusterExitPlans).toBeUndefined()
   })
 
-  it('lane siblings alone (no other exit) do not engage; they keep lane routing', () => {
+  it('two flow-face lane siblings alone engage, as mermaid draws parallel strokes (#2787)', () => {
     const graph = layout(`flowchart TD
   subgraph S
     a
   end
   S -->|x| C
   S -->|y| C
+`)
+    expect(graph.clusterExitPlans?.size).toBe(1)
+  })
+
+  it('lane siblings alone (no other exit) with labels too wide for one stroke keep lane routing', () => {
+    const graph = layout(`flowchart TD
+  subgraph S
+    a
+  end
+  S -->|xx| C
+  S -->|yy| C
 `)
     expect(graph.clusterExitPlans).toBeUndefined()
     const lanes = graph.edges.filter((e) => e.parallelLane)

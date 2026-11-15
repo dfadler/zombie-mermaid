@@ -1,5 +1,9 @@
 import { sanitizeTitle } from '../sanitize-title.ts'
-import { MermaidParseError, stripFrontMatter } from '@zombie-mermaid/core'
+import {
+  extractInitConfig,
+  MermaidParseError,
+  stripFrontMatter,
+} from '@zombie-mermaid/core'
 import type {
   WardleyAnnotation,
   WardleyArrow,
@@ -482,5 +486,7 @@ export function parseWardley(text: string): WardleyMap {
   map.accelerators = accelerators
   map.deaccelerators = deaccelerators
   if (title !== undefined) map.title = title
+  const init = extractInitConfig(text.split(/\r\n?|\n/))
+  if (init.wardleyTheme) map.theme = init.wardleyTheme
   return map
 }
