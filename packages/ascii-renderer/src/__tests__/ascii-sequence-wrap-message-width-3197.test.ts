@@ -7,8 +7,9 @@ import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 const N = 'Pneumonoultramicroscopicsilicovolcanoconiosis'
 // Rows between the participant boxes that carry message text.
 const textRows = (out: string) =>
-  out.split('\n').filter((l) => /[A-Za-z]{3}/.test(l) && !/[│|] *[AB] *[│|]/.test(l))
-    .length
+  out
+    .split('\n')
+    .filter((l) => /[A-Za-z]{3}/.test(l) && !/[│|] *[AB] *[│|]/.test(l)).length
 
 describe('wrapped message width (#3197)', () => {
   // [width, lines mermaid 12.3.0 draws for the 45-character word]
