@@ -3318,7 +3318,10 @@ export function determineLabelLine(
   ): number => {
     const ra = rank(a.line)
     const rb = rank(b.line)
-    return ra[0] - rb[0] || ra[1] - rb[1] || b.index - a.index
+    // #3158: a hook's last leg carries the arrowhead into its node, so a
+    // self-loop's label goes on the first leg, not over the arrowhead.
+    const toward = edge.from === edge.to ? a.index - b.index : b.index - a.index
+    return ra[0] - rb[0] || ra[1] - rb[1] || toward
   }
 
   let largestLine: [GridCoord, GridCoord]
