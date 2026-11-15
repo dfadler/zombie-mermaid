@@ -1,4 +1,4 @@
-import { MermaidParseError } from '@zombie-mermaid/core'
+import { extractInitConfig, MermaidParseError } from '@zombie-mermaid/core'
 import { sanitizeTitle } from '../sanitize-title.ts'
 import type { Treemap, TreemapNode, TreemapStyle } from './types.ts'
 
@@ -257,6 +257,8 @@ export function parseTreemap(text: string): Treemap {
   }
 
   const treemap: Treemap = { roots }
+  const init = extractInitConfig(text.split(/\r\n?|\n/))
+  if (init.treemap) treemap.config = init.treemap
   if (title !== undefined) treemap.title = title
   return treemap
 }

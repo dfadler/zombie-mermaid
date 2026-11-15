@@ -24,6 +24,7 @@ import { Statement } from '@zombie-mermaid/core';
 import { StyleDirectives } from '@zombie-mermaid/core';
 import { ThemeVariables } from '@zombie-mermaid/core';
 import { toDirection } from '@zombie-mermaid/core';
+import { TreemapInitConfig } from '@zombie-mermaid/core';
 import { XyChartInitConfig } from '@zombie-mermaid/core';
 
 // @public
@@ -2672,6 +2673,7 @@ export { toDirection }
 
 // @public
 export interface Treemap {
+    config?: TreemapInitConfig;
     roots: TreemapNode[];
     // (undocumented)
     title?: string;
@@ -2694,6 +2696,9 @@ export interface TreemapStyle {
     // (undocumented)
     value: string;
 }
+
+// @public
+export function treemapValueFormatter(spec?: string): (v: number) => string;
 
 // @public
 export interface UsecaseActor {

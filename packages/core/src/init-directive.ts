@@ -136,6 +136,25 @@ export interface PacketInitConfig {
   bitOrder?: 'ascending' | 'descending'
 }
 
+/**
+ * The `treemap.*` init keys mermaid@12.3.0 reads that change the drawing. Not
+ * listed: `useMaxWidth` (only the root `width`/`max-width`, which this renderer
+ * sizes by its viewBox) and `borderWidth`, `valueFontSize`, `labelFontSize`
+ * (mermaid never reads them: its inline sizes win).
+ */
+export interface TreemapInitConfig {
+  /** Gap between siblings. */
+  padding?: number
+  /** The canvas is `nodeWidth` x 10 wide (960 when 0). */
+  nodeWidth?: number
+  /** The canvas is `nodeHeight` x 10 tall (500 when 0). */
+  nodeHeight?: number
+  showValues?: boolean
+  /** A d3-format specifier (`,`, `$0,0`, `.1%`...); a bad one falls back to `,`. */
+  valueFormat?: string
+  diagramPadding?: number
+}
+
 /** The `sankey.*` init keys that change mermaid's output (a bad value is dropped). */
 export interface SankeyInitConfig {
   width?: number
@@ -478,6 +497,8 @@ export interface InitConfig {
   packet?: PacketInitConfig
   /** The `sankey` block (see {@link SankeyInitConfig}). */
   sankey?: SankeyInitConfig
+  /** The `treemap` block (see {@link TreemapInitConfig}); a bad value is dropped. */
+  treemap?: TreemapInitConfig
   /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
   classLayout?: ClassInitLayout
   /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
@@ -1032,6 +1053,25 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'treemap' && typeof value === 'object' && value !== null) {
+      const t: TreemapInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of [
+        'padding',
+        'nodeWidth',
+        'nodeHeight',
+        'diagramPadding',
+      ] as const) {
+        const v = numeric(rec[k])
+        if (typeof v === 'number' && v >= 0 && v <= 1e5) t[k] = v
+      }
+      if (typeof rec.showValues === 'boolean') t.showValues = rec.showValues
+      if (typeof rec.valueFormat === 'string' && rec.valueFormat.length <= 64)
+        t.valueFormat = stripControls(rec.valueFormat)
+      config.treemap = t
+      continue
+    }
+
     if (lower === 'pie' && typeof value === 'object' && value !== null) {
       for (const [pk, pv] of Object.entries({ ...value })) {
         const pl = pk.toLowerCase()
@@ -1108,6 +1148,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
       merged.journey = { ...merged.journey, ...config.journey }
     if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }
     if (config.packet) merged.packet = { ...merged.packet, ...config.packet }
+    if (config.treemap)
+      merged.treemap = { ...merged.treemap, ...config.treemap }
     if (config.sankey) {
       const earlier = merged.sankey?.nodeColors
       merged.sankey = { ...merged.sankey, ...config.sankey }
