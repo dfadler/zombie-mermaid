@@ -4567,4 +4567,51 @@ data Details {
   A->>B: wrap: Supercalifragilisticexpialidocious_and_more_words here
   Note over A: wrap: Pneumonoultramicroscopicsilicovolcanoconiosis is long`,
   },
+  // ── Block shapes and block arrows (#3106). Appended last so earlier samples keep their baseline index. ──
+  {
+    title: 'Block: Node Shapes',
+    category: 'Block',
+    description:
+      'The delimiters pick the shape: `("x")` round, `(["x"])` stadium, `[["x"]]` subroutine, `[("x")]` cylinder, `(("x"))` circle, `{"x"}` diamond, `{{"x"}}` hexagon and `>"x"]` asymmetric. A polygon fills its cell, a circle, diamond or stadium keeps its own size in the middle of it.',
+    source: `block-beta
+  columns 4
+  a["square"] b("round") c(["stadium"]) d[["subroutine"]]
+  e[("cylinder")] f(("circle")) g{"diamond"} h{{"hexagon"}}
+  i>"asymmetric"]`,
+  },
+  {
+    title: 'Block: Leaning Shapes And Double Circle',
+    category: 'Block',
+    description:
+      '`[/"x"/]` and `[\\"x"\\]` lean, `[/"x"\\]` and `[\\"x"/]` are trapezoids, and `((("x")))` is a double circle. Their slanted sides and outer ring reach past the cell, so Mermaid draws them over a neighbour: `space` cells keep them apart.',
+    source: `block-beta
+  columns 3
+  a[/"lean right"/] space b[\\"lean left"\\]
+  c[/"trapezoid"\\] space d[\\"inverted"/]
+  e((("double"))) space f["plain"]`,
+  },
+  {
+    title: 'Block: Block Arrows',
+    category: 'Block',
+    description:
+      '`id<["text"]>(right, down)` draws an arrow block pointing in the listed directions (`right`, `left`, `up`, `down`, `x` for both horizontal, `y` for both vertical); a block arrow spanning columns stretches to them.',
+    source: `block-beta
+  columns 3
+  a<["right"]>(right) b<["left"]>(left) c<["up"]>(up)
+  d<["down"]>(down) e<["both"]>(x) f<["vertical"]>(y)
+  g<["right and down"]>(right, down) h<["all four sides"]>(right, left, up, down):2`,
+  },
+  {
+    title: 'Block: Shapes With Links',
+    category: 'Block',
+    description:
+      'A link leaves a shape where the line from its centre meets its outline: the circle, the cylinder, the leaning box and the subroutine are each clipped to their own edge. A link between neighbours in a column folds back over itself, as in Mermaid.',
+    source: `block-beta
+  columns 3
+  a(("start")) space b[("store")]
+  d[/"input"/] space e[["handler"]]
+  a -- "write" --> b
+  b --> e
+  d ==> e`,
+  },
 ]

@@ -17,7 +17,20 @@ const LINKED = `<svg viewBox="-5 -25 150 50"><g class="block"><path d="M41.438,0
 describe('parseBlockSvg', () => {
   it('reads rectangles relative to the viewBox, radii and the size', () => {
     expect(parseBlockSvg(OFFICIAL)).toEqual({
-      blocks: [{ x: 5, y: 5, width: 46, height: 40, radius: 5, style: '' }],
+      blocks: [
+        {
+          kind: 'rect',
+          x: 5,
+          y: 5,
+          width: 46,
+          height: 40,
+          cx: 28,
+          cy: 25,
+          geom: [],
+          radius: 5,
+          style: '',
+        },
+      ],
       edges: [],
       size: { width: 56, height: 50 },
     })
@@ -58,10 +71,85 @@ describe('parseBlockSvg', () => {
     const svg =
       '<svg><g class="node"><rect class="label-container"></rect></g><g class="node"><circle></circle></g></svg>'
     expect(parseBlockSvg(svg)).toEqual({
-      blocks: [{ x: 0, y: 0, width: 0, height: 0, radius: 0, style: '' }],
+      blocks: [
+        {
+          kind: 'rect',
+          x: 0,
+          y: 0,
+          width: 0,
+          height: 0,
+          cx: 0,
+          cy: 0,
+          geom: [],
+          radius: 0,
+          style: '',
+        },
+      ],
       edges: [],
       size: { width: 0, height: 0 },
     })
+  })
+})
+
+// Trimmed from mermaid 12.3.0's render of `block-beta\n  a(("x"))`, `a{"x"}` and `a[("x")]`.
+const CIRCLE = `<svg viewBox="-5 -29 58 58"><g class="block"><g class="node default" transform="translate(24, 0)"><circle r="24" cx="0" cy="0" class="basic label-container"></circle></g></g></svg>`
+const DIAMOND = `<svg viewBox="-4.5 -29 58 58"><g class="block"><g class="node default" transform="translate(24.5, 0)"><polygon points="24,0 48,-24 24,-48 0,-24" transform="translate(-23.5,24)" class="label-container"></polygon></g></g></svg>`
+const CYLINDER = `<svg viewBox="-5 -31 57 62"><g class="block"><g class="node default" transform="translate(23, 0)"><path d="M0,6.8 a23,6.8 0,0,0 46,0 a23,6.8 0,0,0 -46,0 l0,40 a23,6.8 0,0,0 46,0 l0,-40" class="basic label-container outer-path" transform="translate(-23, -26)"></path></g></g></svg>`
+const DOUBLE = `<svg viewBox="-18 -40 80 80"><g class="block"><g class="node default" transform="translate(23, 0)"><g class="basic label-container"><circle class="outer-circle" r="40" cx="0" cy="0"></circle><circle class="inner-circle" r="35" cx="0" cy="0"></circle></g></g></g></svg>`
+const ROUGH = `<svg viewBox="-5 -21 68 42"><g class="block"><g class="node default" transform="translate(29, 0)"><g class="basic label-container outer-path" transform="translate(1, 0)"><path d="M-10 -16 C0 -16 10 -16 20 -16" fill="#ececff"></path><path d="M-30 16 L30 16" fill="none"></path></g></g></g></svg>`
+
+describe('parseBlockSvg shapes', () => {
+  it('reads a circle as its radius and box, and a double circle as both radii', () => {
+    expect(parseBlockSvg(CIRCLE).blocks[0]).toMatchObject({
+      kind: 'circle',
+      geom: [24],
+      x: 5,
+      width: 48,
+      cx: 29,
+    })
+    expect(parseBlockSvg(DOUBLE).blocks[0]).toMatchObject({
+      kind: 'circle',
+      geom: [40, 35],
+      width: 80,
+    })
+  })
+
+  it('reads a polygon as its corners moved by its own transform', () => {
+    const [b] = parseBlockSvg(DIAMOND).blocks
+    expect(b).toMatchObject({ kind: 'polygon', width: 48, height: 48, cx: 29 })
+    expect(b!.geom.slice(0, 2)).toEqual([29.5, 53])
+  })
+
+  it('reads a cylinder path and a rough path as boxes', () => {
+    expect(parseBlockSvg(CYLINDER).blocks[0]).toMatchObject({
+      kind: 'cylinder',
+      width: 46,
+    })
+    expect(parseBlockSvg(ROUGH).blocks[0]).toMatchObject({
+      kind: 'rough',
+      geom: [],
+      width: 60,
+      height: 32,
+    })
+  })
+
+  it('reads our markup for each shape to the same kind as Mermaid', () => {
+    const kinds = (src: string) =>
+      parseBlockSvg(renderMermaidSVG(src)).blocks.map((b) => b.kind)
+    expect(kinds('block-beta\n  a(("x"))')).toEqual(['circle'])
+    expect(kinds('block-beta\n  a((("x")))')).toEqual(['circle'])
+    expect(kinds('block-beta\n  a{"x"}')).toEqual(['polygon'])
+    expect(kinds('block-beta\n  a[("x")]')).toEqual(['cylinder'])
+    expect(kinds('block-beta\n  a(["x"])')).toEqual(['rough'])
+    expect(kinds('block-beta\n  a>"x"]')).toEqual(['rough'])
+  })
+
+  it('notices a shape of another size or another kind', () => {
+    const wider = parseBlockSvg(CIRCLE.replace('r="24"', 'r="26"'))
+    expect(blockAgreement(parseBlockSvg(CIRCLE), wider).blocks).toBe(0)
+    expect(
+      blockAgreement(parseBlockSvg(CIRCLE), parseBlockSvg(DIAMOND)).blocks,
+    ).toBe(0)
   })
 })
 

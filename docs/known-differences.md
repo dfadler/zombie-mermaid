@@ -1040,8 +1040,10 @@ rectangles, lane labels, arrows and the drawing size agree on every gallery samp
 
 ## Block diagrams
 
-Checked against mermaid 12.3.0 with `pnpm run block:oracle`: every block's rectangle, its corner
-radius, every link's path and label place, and the drawing size agree on every gallery sample.
+Checked against mermaid 12.3.0 with `pnpm run block:oracle`: every block's drawn box and centre
+(and, for a shape, its circle radii, polygon points or cylinder path), its corner radius, every
+link's path and label place, and the drawing size agree on every gallery sample and on a case for
+each shape, each block arrow direction list, a wider cell and a two-line label.
 
 - **Text widths.** Mermaid measures labels in the browser; this library sums Trebuchet MS advances
   and ignores kerning, so a label can differ by about a pixel (`A label` measures 0.9px wider
@@ -1056,8 +1058,12 @@ radius, every link's path and label place, and the drawing size agree on every g
   which are dropped. A `style` on a block declared later, or on several ids, is a parse error (Mermaid
   throws a `TypeError`); `class` on an id that is not declared is ignored.
 - **Markdown strings** (`["`**x**`"]`) are a parse error in Mermaid 12.3.0 and are one here.
-- **Not drawn yet.** The other shapes: see
-  [#3106](https://github.com/dfadler/zombie-mermaid/issues/3106).
+- **Shapes.** A stadium and an asymmetric block are rough.js paths in Mermaid (curved
+  approximations of straight lines); here they are plain polygons with the same bounding box, and
+  the oracle compares only that box and the centre.
+- **Links to a diamond.** Mermaid 12.3.0 throws `this.calcIntersect is not a function` when a link
+  starts or ends at `{"x"}`, so the whole diagram fails to render there; here the link is clipped
+  to the diamond's outline.
 - **`~~~`.** Mermaid's lexer reads `~~~` as a block id (its id rule comes before the invisible-link rule); so does this parser.
 - **ASCII.** Mermaid has no ASCII output; the box grid is this library's own.
 

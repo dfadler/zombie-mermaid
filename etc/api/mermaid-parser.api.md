@@ -220,10 +220,44 @@ export interface BlockEdge {
 }
 
 // @public
+export interface BlockGeometry {
+    clip: {
+        width: number;
+        height: number;
+        points?: {
+            x: number;
+            y: number;
+        }[];
+        r?: number;
+        rx?: number;
+        ry?: number;
+    };
+    d?: string;
+    extent: {
+        minX: number;
+        minY: number;
+        maxX: number;
+        maxY: number;
+    };
+    inner?: number;
+    // (undocumented)
+    kind: 'circle' | 'doublecircle' | 'polygon' | 'cylinder';
+    labelDx: number;
+    // (undocumented)
+    labelDy: number;
+    points?: {
+        x: number;
+        y: number;
+    }[];
+    r?: number;
+}
+
+// @public
 export interface BlockNode {
     children: BlockNode[];
     classes: string[];
     columns?: number;
+    directions: string[];
     id: string;
     label: string;
     // (undocumented)
@@ -235,7 +269,7 @@ export interface BlockNode {
 }
 
 // @public
-export type BlockShape = 'square' | 'round';
+export type BlockShape = 'square' | 'round' | 'circle' | 'doublecircle' | 'diamond' | 'hexagon' | 'stadium' | 'subroutine' | 'cylinder' | 'rect_left_inv_arrow' | 'lean_right' | 'lean_left' | 'trapezoid' | 'inv_trapezoid' | 'block_arrow';
 
 // @public (undocumented)
 export interface C4Boundary {
@@ -1163,6 +1197,7 @@ export interface PositionedBlockEdge {
 export interface PositionedBlockNode {
     classes: string[];
     css: [string, string][];
+    geometry?: BlockGeometry;
     // (undocumented)
     height: number;
     // (undocumented)

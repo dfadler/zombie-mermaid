@@ -5,8 +5,8 @@
 // layout.ts and renderHelpers.ts), which is a grid, not a graph layout:
 //
 //   - a block is its label (one 24px line per `<br>`) plus 16px of padding
-//     (32px across, 16px for a round block); `space` and groups have no size
-//     of their own
+//     (32px across, 16px for a round block), or the size of its shape's drawing
+//     (`./shapes.ts`); `space` and groups have no size of their own
 //   - inside a group every child gets the size of the widest child (a child
 //     spanning N columns counts as 1/N of its width) and the tallest height; a
 //     child spanning N columns is N cells plus N - 1 paddings wide
@@ -30,6 +30,7 @@ import type {
   PositionedBlockNode,
 } from '@zombie-mermaid/mermaid-parser'
 import { textWidth } from '../timeline/layout.ts'
+import { clipToShape, fitShape, intersectRect } from './shapes.ts'
 
 /** Mermaid's block defaults. */
 export const BLOCK = {
@@ -73,12 +74,24 @@ function toCell(node: BlockNode, padding: number): Cell {
   }
   // Measured size of a plain block (`calculateBlockSize`); groups have none yet.
   if (node.type === 'node') {
-    cell.size = {
-      // A block is its label plus `padding` on each of its four sides, twice over across (2p for a round block).
-      width: textW + (node.shape === 'round' ? 2 : 4) * padding,
-      height: lines.length * BLOCK.lineHeight + 2 * padding,
-      x: 0,
-      y: 0,
+    if (node.shape === 'square' || node.shape === 'round') {
+      cell.size = {
+        // A block is its label plus `padding` on each of its four sides, twice over across (2p for a round block).
+        width: textW + (node.shape === 'round' ? 2 : 4) * padding,
+        height: lines.length * BLOCK.lineHeight + 2 * padding,
+        x: 0,
+        y: 0,
+      }
+    } else {
+      // The first pass: the size of what the shape draws on its own.
+      const fit = fitShape(
+        node.shape,
+        node.directions,
+        textW,
+        lines.length * BLOCK.lineHeight,
+        padding,
+      )
+      cell.size = { width: fit.width, height: fit.height, x: 0, y: 0 }
     }
   }
   return cell
@@ -223,27 +236,6 @@ interface Pt {
   x: number
   y: number
 }
-interface Box {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-/** Mermaid's `intersectRect`: where the line from the box centre to `p` leaves the box. */
-function intersectRect(n: Box, p: Pt): Pt {
-  const dx = p.x - n.x
-  const dy = p.y - n.y
-  let w = n.width / 2
-  let h = n.height / 2
-  if (Math.abs(dy) * w > Math.abs(dx) * h) {
-    if (dy < 0) h = -h
-    return { x: n.x + (dy === 0 ? 0 : (h * dx) / dy), y: n.y + h }
-  }
-  if (dx < 0) w = -w
-  return { x: n.x + w, y: n.y + (dx === 0 ? 0 : (w * dy) / dx) }
-}
-
 /** Mermaid's `markerOffsets` for the arrow types a block edge can have. */
 const markerOffset = (type: string): number | undefined =>
   type === 'arrow_point' ? 4 : undefined
@@ -321,7 +313,11 @@ function layoutEdges(
     const b = byId.get(e.end)
     if (!a || !b) continue
     const mid = { x: a.x + (b.x - a.x) / 2, y: a.y + (b.y - a.y) / 2 }
-    const points = [intersectRect(a, mid), mid, intersectRect(b, mid)]
+    const clip = (n: PositionedBlockNode): Pt =>
+      n.geometry
+        ? clipToShape(n.geometry, n.x, n.y, mid)
+        : intersectRect(n, mid)
+    const points = [clip(a), mid, clip(b)]
     const path = basisPath(
       withMarkerOffsets(points, e.arrowTypeStart, e.arrowTypeEnd),
     )
@@ -385,10 +381,11 @@ export function layoutBlock(diagram: BlockDiagram): PositionedBlockDiagram {
     for (const child of cell.children) {
       const t = child.node.type
       if (t !== 'space' && child.size) {
-        nodes.push({
+        const { shape } = child.node
+        const positioned: PositionedBlockNode = {
           id: child.node.id,
           type: t,
-          shape: child.node.shape,
+          shape,
           x: child.size.x,
           y: child.size.y,
           width: child.size.width,
@@ -396,7 +393,23 @@ export function layoutBlock(diagram: BlockDiagram): PositionedBlockDiagram {
           text: { lines: child.lines, width: child.textW },
           classes: child.node.classes,
           css: compileStyles(diagram.classDefs, child.node),
-        })
+        }
+        if (t === 'node' && shape !== 'square' && shape !== 'round') {
+          // The second pass: the shape is drawn again knowing its cell.
+          positioned.geometry = fitShape(
+            shape,
+            child.node.directions,
+            child.textW,
+            child.lines.length * BLOCK.lineHeight,
+            padding,
+            {
+              width: child.size.width,
+              height: child.size.height,
+              span: child.node.widthInColumns,
+            },
+          ).geometry
+        }
+        nodes.push(positioned)
       }
       walk(child)
     }
@@ -408,10 +421,12 @@ export function layoutBlock(diagram: BlockDiagram): PositionedBlockDiagram {
   let maxX = -Infinity
   let maxY = -Infinity
   for (const n of nodes) {
-    minX = Math.min(minX, n.x - n.width / 2)
-    minY = Math.min(minY, n.y - n.height / 2)
-    maxX = Math.max(maxX, n.x + n.width / 2)
-    maxY = Math.max(maxY, n.y + n.height / 2)
+    // A shape can overflow its cell (a double circle) or sit off its centre (a block arrow).
+    const e = n.geometry?.extent
+    minX = Math.min(minX, n.x + (e ? e.minX : -n.width / 2))
+    minY = Math.min(minY, n.y + (e ? e.minY : -n.height / 2))
+    maxX = Math.max(maxX, n.x + (e ? e.maxX : n.width / 2))
+    maxY = Math.max(maxY, n.y + (e ? e.maxY : n.height / 2))
   }
   const edges = layoutEdges(diagram.edges, nodes)
   // Mermaid sizes the drawing by the bounding box of everything drawn, edges and labels included.

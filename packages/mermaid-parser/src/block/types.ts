@@ -7,8 +7,29 @@
 // from the parsed `BlockDiagram` directly.
 // ============================================================================
 
-/** Shapes supported so far: `id`, `id["x"]` (square) and `id("x")` (round, 5px corners). */
-export type BlockShape = 'square' | 'round'
+/**
+ * Mermaid's block types, by delimiters: `id` / `id["x"]` square, `id("x")` round (5px
+ * corners), `(("x"))` circle, `((("x")))` doublecircle, `{"x"}` diamond, `{{"x"}}`
+ * hexagon, `(["x"])` stadium, `[["x"]]` subroutine, `[("x")]` cylinder, `>"x"]`
+ * rect_left_inv_arrow (asymmetric), `[/"x"/]` lean_right, `[\"x"\]` lean_left,
+ * `[/"x"\]` trapezoid, `[\"x"/]` inv_trapezoid, `<["x"]>(right)` block_arrow.
+ */
+export type BlockShape =
+  | 'square'
+  | 'round'
+  | 'circle'
+  | 'doublecircle'
+  | 'diamond'
+  | 'hexagon'
+  | 'stadium'
+  | 'subroutine'
+  | 'cylinder'
+  | 'rect_left_inv_arrow'
+  | 'lean_right'
+  | 'lean_left'
+  | 'trapezoid'
+  | 'inv_trapezoid'
+  | 'block_arrow'
 
 /** A leaf block, a `space` cell, or a `block ... end` group (`composite`). */
 export interface BlockNode {
@@ -18,6 +39,8 @@ export interface BlockNode {
   /** The label as written (`<br>` breaks kept); `''` for spaces and groups. */
   label: string
   shape: BlockShape
+  /** A block arrow's directions as written (`right`, `left`, `up`, `down`, `x`, `y`; a name with a stray space counts for nothing); `[]` otherwise. */
+  directions: string[]
   /** `a:2`, `block:id:2`: how many columns the block spans (1 when absent). */
   widthInColumns: number
   /** A group's `columns N` (`-1`: no limit, one row). Absent on leaves. */
@@ -66,6 +89,36 @@ export interface PositionedBlockText {
   width: number
 }
 
+/**
+ * How a shape other than a rectangle is drawn, relative to the block's centre
+ * (Mermaid's shape functions, see `fitShape` in `@zombie-mermaid/svg-renderer`).
+ */
+export interface BlockGeometry {
+  kind: 'circle' | 'doublecircle' | 'polygon' | 'cylinder'
+  /** `circle`: its radius; `doublecircle`: the outer radius. */
+  r?: number
+  /** `doublecircle`: the inner radius. */
+  inner?: number
+  /** `polygon`: the corners as drawn; `cylinder`: the two corners of the path's bounding box. */
+  points?: { x: number; y: number }[]
+  /** `cylinder`: the path, in its own coordinates (its box starts at `points[0]`). */
+  d?: string
+  /** What an edge clips against (Mermaid's `intersect`): the shape's bounding box size and its own outline. */
+  clip: {
+    width: number
+    height: number
+    points?: { x: number; y: number }[]
+    r?: number
+    rx?: number
+    ry?: number
+  }
+  /** Where the label's centre sits, relative to the block's centre. */
+  labelDx: number
+  labelDy: number
+  /** The bounding box of what is drawn, relative to the block's centre. */
+  extent: { minX: number; minY: number; maxX: number; maxY: number }
+}
+
 /** A block with its place, ready to draw. `x`, `y` are the centre. */
 export interface PositionedBlockNode {
   id: string
@@ -76,6 +129,8 @@ export interface PositionedBlockNode {
   width: number
   height: number
   text: PositionedBlockText
+  /** The drawing of a shape other than a rectangle (`square`, `round`, groups); `width`/`height` are then the block's grid cell. */
+  geometry?: BlockGeometry
   /** The block's classes (`class a name`), on the node group. */
   classes: string[]
   /** Style properties after merging `classDef` items (in class order) and `style` items, `color` included. */

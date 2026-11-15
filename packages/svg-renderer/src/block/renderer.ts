@@ -17,6 +17,7 @@
 // ============================================================================
 
 import type {
+  BlockGeometry,
   PositionedBlockDiagram,
   PositionedBlockEdge,
   PositionedBlockNode,
@@ -36,7 +37,7 @@ const r = (n: number): string => String(Math.round(n * 100) / 100)
 function blockStyles(nonce?: string): string {
   return `${styleOpenTag(nonce)}
   .block-label { fill: var(--_text); font-size: ${BLOCK.fontSize}px; text-anchor: middle; }
-  .node rect { fill: var(--_node-fill); stroke: var(--_node-stroke); stroke-width: 1px; }
+  .node rect, .node polygon, .node circle, .node path.label-container { fill: var(--_node-fill); stroke: var(--_node-stroke); stroke-width: 1px; }
   .edge-path { fill: none; stroke: var(--_line); stroke-width: 1px; }
   .edge-path.thick { stroke-width: 3.5px; }
   .edge-path.dotted { stroke-dasharray: 2; }
@@ -62,7 +63,33 @@ function nodeStyle(n: PositionedBlockNode): { rect: string; color?: string } {
   return color === undefined ? { rect } : { rect, color }
 }
 
+/** A shape other than a rectangle: a group at the block's centre, its drawing and label relative to it (as Mermaid draws it). */
+function shapeSvg(n: PositionedBlockNode, g: BlockGeometry): string {
+  const { rect, color } = nodeStyle(n)
+  const style = rect ? ` style="${escapeXml(rect)}"` : ''
+  const classes = n.classes.map((c) => ` ${escapeXml(c)}`).join('')
+  let out = `<g class="node shape-${n.shape}${classes}" transform="translate(${r(n.x)}, ${r(n.y)})">`
+  const pts = (g.points ?? []).map((p) => `${r(p.x)},${r(p.y)}`)
+  if (g.kind === 'circle')
+    out += `<circle class="label-container"${style} r="${r(g.r!)}" cx="0" cy="0"/>`
+  else if (g.kind === 'doublecircle')
+    out +=
+      `<circle class="outer-circle label-container"${style} r="${r(g.r!)}" cx="0" cy="0"/>` +
+      `<circle class="inner-circle"${style} r="${r(g.inner!)}" cx="0" cy="0"/>`
+  else if (g.kind === 'cylinder')
+    out += `<path class="label-container" d="${g.d}" transform="translate(${pts[0]})"${style}/>`
+  else
+    out += `<polygon class="label-container" points="${pts.join(' ')}"${style}/>`
+  const lines = n.text.lines
+  lines.forEach((line, k) => {
+    const ly = g.labelDy + (k - (lines.length - 1) / 2) * BLOCK.lineHeight
+    out += `<text class="block-label"${color === undefined ? '' : ` style="fill:${escapeXml(color)}"`} x="${r(g.labelDx)}" y="${r(ly)}" dy="0.35em" xml:space="preserve">${escapeXml(line)}</text>`
+  })
+  return out + '</g>'
+}
+
 function nodeSvg(n: PositionedBlockNode): string {
+  if (n.geometry) return shapeSvg(n, n.geometry)
   const x = n.x - n.width / 2
   const y = n.y - n.height / 2
   const rad = n.shape === 'round' ? BLOCK.cornerRadius : 0

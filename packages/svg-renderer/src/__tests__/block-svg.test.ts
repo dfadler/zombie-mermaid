@@ -200,4 +200,115 @@ describe('block styling', () => {
     expect(b!.x - a!.x).toBe(b!.width + 20)
     expect(wide.viewBox.width).toBeGreaterThan(plain.viewBox.width)
   })
+
+  describe('shapes and block arrows (Mermaid 12.3.0 figures, "Label" = 38.867px)', () => {
+    const one = (decl: string, more = '') =>
+      layout(`block-beta\n  columns 1\n  ${decl}${more}`).nodes[0]!
+    // Text widths here are Trebuchet advances, within a pixel of the browser's (see known-differences).
+    const size = (n: { width: number; height: number }) => [
+      Math.round(n.width),
+      Math.round(n.height),
+    ]
+
+    it('sizes each shape by what Mermaid draws', () => {
+      expect(size(one('a{"Label"}'))).toEqual([79, 79])
+      expect(size(one('a{{"Label"}}'))).toEqual([63, 32])
+      expect(size(one('a[["Label"]]'))).toEqual([63, 32])
+      expect(size(one('a[/"Label"/]'))).toEqual([79, 32])
+      expect(size(one('a[\\"Label"/]'))).toEqual([95, 40])
+      expect(size(one('a<["Label"]>(right)'))).toEqual([67, 40])
+    })
+
+    it('keeps a circle and a diamond at their own size in a wider cell and stretches the polygons', () => {
+      const wide = (decl: string) =>
+        layout(
+          `block-beta\n  columns 1\n  ${decl}\n  b["a much wider block here"]`,
+        ).nodes[0]!
+      const circle = wide('a(("Label"))')
+      expect(circle.geometry!.kind).toBe('circle')
+      expect(circle.geometry!.r).toBeCloseTo(26.843, 1)
+      expect(circle.width).toBeGreaterThan(200)
+      const hex = wide('a{{"Label"}}')
+      const xs = hex.geometry!.points!.map((p) => p.x)
+      expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(209.328, 0)
+    })
+
+    it('draws a double circle 5px wider than its inner ring, and a wide cell grows both', () => {
+      const d = layout('block-beta\n  a((("Label")))')
+      const g = d.nodes[0]!.geometry!
+      expect(g.r! - g.inner!).toBe(5)
+      expect(g.r).toBeCloseTo(48.843, 1)
+      expect(d.viewBox.width).toBeCloseTo(107.687, 0)
+      const wide = layout(
+        'block-beta\n  columns 1\n  a((("Label")))\n  b["a much wider block here"]',
+      ).nodes[0]!
+      expect(wide.geometry!.r).toBeCloseTo(117.664, 0)
+    })
+
+    it('clips a link to the shape, not to its cell', () => {
+      const d = layout('block-beta\n  a(("x")) space b\n  a --> b')
+      const [a] = d.nodes
+      expect(d.edges[0]!.points[0]!.x).toBeCloseTo(a!.x + a!.geometry!.r!, 3)
+      // On a diagonal the rectangle's corner is farther from the centre than the rim.
+      const diag = layout(
+        'block-beta\n  columns 2\n  a(("x")) b\n  c d\n  a --> d',
+      )
+      const p = diag.edges[0]!.points[0]!
+      const n = diag.nodes[0]!
+      expect(Math.hypot(p.x - n.x, p.y - n.y)).toBeCloseTo(n.geometry!.r!, 3)
+      const cyl = layout('block-beta\n  a[("x")] space b\n  a --> b')
+      expect(cyl.edges[0]!.points[0]!.x).toBeGreaterThan(cyl.nodes[0]!.x)
+    })
+
+    it('draws a polygon, a circle, a path and a label for each kind', () => {
+      const svg = renderMermaidSVG(
+        'block-beta\n  columns 3\n  a{"x"} b(("y")) c[("z")]\n  d((("w"))) e<["go"]>(right) f(["s"])',
+      )
+      expect(svg).toContain('<polygon class="label-container"')
+      expect(svg).toContain('<circle class="label-container"')
+      expect(svg).toContain('class="outer-circle label-container"')
+      expect(svg).toContain('class="inner-circle"')
+      expect(svg).toContain('<path class="label-container" d="M0,')
+      expect(svg).toContain('class="node shape-block_arrow"')
+      expect(svg).toContain('>go</text>')
+    })
+
+    it('puts styles on the shape and the colour on the label', () => {
+      const svg = renderMermaidSVG(
+        'block-beta\n  a{"x"}\n  style a fill:#f00,color:#fff',
+      )
+      expect(svg).toContain('style="fill:#f00 !important"')
+      expect(svg).toContain('style="fill:#fff"')
+    })
+
+    it('draws a block arrow spanning columns across them, and the other directions as lists', () => {
+      const span = layout(
+        'block-beta\n  columns 3\n  a<["x"]>(right):3\n  b c d',
+      ).nodes[0]!
+      const xs = span.geometry!.points!.map((p) => p.x)
+      // The arrow's own width is the cell's: its tip is at the right edge of the cell.
+      expect(Math.max(...xs)).toBeCloseTo(span.width / 2, 3)
+      const every = (list: string) =>
+        one(`a<["Label"]>(${list})`).geometry!.points!.length
+      expect(every('right, left, up, down')).toBe(16)
+      expect(every('right, left')).toBe(10)
+      expect(every('up, down')).toBe(10)
+      expect(every('x')).toBe(10)
+      expect(every('y')).toBe(10)
+      expect(every('right')).toBe(9)
+      expect(every('left')).toBe(7)
+      expect(every('up')).toBe(7)
+      expect(every('down')).toBe(7)
+      expect(every('right, up')).toBe(3)
+      expect(every('right, down')).toBe(3)
+      expect(every('left, up')).toBe(3)
+      expect(every('left, down')).toBe(3)
+      expect(every('right, left, up')).toBe(6)
+      expect(every('right, left, down')).toBe(4)
+      expect(every('right, up, down')).toBe(4)
+      expect(every('left, up, down')).toBe(4)
+      // "right " keeps its space and names nothing, so only "down" counts, as in Mermaid.
+      expect(every('right down')).toBe(7)
+    })
+  })
 })

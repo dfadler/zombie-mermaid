@@ -61,6 +61,47 @@ describe('block ASCII', () => {
     )
   })
 
+  it('gives each shape its own delimiters', () => {
+    const shape = (decl: string, ascii = false) =>
+      render(`block-beta\n  ${decl}`, ascii)
+    expect(shape('a(("x"))')).toBe(['◯───◯', '│ x │', '◯───◯'].join('\n'))
+    expect(shape('a((("x")))', true)).toBe(
+      ['@---@', '| x |', '@---@'].join('\n'),
+    )
+    expect(shape('a{"x"}')).toBe(['◇───◇', '│ x │', '◇───◇'].join('\n'))
+    expect(shape('a{{"x"}}')).toBe(['⌜───⌝', '│ x │', '⌞───⌟'].join('\n'))
+    expect(shape('a(["x"])', true)).toBe(['(---)', '| x |', '(---)'].join('\n'))
+    expect(shape('a[["x"]]')).toBe(['┌─────┐', '││ x ││', '└─────┘'].join('\n'))
+    expect(shape('a[("x")]')).toBe(
+      ['╭───╮', '│───│', '│ x │', '╰───╯'].join('\n'),
+    )
+    expect(shape('a>"x"]').split('\n')[1]).toBe('> x │')
+    expect(shape('a[/"x"/]', true)).toBe(['/---/', '| x |', '/---/'].join('\n'))
+    expect(shape('a[\\"x"\\]', true)).toBe(
+      ['\\---\\', '| x |', '\\---\\'].join('\n'),
+    )
+    expect(shape('a[/"x"\\]', true)).toBe(
+      ['/---\\', '| x |', '+---+'].join('\n'),
+    )
+    expect(shape('a[\\"x"/]', true)).toBe(
+      ['+---+', '| x |', '\\---/'].join('\n'),
+    )
+  })
+
+  it('points a block arrow at each side it lists', () => {
+    expect(render('block-beta\n  a<["x"]>(right)').split('\n')[1]).toBe('│ x ▶')
+    expect(render('block-beta\n  a<["x"]>(left)').split('\n')[1]).toBe('◀ x │')
+    expect(render('block-beta\n  a<["x"]>(x, y)')).toBe(
+      ['┌─▲─┐', '◀ x ▶', '└─▼─┘'].join('\n'),
+    )
+    expect(render('block-beta\n  a<["x"]>(up)', true)).toBe(
+      ['+-^-+', '| x |', '+---+'].join('\n'),
+    )
+    expect(render('block-beta\n  a<["x"]>(down)', true)).toBe(
+      ['+---+', '| x |', '+-v-+'].join('\n'),
+    )
+  })
+
   it('lines up wide characters and multi-line labels', () => {
     const out = render('block-beta\n  a["日本<br/>x"]')
     expect(out.split('\n')[1]).toBe('│ 日本 │')
