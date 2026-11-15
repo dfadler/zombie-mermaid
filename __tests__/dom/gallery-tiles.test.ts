@@ -32,10 +32,15 @@ import {
   GitGraphTile,
   SankeyTile,
   UseCaseTile,
+  BlockTile,
+  TreemapTile,
+  IshikawaTile,
+  EventModelingTile,
+  WardleyTile,
 } from '../../demo/components/gallery-tiles.tsx'
 
 describe('gallery tiles', () => {
-  it('GALLERY_TILES lists all twenty-one tiles in flowchart/state/sequence/class/er/xy-chart/c4/architecture/pie/quadrant/gantt/kanban/mindmap/timeline/requirement/journey/radar/packet/gitgraph/sankey/usecase order', () => {
+  it('GALLERY_TILES lists all twenty-six tiles in flowchart/state/sequence/class/er/xy-chart/c4/architecture/pie/quadrant/gantt/kanban/mindmap/timeline/requirement/journey/radar/packet/gitgraph/sankey/usecase/block/treemap/ishikawa/eventmodeling/wardley order', () => {
     expect(GALLERY_TILES).toEqual([
       FlowchartTile,
       StateTile,
@@ -58,6 +63,11 @@ describe('gallery tiles', () => {
       GitGraphTile,
       SankeyTile,
       UseCaseTile,
+      BlockTile,
+      TreemapTile,
+      IshikawaTile,
+      EventModelingTile,
+      WardleyTile,
     ])
   })
 
@@ -83,6 +93,11 @@ describe('gallery tiles', () => {
     ['GitGraphTile', GitGraphTile],
     ['SankeyTile', SankeyTile],
     ['UseCaseTile', UseCaseTile],
+    ['BlockTile', BlockTile],
+    ['TreemapTile', TreemapTile],
+    ['IshikawaTile', IshikawaTile],
+    ['EventModelingTile', EventModelingTile],
+    ['WardleyTile', WardleyTile],
   ] as const)('%s renders a single 100x70-viewBox svg', (_name, Tile) => {
     const { container } = render(createElement(Tile))
     const svg = container.querySelector('svg')
