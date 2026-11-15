@@ -745,6 +745,245 @@ function SankeyGlyph() {
   )
 }
 
+function UseCaseGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <circle
+        cx="16"
+        cy="28"
+        r="5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M16 33 V46 M8 38 H24 M16 46 L9 58 M16 46 L23 58"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <ellipse
+        cx="68"
+        cy="22"
+        rx="18"
+        ry="9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <ellipse
+        cx="68"
+        cy="48"
+        rx="18"
+        ry="9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M24 36 L50 24 M24 42 L50 48"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function BlockGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect
+        x="8"
+        y="8"
+        width="36"
+        height="22"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="52"
+        y="8"
+        width="40"
+        height="22"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="8"
+        y="40"
+        width="84"
+        height="22"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M72 30 V40"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function TreemapGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect
+        x="8"
+        y="8"
+        width="84"
+        height="54"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M58 8 V62 M58 34 H92"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M75 34 V62"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function IshikawaGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <path d="M8 35 H72" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M72 22 L92 35 L72 48 Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M18 12 L34 35 M44 12 L60 35"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M18 58 L34 35"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function EventModelingGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect
+        x="8"
+        y="10"
+        width="26"
+        height="14"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="37"
+        y="28"
+        width="26"
+        height="14"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="66"
+        y="46"
+        width="26"
+        height="14"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M21 24 V35 H37"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M50 42 V53 H66"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function WardleyGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <path
+        d="M10 8 V60 H92"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="32"
+        cy="22"
+        r="5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="44"
+        cy="46"
+        r="5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M34 27 L42 41"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M52 46 H84 M78 40 L84 46 L78 52"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
 /**
  * Every diagram type's crosslink glyph, keyed by `DiagramTypeProfile.slug`
  * (demo/diagram-pages-data.ts) — the same six slugs `DIAGRAM_TYPE_PROFILES`
@@ -772,6 +1011,12 @@ const DIAGRAM_TYPE_GLYPHS: Record<string, () => ReactNode> = {
   packet: PacketGlyph,
   gitgraph: GitGraphGlyph,
   sankey: SankeyGlyph,
+  usecase: UseCaseGlyph,
+  block: BlockGlyph,
+  treemap: TreemapGlyph,
+  ishikawa: IshikawaGlyph,
+  eventmodeling: EventModelingGlyph,
+  wardley: WardleyGlyph,
 }
 
 /** One crosslink target: the other type's own display data. */

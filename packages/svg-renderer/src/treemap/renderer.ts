@@ -14,8 +14,9 @@
 //   leaf fill / stroke                its section's colour (0.3 opacity, 3px)
 //   labels, values, title             var(--_text)
 //
-// `classDef` styles `fill`, `stroke` and `stroke-width` (and `color` for the
-// text) are applied when their values are safe; other properties are ignored.
+// Every `classDef` property mermaid applies is applied here, `!important` like
+// mermaid's; a value that could fetch a resource or break out of the style
+// attribute is dropped (see inlineStyle()).
 // There is no hover or interactivity: Mermaid has none for this type.
 // ============================================================================
 
@@ -66,18 +67,67 @@ function slotColors(
 const safeColor = (v: string): boolean =>
   isValidCssColor(v) && !/url\(|[;"'<>\\]/i.test(v)
 
-/** The `classDef` items that are safe to inline: colours, a stroke width, a text colour. */
-function inlineStyle(styles: TreemapStyle[]): { box: string; text: string } {
+/** Mermaid's `isLabelStyle`: the `classDef` properties it routes to the text. */
+const LABEL_PROPS = new Set([
+  'color',
+  'font-size',
+  'font-family',
+  'font-weight',
+  'font-style',
+  'text-decoration',
+  'text-align',
+  'text-transform',
+  'line-height',
+  'letter-spacing',
+  'word-spacing',
+  'text-shadow',
+  'text-overflow',
+  'white-space',
+  'word-wrap',
+  'word-break',
+  'overflow-wrap',
+  'hyphens',
+])
+
+/**
+ * Any other value must not be able to fetch a resource (`url()`, `image-set()`...),
+ * hide one behind a comment or escape, or end its declaration.
+ */
+const safeValue = (v: string): boolean =>
+  v !== '' &&
+  !/[;{}<>\\@!]|\/\*/.test(v) &&
+  !/\b(?:url|image|image-set|src|expression|element|cross-fade|paint)\s*\(/i.test(
+    v,
+  )
+
+/**
+ * Every `classDef` property mermaid copies, as it does (`!important`, a later
+ * item replacing an earlier one): the label properties (`color` as `fill`) go
+ * to the text, the rest to the box. A leaf's text takes its size from the
+ * layout, as in mermaid, so `font-size` is left out there.
+ */
+function inlineStyle(
+  styles: TreemapStyle[],
+  keepFontSize: boolean,
+): { box: string; text: string } {
+  const merged = new Map<string, string>()
+  for (const { key, value } of styles) merged.set(key, value)
   const box: string[] = []
   const text: string[] = []
-  for (const { key, value } of styles) {
-    if (key === 'fill' || key === 'stroke') {
-      if (safeColor(value)) box.push(`${key}:${value}`)
-    } else if (key === 'stroke-width' && /^\d+(?:\.\d+)?(?:px)?$/.test(value)) {
-      box.push(`${key}:${value}`)
-    } else if (key === 'color' && safeColor(value)) {
-      text.push(`fill:${value}`)
-    }
+  for (const [key, value] of merged) {
+    if (
+      !/^-?[a-z][a-z-]*$/i.test(key) ||
+      /^(?:behavior|-moz-binding)$/i.test(key)
+    )
+      continue
+    if (key === 'color') {
+      if (safeColor(value)) text.push(`fill:${value} !important`)
+    } else if (LABEL_PROPS.has(key)) {
+      if (safeValue(value) && (keepFontSize || key !== 'font-size'))
+        text.push(`${key}:${value} !important`)
+    } else if (key === 'fill' || key === 'stroke') {
+      if (safeColor(value)) box.push(`${key}:${value} !important`)
+    } else if (safeValue(value)) box.push(`${key}:${value} !important`)
   }
   return { box: box.join(';'), text: text.join(';') }
 }
@@ -173,7 +223,7 @@ ${rules.join('\n')}
   )
   for (const s of tm.sections) {
     if (s.depth === 0) continue
-    const { box, text: textStyle } = inlineStyle(s.styles)
+    const { box, text: textStyle } = inlineStyle(s.styles, true)
     parts.push(
       `<g class="treemapSection" transform="translate(${r(s.x)},${r(s.y)})">` +
         `<rect class="treemapSectionHeader" width="${r(s.width)}" height="25"/>` +
@@ -188,7 +238,7 @@ ${rules.join('\n')}
     )
   }
   for (const l of tm.leaves) {
-    const { box, text: textStyle } = inlineStyle(l.styles)
+    const { box, text: textStyle } = inlineStyle(l.styles, false)
     parts.push(
       `<g class="treemapNode treemapLeafGroup" transform="translate(${r(l.x)},${r(l.y)})">` +
         `<rect class="treemapLeaf${l.color ? ` tm-c${l.color}` : ''}" width="${r(l.width)}" height="${r(l.height)}"${l.color ? '' : ' fill="transparent" stroke="transparent"'}${styleAttr(box)}/>` +

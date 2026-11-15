@@ -15,4 +15,6 @@ export interface IshikawaNode {
 /** A parsed Mermaid ishikawa diagram; `root` is absent when no line follows the header. */
 export interface Ishikawa {
   root?: IshikawaNode
+  /** `ishikawa.diagramPadding` from `%%{init}%%` or front matter; the layout's default is 20. */
+  diagramPadding?: number
 }

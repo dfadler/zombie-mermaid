@@ -117,6 +117,7 @@ export interface GitGraphInitConfig {
   parallelCommits?: boolean
   titleTopMargin?: number
   diagramPadding?: number
+  useMaxWidth?: boolean
 }
 
 /** The `kanban.*` init keys that change mermaid's output. */
@@ -134,6 +135,25 @@ export interface PacketInitConfig {
   paddingY?: number
   showBits?: boolean
   bitOrder?: 'ascending' | 'descending'
+}
+
+/**
+ * The `treemap.*` init keys mermaid@12.3.0 reads that change the drawing. Not
+ * listed: `useMaxWidth` (only the root `width`/`max-width`, which this renderer
+ * sizes by its viewBox) and `borderWidth`, `valueFontSize`, `labelFontSize`
+ * (mermaid never reads them: its inline sizes win).
+ */
+export interface TreemapInitConfig {
+  /** Gap between siblings. */
+  padding?: number
+  /** The canvas is `nodeWidth` x 10 wide (960 when 0). */
+  nodeWidth?: number
+  /** The canvas is `nodeHeight` x 10 tall (500 when 0). */
+  nodeHeight?: number
+  showValues?: boolean
+  /** A d3-format specifier (`,`, `$0,0`, `.1%`...); a bad one falls back to `,`. */
+  valueFormat?: string
+  diagramPadding?: number
 }
 
 /** The `sankey.*` init keys that change mermaid's output (a bad value is dropped). */
@@ -483,6 +503,8 @@ export interface InitConfig {
   timeline?: TimelineInitConfig
   /** `radar.*` keys ({@link RadarInitConfig}); other keys and bad values are dropped. */
   radar?: RadarInitConfig
+  /** `ishikawa.diagramPadding` (a number or numeric string, negative allowed, as mermaid 12.3.0 takes it). */
+  ishikawaPadding?: number
   /** `themeVariables.radar` sizes and opacities ({@link RadarStyleConfig}); 0 is kept, as mermaid does. */
   radarTheme?: RadarStyleConfig
   /** `journey.*` geometry keys ({@link JourneyInitConfig}); other keys and bad values are dropped. */
@@ -497,6 +519,8 @@ export interface InitConfig {
   sankey?: SankeyInitConfig
   /** `themeVariables.wardley` colours (see {@link WARDLEY_THEME_KEYS}); a value that is not a safe colour is dropped. */
   wardleyTheme?: Partial<Record<WardleyThemeKey, string>>
+  /** The `treemap` block (see {@link TreemapInitConfig}); a bad value is dropped. */
+  treemap?: TreemapInitConfig
   /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
   classLayout?: ClassInitLayout
   /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
@@ -709,7 +733,9 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         if ((QUADRANT_COLOR_VARIABLES as readonly string[]).includes(vk)) {
           if (color) (tv.quadrant ??= {})[vk as QuadrantColorVariable] = color
         } else if (PIE_VARIABLE.test(vk)) {
-          if (color) (tv.pieColors ??= {})[Number(vk.slice(3)) - 1] = color
+          // Mermaid 12.3.0 paints an invalid pieN as the root `fill: #333`,
+          // not the default palette (#3162).
+          ;(tv.pieColors ??= {})[Number(vk.slice(3)) - 1] = color ?? '#333'
         } else if (
           (BASE_ONLY_VARIABLES as readonly string[]).includes(vk) ||
           (ANY_THEME_VARIABLES as readonly string[]).includes(vk)
@@ -900,6 +926,7 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         'showBranches',
         'rotateCommitLabel',
         'parallelCommits',
+        'useMaxWidth',
       ] as const)
         if (typeof rec[k] === 'boolean') g[k] = rec[k]
       // Mermaid coerces numeric strings ("60") and lets a negative number through.
@@ -926,6 +953,13 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       if (rec.disableMulticolor !== undefined && rec.disableMulticolor !== null)
         t.disableMulticolor = Boolean(rec.disableMulticolor)
       config.timeline = t
+      continue
+    }
+
+    if (lower === 'ishikawa' && typeof value === 'object' && value !== null) {
+      const v = numeric((value as Record<string, unknown>).diagramPadding)
+      if (typeof v === 'number' && Number.isFinite(v))
+        config.ishikawaPadding = v
       continue
     }
 
@@ -1060,6 +1094,25 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'treemap' && typeof value === 'object' && value !== null) {
+      const t: TreemapInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of [
+        'padding',
+        'nodeWidth',
+        'nodeHeight',
+        'diagramPadding',
+      ] as const) {
+        const v = numeric(rec[k])
+        if (typeof v === 'number' && v >= 0 && v <= 1e5) t[k] = v
+      }
+      if (typeof rec.showValues === 'boolean') t.showValues = rec.showValues
+      if (typeof rec.valueFormat === 'string' && rec.valueFormat.length <= 64)
+        t.valueFormat = stripControls(rec.valueFormat)
+      config.treemap = t
+      continue
+    }
+
     if (lower === 'pie' && typeof value === 'object' && value !== null) {
       for (const [pk, pv] of Object.entries({ ...value })) {
         const pl = pk.toLowerCase()
@@ -1130,12 +1183,16 @@ export function extractInitConfig(lines: string[]): InitConfig {
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
     if (config.radar) merged.radar = { ...merged.radar, ...config.radar }
+    if (config.ishikawaPadding !== undefined)
+      merged.ishikawaPadding = config.ishikawaPadding
     if (config.radarTheme)
       merged.radarTheme = { ...merged.radarTheme, ...config.radarTheme }
     if (config.journey)
       merged.journey = { ...merged.journey, ...config.journey }
     if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }
     if (config.packet) merged.packet = { ...merged.packet, ...config.packet }
+    if (config.treemap)
+      merged.treemap = { ...merged.treemap, ...config.treemap }
     if (config.sankey) {
       const earlier = merged.sankey?.nodeColors
       merged.sankey = { ...merged.sankey, ...config.sankey }

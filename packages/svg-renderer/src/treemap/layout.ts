@@ -26,7 +26,7 @@
 
 import { measureTextWidth } from '@zombie-mermaid/core'
 import { trebuchetAdvance } from '../pie/trebuchet-metrics.ts'
-import { formatTreemapValue } from '@zombie-mermaid/mermaid-parser'
+import { treemapValueFormatter } from '@zombie-mermaid/mermaid-parser'
 import type {
   PositionedTreemap,
   PositionedTreemapLeaf,
@@ -229,14 +229,37 @@ function truncate(text: string, size: number, avail: number): string {
   return ''
 }
 
-/** Lay out a parsed treemap. */
+/**
+ * The px size a `classDef` `font-size` sets (`20px` or `20`); mermaid's inline
+ * label style carries it, and other units cannot be measured here.
+ */
+function classFontSize(styles: TreemapStyle[]): number | undefined {
+  let size: number | undefined
+  for (const { key, value } of styles) {
+    if (key === 'font-size') {
+      const m = /^(\d+(?:\.\d+)?)(?:px)?$/.exec(value)
+      size = m ? +m[1]! : undefined
+    }
+  }
+  return size
+}
+
+/** Lay out a parsed treemap, honouring its `treemap` init keys. */
 export function layoutTreemap(treemap: Treemap): PositionedTreemap {
+  const cfg = treemap.config ?? {}
+  // Mermaid's defaults are 100 x 40 (a 1000 x 400 canvas); 0 falls back to 960 x 500.
+  const nodeW = cfg.nodeWidth ?? 100
+  const nodeH = cfg.nodeHeight ?? 40
+  const canvasW = nodeW ? nodeW * TREEMAP.sectionPadding : 960
+  const canvasH = nodeH ? nodeH * TREEMAP.sectionPadding : 500
+  const showValues = cfg.showValues !== false
+  const fmt = treemapValueFormatter(cfg.valueFormat)
   const root = hierarchy({
     name: '',
     styles: [],
     children: treemap.roots,
   })
-  layoutTree(root, TREEMAP.width, TREEMAP.height, TREEMAP.padding)
+  layoutTree(root, canvasW, canvasH, cfg.padding ?? TREEMAP.padding)
 
   // Breadth-first (d3's iterator) for the sections and their colour slots.
   const bfs: HNode[] = [root]
@@ -253,6 +276,7 @@ export function layoutTreemap(treemap: Treemap): PositionedTreemap {
     .map((n): PositionedTreemapSection => {
       const width = n.x1 - n.x0
       const styles: TreemapStyle[] = n.data.styles
+      const cs = classFontSize(styles)
       const sec: PositionedTreemapSection = {
         name: n.data.name,
         depth: n.depth,
@@ -263,24 +287,25 @@ export function layoutTreemap(treemap: Treemap): PositionedTreemap {
         color: index(n.data.name),
         value: n.value,
         styles,
-        label: { text: '', x: 6, y: TREEMAP.sectionHeader / 2, fontSize: 12 },
+        label: {
+          text: '',
+          x: 6,
+          y: TREEMAP.sectionHeader / 2,
+          fontSize: cs ?? TREEMAP.sectionLabelFontSize,
+        },
       }
       if (n.depth > 0) {
         const avail = Math.max(
           15,
-          n.value ? width - 10 - 30 - 10 - 6 : width - 6 - 6,
+          showValues && n.value ? width - 10 - 30 - 10 - 6 : width - 6 - 6,
         )
-        sec.label.text = truncate(
-          n.data.name,
-          TREEMAP.sectionLabelFontSize,
-          avail,
-        )
-        if (n.value) {
+        sec.label.text = truncate(n.data.name, sec.label.fontSize, avail)
+        if (showValues && n.value) {
           sec.valueLabel = {
-            text: formatTreemapValue(n.value),
+            text: fmt(n.value),
             x: width - 10,
             y: TREEMAP.sectionHeader / 2,
-            fontSize: TREEMAP.sectionValueFontSize,
+            fontSize: cs ?? TREEMAP.sectionValueFontSize,
           }
         }
       }
@@ -321,7 +346,8 @@ export function layoutTreemap(treemap: Treemap): PositionedTreemap {
     const availH = height - 2 * pad
     if (availW < minShow || availH < minShow || n.data.name === '') return leaf
 
-    let size = baseLabel
+    // A classDef `font-size` is where fitting starts (mermaid parseInt()s it).
+    let size = Math.trunc(classFontSize(n.data.styles) ?? baseLabel)
     const nameWidth = (): number => w(n.data.name, size)
     while (nameWidth() > availW && size > minLabel) size--
     const valueSize = (): number =>
@@ -337,7 +363,7 @@ export function layoutTreemap(treemap: Treemap): PositionedTreemap {
       y: height / 2,
       fontSize: size,
     }
-    const text = n.value ? formatTreemapValue(n.value) : ''
+    const text = showValues && n.value ? fmt(n.value) : ''
     const vs = valueSize()
     const top = height / 2 + size / 2 + gap
     if (text && w(text, vs) <= availW && top + vs <= height - 4) {
@@ -359,8 +385,14 @@ export function layoutTreemap(treemap: Treemap): PositionedTreemap {
     maxY = Math.max(maxY, y1)
   }
   for (const s of sections) {
-    if (s.depth > 0)
+    if (s.depth > 0) {
       grow(s.x, s.y + offsetY, s.x + s.width, s.y + offsetY + s.height)
+      // A `classDef` font-size over ~18px makes the header text taller than the
+      // header: Chromium's text box is about 1.376 x the size (measured at 20px).
+      const mid = s.y + offsetY + TREEMAP.sectionHeader / 2
+      const half = 0.688 * s.label.fontSize
+      grow(s.x, mid - half, s.x + s.width, mid + half)
+    }
   }
   for (const l of leaves) {
     grow(l.x, l.y + offsetY, l.x + l.width, l.y + offsetY + l.height)
@@ -370,13 +402,13 @@ export function layoutTreemap(treemap: Treemap): PositionedTreemap {
     const half = w(treemap.title, TREEMAP.titleFontSize) / 2
     title = {
       text: treemap.title,
-      x: TREEMAP.width / 2,
+      x: canvasW / 2,
       y: TREEMAP.titleHeight / 2,
     }
     // A 14px line is about 18.7px tall in Mermaid's headless render.
     grow(title.x - half, title.y - 9.34, title.x + half, title.y + 9.34)
   }
-  const d = TREEMAP.diagramPadding
+  const d = cfg.diagramPadding ?? TREEMAP.diagramPadding
   return {
     width: maxX - minX + 2 * d,
     height: maxY - minY + 2 * d,

@@ -1868,9 +1868,9 @@ graphs in all three orientations, with and without `parallelCommits` and
   when written, so markup in them shows as text.
 - **Config keys.** `titleTopMargin` and `diagramPadding` are read (numbers, numeric strings
   and negatives as Mermaid takes them; anything else keeps 25 and 8) and move the title and
-  the viewBox as in 12.3.0. `useMaxWidth` is not read: this renderer always emits fixed
-  `width` and `height` (what mermaid 12.3.0 emits with `useMaxWidth: false`), as for every
-  other diagram type.
+  the viewBox as in 12.3.0. `useMaxWidth` is read (boolean): `true`, Mermaid's default and what
+  GitHub and mermaid.live render, gives `width="100%"` plus a `max-width` style; `false` gives the fixed `width`
+  and `height`. gitGraph is the only diagram type that does this; the others always emit fixed sizes.
 - **ASCII.** Mermaid has no ASCII output; the `git log --graph` layout above is this
   library's own. `look` and `theme` change nothing in it. `parallelCommits: true` puts
   commits of the same depth (a root is 0, else one below the deepest parent) on one row, ids
@@ -1888,15 +1888,22 @@ the reference here because it is behind npm `latest`).
   metrics are used, so every x that depends on a label (where the next pair of bones
   starts, the left edge, the label boxes) and the frame width differ by a few percent.
   Bone vectors, y positions, element order and all text agree exactly.
-- **Quirks of Mermaid's grammar not ported.** Its jison grammar rejects `ishikawa   `
-  (trailing spaces after the header), a header with no newline after it, and some blank
-  lines straight after the header (`ishikawa`, blank, `  Effect` is an error, while
-  `ishikawa`, blank, `%% c`, `  Effect` is not); this parser accepts all of them.
-- **Accessibility statements.** The front door strips `accTitle` / `accDescr` lines
+- **Grammar quirks.** Mermaid's jison grammar rejects `ishikawa   ` (trailing whitespace
+  after the header), a bare header with no newline after it, and a whitespace-only line
+  directly before the effect (`ishikawa`, blank, `  Effect`, or a comment, blank,
+  `  Effect`; a blank followed by a comment is fine). This parser rejects the same
+  sources, measured on 12.3.0.
+- **Accessibility statements (kept on purpose).** The front door strips `accTitle` / `accDescr` lines
   before parsing; Mermaid's ishikawa grammar has no such statement and draws them as
   causes.
-- **Not drawn.** The `handDrawn` look (rough.js strokes) and the `ishikawa.*` config keys
-  `diagramPadding` and `useMaxWidth`; `fontSize` from config is not read (16px).
+- **Config keys.** `ishikawa.diagramPadding` is read (number or numeric string, negative
+  allowed, default 20) and moves the frame as in 12.3.0. `useMaxWidth` only changes the
+  root `width` / `max-width`, which this renderer sizes by its viewBox, as for the other
+  types. A top-level or `ishikawa.fontSize` changes nothing in 12.3.0 either (measured);
+  `themeVariables.fontSize` does, and is not read (16px).
+- **Not drawn.** The `handDrawn` look (rough.js strokes, `handDrawnSeed`, filled rough
+  arrowheads): it needs rough.js's seeded random generator, which no renderer here
+  ports; `look` is ignored for ishikawa, as for radar.
 - **Labels.** Mermaid runs a label through DOMPurify and draws the resulting HTML as
   text: `<x>` vanishes and `&` shows as `&amp;`. The same sanitizer stand-in as for
   packet titles is used (`sanitize-title.ts`).

@@ -432,6 +432,82 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
       'Use case diagrams come from UML, where they capture a system’s behaviour from the point of view of the people and systems that use it. Mermaid’s syntax starts with `usecase-beta`, declares `actor` and use case nodes, groups use cases in a `systemBoundary`, and joins them with associations or `include`, `extend` and generalization relationships.',
     docsUrl: 'https://mermaid.ai/open-source/syntax/useCaseDiagram.html',
   },
+  {
+    slug: 'block',
+    label: 'Block diagram',
+    keyword: 'block-beta',
+    source: sampleSource('Block: Basic'),
+    intro:
+      'Block diagrams lay boxes out on a grid you control, for architecture overviews where position matters more than flow. zombie-mermaid renders blocks, column spans, nested groups and edges in SVG and ASCII.',
+    accent: 'blue',
+    exampleHeading: 'Blocks placed on a grid, spanning columns.',
+    sourceFilename: 'blocks.mmd',
+    aboutHeading: 'Where block diagrams come from, and how the syntax works.',
+    about:
+      'Block diagrams are the boxes-on-a-grid sketches used in system overviews, where you decide where each box sits instead of leaving it to an auto-layout. Mermaid’s syntax starts with `block-beta`, sets the grid width with `columns`, spans a block over several columns with `id:2`, nests blocks in a `block ... end` group, and joins them with arrows.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/block.html',
+  },
+  {
+    slug: 'treemap',
+    label: 'Treemap',
+    keyword: 'treemap-beta',
+    source: sampleSource('Treemap: Basic'),
+    intro:
+      'Treemaps show a hierarchy as nested rectangles, each leaf as large as its value. zombie-mermaid renders sections, sized leaves and class styling in SVG and ASCII.',
+    accent: 'green',
+    exampleHeading: 'A hierarchy drawn as nested, value-sized rectangles.',
+    sourceFilename: 'treemap.mmd',
+    aboutHeading: 'Where treemaps come from, and how the syntax works.',
+    about:
+      'Treemaps were invented by Ben Shneiderman in the early 1990s to show disk usage in a small space, and now show budgets, portfolios and market sizes. Mermaid’s syntax starts with `treemap-beta` and uses indentation to nest: a quoted name alone is a section, `"Name": value` is a leaf sized by its value, and `classDef` styles nodes by class.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/treemap.html',
+  },
+  {
+    slug: 'ishikawa',
+    label: 'Ishikawa diagram',
+    keyword: 'ishikawa-beta',
+    source: sampleSource('Ishikawa: Basic'),
+    intro:
+      'Ishikawa (fishbone) diagrams trace the possible causes of one effect, grouped by category. zombie-mermaid renders the spine, category bones and causes in SVG and ASCII.',
+    accent: 'violet',
+    exampleHeading: 'One effect, with its causes grouped on bones.',
+    sourceFilename: 'fishbone.mmd',
+    aboutHeading:
+      'Where Ishikawa diagrams come from, and how the syntax works.',
+    about:
+      'Ishikawa diagrams, also called fishbone or cause-and-effect diagrams, were popularised by Kaoru Ishikawa for quality control and are used in root-cause analysis. Mermaid’s syntax starts with `ishikawa-beta`; the first line is the effect, each indented line under it is a category, and each line below a category is a cause.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/ishikawa.html',
+  },
+  {
+    slug: 'eventmodeling',
+    label: 'Event modeling diagram',
+    keyword: 'eventmodeling',
+    source: sampleSource('Event Modeling: Basic'),
+    intro:
+      'Event modeling lays a system out as a timeline of screens, commands, events and read models. zombie-mermaid renders the frames, swimlanes and arrows in SVG and ASCII.',
+    accent: 'amber',
+    exampleHeading: 'Screens, commands, events and read models on a timeline.',
+    sourceFilename: 'events.mmd',
+    aboutHeading: 'Where event modeling comes from, and how the syntax works.',
+    about:
+      'Event modeling is a method for designing information systems by drawing how state changes over time, introduced by Adam Dymitruk. Mermaid’s syntax starts with `eventmodeling`; each `tf` line is a time frame with a number, a kind such as `ui`, `cmd`, `evt` or `rmo`, and a name, and a `Namespace.Name` identifier opens its own swimlane.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/eventmodeling.html',
+  },
+  {
+    slug: 'wardley',
+    label: 'Wardley map',
+    keyword: 'wardley-beta',
+    source: sampleSource('Wardley: Tea Shop'),
+    intro:
+      'Wardley maps place the parts of a system by how visible they are to the user and how evolved they are. zombie-mermaid renders anchors, components, links and evolve arrows in SVG and ASCII.',
+    accent: 'cyan',
+    exampleHeading: 'Components placed by visibility and evolution.',
+    sourceFilename: 'wardley.mmd',
+    aboutHeading: 'Where Wardley maps come from, and how the syntax works.',
+    about:
+      'Wardley maps were created by Simon Wardley to show how the parts of a business change over time, and are used in strategy work. Mermaid’s syntax starts with `wardley-beta`; `anchor` and `component` lines give a name and a `[visibility, evolution]` position, `evolve` moves a component along the axis, and links join components.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/wardley.html',
+  },
 ]
 
 /**
@@ -465,6 +541,11 @@ const GALLERY_CATEGORY: Record<string, string> = {
   gitgraph: 'GitGraph',
   sankey: 'Sankey',
   usecase: 'Use Case',
+  block: 'Block',
+  treemap: 'Treemap',
+  ishikawa: 'Ishikawa',
+  eventmodeling: 'Event Modeling',
+  wardley: 'Wardley',
 }
 
 /**

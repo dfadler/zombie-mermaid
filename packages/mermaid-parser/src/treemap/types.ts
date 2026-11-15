@@ -7,6 +7,8 @@
 // from the parsed `Treemap` directly.
 // ============================================================================
 
+import type { TreemapInitConfig } from '@zombie-mermaid/core'
+
 /** One `classDef` style item, e.g. `fill:#f96`. */
 export interface TreemapStyle {
   key: string
@@ -32,6 +34,8 @@ export interface TreemapNode {
 
 /** A parsed Mermaid treemap diagram. */
 export interface Treemap {
+  /** `config: treemap:` / `%%{init: {"treemap": {...}}}%%` keys mermaid reads. */
+  config?: TreemapInitConfig
   /** The top-level rows (Mermaid's root is an unnamed node holding these). */
   roots: TreemapNode[]
   title?: string

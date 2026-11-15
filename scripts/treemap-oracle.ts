@@ -7,18 +7,12 @@
  * `--thresholds` exits 1 when a sample is under TREEMAP_FLOOR or errored.
  * Set MERMAID_DIST=<path to mermaid.min.js> to score another mermaid build
  * (the first output line names the version scored).
- * Needs Chromium (`pnpm exec playwright install chromium`). A diagnostic, not CI.
+ * Needs Chromium (`pnpm exec playwright install chromium`).
+ * `layout:oracle --thresholds` runs the same check in the weekly CI (#3117).
  */
-import { samples } from '../samples/samples-data.ts'
-import { renderMermaidSVG } from '../src/index.ts'
 import { mermaidVersion } from './lib/mermaid-pin-freshness.ts'
-import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
-import {
-  parseTreemapSvg,
-  treemapAgreement,
-  treemapBreaches,
-  type TreemapAgreement,
-} from './lib/treemap-agreement.ts'
+import { startRealMermaid } from './lib/real-mermaid.ts'
+import { scoreTreemap } from './lib/treemap-measure.ts'
 
 const pct = (n: number | null): string =>
   n === null ? '  - ' : `${Math.round(n * 100)}%`.padStart(4)
@@ -30,36 +24,13 @@ async function main(): Promise<number> {
   console.log(`mermaid ${mermaidVersion(distPath)}`)
   const session = await startRealMermaid(distPath)
   try {
-    const wanted = samples
-      .filter((s) => /^\s*treemap\b/m.test(s.source))
-      .filter(
-        (s) => !filter || s.title.toLowerCase().includes(filter.toLowerCase()),
-      )
-    const results: Record<string, TreemapAgreement> = {}
-    const errored: string[] = []
-    for (const [i, { title, source }] of wanted.entries()) {
-      try {
-        const official = await renderRealMermaidSvg(
-          session,
-          `treemap_${i}`,
-          source,
-        )
-        results[title] = treemapAgreement(
-          parseTreemapSvg(official),
-          parseTreemapSvg(renderMermaidSVG(source)),
-        )
-      } catch (err) {
-        console.error(`ERR  ${title}: ${(err as Error).message.split('\n')[0]}`)
-        errored.push(title)
-      }
-    }
+    const { results, breaches } = await scoreTreemap(session, filter)
     console.log('cells boxes texts frame  sample')
     for (const [title, r] of Object.entries(results)) {
       console.log(
         `${String(r.cells).padStart(5)}  ${pct(r.boxes)}  ${pct(r.texts)}  ${pct(r.frame)}   ${title}`,
       )
     }
-    const breaches = treemapBreaches(results, errored)
     if (args.includes('--thresholds') && breaches.length > 0) {
       console.error(`\nBelow threshold: ${breaches.join(', ')}`)
       return 1
