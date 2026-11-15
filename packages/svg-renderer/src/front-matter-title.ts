@@ -5,10 +5,17 @@
 import { escapeXml, measureTextWidth } from '@zombie-mermaid/core'
 
 const BAND = 54
+// Class and ER start their content at 4, not 0, so 12.3.0's viewBox grows 52.
+const BAND_BY_TYPE: Record<string, number> = { class: 52, er: 52 }
 const SIZE = 18
 const BASELINE = -25
 
-export function addFrontMatterTitle(svg: string, title: string): string {
+export function addFrontMatterTitle(
+  svg: string,
+  title: string,
+  type?: string,
+): string {
+  const band = (type && BAND_BY_TYPE[type]) || BAND
   const tag = /<svg [^>]*>/.exec(svg)![0]
   const [, w, h] = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(tag)!
   const width = Number(w)
@@ -19,9 +26,9 @@ export function addFrontMatterTitle(svg: string, title: string): string {
     Math.ceil((measureTextWidth(title, SIZE, 400) - width) / 2),
   )
   const vbW = width + 2 * side
-  const vbH = height + BAND
+  const vbH = height + band
   const next = tag
-    .replace(/viewBox="[^"]*"/, `viewBox="${-side} ${-BAND} ${vbW} ${vbH}"`)
+    .replace(/viewBox="[^"]*"/, `viewBox="${-side} ${-band} ${vbW} ${vbH}"`)
     .replace(/ width="[^"]*"/, ` width="${vbW}"`)
     .replace(/ height="[^"]*"/, ` height="${vbH}"`)
   const text =
