@@ -1,4 +1,4 @@
-# target sentence: "Source block comes **first**, right after the heading, before any image." then SVG, then ASCII (real terminal)
+# target sentence: "Put the source block first, right after the heading, before any image." then SVG, then ASCII (real terminal)
 # Negation-style graders (source_block_first) pair with the positive svg_then_ascii_tables check; their lint EVAL024 echo warning is intended.
 # good-reply: ## Visual verification ```mermaid flowchart LR A -->|a very long label here| B ``` ### SVG | Before (main @ abc1234) | After | ![before](URL) ### ASCII (real terminal, via verify-ascii-terminal) | Before (main @ abc1234) | After | ![before](URL)
 # bad-reply: ## Visual verification ### SVG | Before | After | ![before](URL) ### ASCII (Playwright browser screenshot, NOT a real terminal) | Before | After | ![before](URL) ```mermaid flowchart LR A --> B ```

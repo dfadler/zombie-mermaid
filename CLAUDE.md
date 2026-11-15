@@ -45,14 +45,10 @@ properties that make worktree cleanup easy to get wrong:
 
 ## Visual verification: any change that could alter a render
 
-If a diff could change a rendered result (parser, layout, theme, SVG, ASCII, CLI,
-`demo/`), the PR body needs a complete "Visual verification" section, built with the
-`pr-visual-verification` skill: (1) the exact Mermaid source in a fenced `mermaid`
-block right under the heading, which GitHub renders; (2) SVG before/after if SVG can
-change; (3) ASCII before/after if ASCII can change, via `verify-ascii-terminal`.
-Docs/CI/tooling/test-only diffs write `N/A: <reason>` on the checklist line instead.
-`scripts/pre-pr-check.sh` warns when rendering paths changed and no `mermaid` block
-is in the body.
+A PR whose diff could change a rendered result needs the complete "Visual verification"
+section in its body, or `N/A: <reason>` on the checklist line when it cannot. Build it
+with the `pr-visual-verification` skill, which owns the section's shape and the list of
+rendering paths.
 
 ## ASCII rendering changes: the PR screenshot must be a real terminal; mockup-only changes use the probes
 
@@ -90,14 +86,10 @@ labeled as a browser mockup, not a terminal. Any change to what the renderer
 emits still needs the real-terminal image above. A real-PTY golden suite was
 considered and not adopted (#1151, #1186).
 
-Whenever a PR or issue includes a "Visual verification" (or equivalent
-before/after) section for this category of change, paste the exact Mermaid
-source used to produce both renders inline, in a fenced ` ```mermaid ` code
-block directly after that heading — before the before/after image table, not
-after it — rather than only linking to a sample index or a separate issue's
-reproduction. A reviewer (or a future reader) must be able to verify the
-screenshots from the PR/issue body alone, without chasing down another issue
-that may no longer contain a matching repro. See
+In an issue's before/after section for this category of change, paste the exact
+Mermaid source inline in a fenced ` ```mermaid ` block directly after the heading
+(a PR body follows `pr-visual-verification`). A reviewer must be able to verify the
+screenshots from the body alone, without chasing a sample index or another issue. See
 [#402](https://github.com/dfadler/zombie-mermaid/issues/402), which this
 requirement exists to close.
 

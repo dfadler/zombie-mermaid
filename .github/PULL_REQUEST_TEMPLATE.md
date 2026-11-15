@@ -10,11 +10,7 @@
 
 ## Visual verification
 
-<!-- Required if this PR could change any rendered result (parser, layout, theme, SVG, ASCII, CLI, demo/). Not required for docs/CI/tooling/test-only PRs: delete this section and tick the checklist line below as "N/A: <reason>". Run the `pr-visual-verification` skill (.claude/skills/pr-visual-verification/) to fill it. Keep this order:
-1. The exact Mermaid source in a fenced mermaid block right under this heading (GitHub renders it: the reference).
-2. SVG before/after table, if SVG output can change.
-3. ASCII before/after table, if ASCII output can change (real-terminal capture; see verify-ascii-terminal).
-Two columns (Before main@sha | After), tight crops. Delete a half that cannot change and say why in one line. -->
+<!-- Fill this section with the `pr-visual-verification` skill (.claude/skills/pr-visual-verification/). If the PR cannot change a rendered result, delete the section and write "N/A: <reason>" on the checklist line. -->
 
 ## Checklist
 

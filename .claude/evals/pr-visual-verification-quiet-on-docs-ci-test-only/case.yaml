@@ -1,4 +1,4 @@
-# target sentence: "Not required only for docs, CI, tooling, and test-only diffs. Then write `Visual verification: N/A: <reason tied to this diff>`"
+# target sentence: "No such warning, and the diff touches only docs, CI, tooling or tests: write `Visual verification: N/A: <reason tied to this diff>`"
 # near-miss: a screenshots question whose diff cannot change a render; expect an N/A line, no section.
 # Smoke tripwire: the bare model likely also answers N/A, so no delta is expected. no_section_built is a pure
 # negation (lint EVAL024 echo warning is intended); it sits beside the positive na_with_diff_reason.
