@@ -404,6 +404,8 @@ export interface GitGraphInitConfig {
     showCommitLabel?: boolean;
     // (undocumented)
     titleTopMargin?: number;
+    // (undocumented)
+    useMaxWidth?: boolean;
 }
 
 // @public

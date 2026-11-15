@@ -4033,9 +4033,9 @@ graphs in all three orientations, with and without `parallelCommits` and
   when written, so markup in them shows as text.
 - **Config keys.** `titleTopMargin` and `diagramPadding` are read (numbers, numeric strings
   and negatives as Mermaid takes them; anything else keeps 25 and 8) and move the title and
-  the viewBox as in 12.3.0. `useMaxWidth` is not read: this renderer always emits fixed
-  `width` and `height` (what mermaid 12.3.0 emits with `useMaxWidth: false`), as for every
-  other diagram type.
+  the viewBox as in 12.3.0. `useMaxWidth` is read (boolean): `true`, Mermaid's default and what
+  GitHub and mermaid.live render, gives `width="100%"` plus a `max-width` style; `false` gives the fixed `width`
+  and `height`. gitGraph is the only diagram type that does this; the others always emit fixed sizes.
 - **ASCII.** Mermaid has no ASCII output; the `git log --graph` layout above is this
   library's own. `look` and `theme` change nothing in it. `parallelCommits: true` puts
   commits of the same depth (a root is 0, else one below the deepest parent) on one row, ids
