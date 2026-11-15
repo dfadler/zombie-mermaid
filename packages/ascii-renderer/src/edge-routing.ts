@@ -566,7 +566,7 @@ const FLOW_FAN_LABEL_ROWS = 2
  * strokes on the facing faces: a duplicate pair (two or more) with a single
  * unlabeled reciprocal, all in one column. Empty otherwise.
  */
-export function reciprocalStrokes(
+function reciprocalStrokes(
   graph: AsciiGraph,
   group: readonly AsciiEdge[],
 ): AsciiEdge[] {
