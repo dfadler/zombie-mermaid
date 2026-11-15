@@ -4556,4 +4556,15 @@ data Details {
   Retros -> Pairing
   evolve Pairing 0.45`,
   },
+  {
+    title: 'Sequence: Wrapped Long Words',
+    category: 'Sequence',
+    description:
+      'With wrap on, a word wider than the wrap width in a participant name, message or note is split mid-word with a trailing hyphen, as mermaid 12.3.0 does (#2963).',
+    source: `sequenceDiagram
+  participant A as wrap:Supercalifragilisticexpialidocious
+  participant B
+  A->>B: wrap: Supercalifragilisticexpialidocious_and_more_words here
+  Note over A: wrap: Pneumonoultramicroscopicsilicovolcanoconiosis is long`,
+  },
 ]
