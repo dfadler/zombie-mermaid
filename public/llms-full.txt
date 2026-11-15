@@ -2410,10 +2410,16 @@ block-beta
   b -.- d
 ```
 
+Styling: `classDef name fill:#f9f,stroke:#333,color:#fff` defines a class, `class a,b name` applies
+it and `style a fill:#969,stroke-width:4px` styles one block (declare the block above its `style`).
+`fill`, `stroke`, `stroke-width` and the other properties go on the block's rectangle, `color` on
+its label; a `style` item replaces the same property from a class. `block.padding` (front matter
+`config: block: padding: 20` or `%%{init: {"block": {"padding": 20}}}%%`, default 8) sets the space
+between cells and inside each block. A markdown label (`["`**x**`"]`) is a parse error in
+Mermaid 12.3.0, so it is one here.
+
 Not supported yet, and rejected with an error naming the issue: the other node shapes and block
-arrows ([#3106](https://github.com/dfadler/zombie-mermaid/issues/3106)), and `classDef`, `class`,
-`style`, markdown strings and `block.padding`
-([#3107](https://github.com/dfadler/zombie-mermaid/issues/3107)).
+arrows ([#3106](https://github.com/dfadler/zombie-mermaid/issues/3106)).
 
 Colours follow the theme, see [Known differences](https://github.com/dfadler/zombie-mermaid/blob/main/docs/known-differences.md#block-diagrams).
 
@@ -2433,6 +2439,7 @@ and a `block ... end` group is a larger box around its cells.
 ```
 
 - Round blocks use `╭╮╰╯` corners (`+` in ASCII mode); `space` leaves its cell empty.
+- Colours and `block.padding` are ignored (the box grid has fixed spacing).
 - Cells are one column apart and touch vertically (a diagram with links leaves 4 columns and 2 rows
   between cells, more for a long link label); labels are centred in both directions.
 - A link is a straight line in that room between blocks that share a row or a column, else one
@@ -3893,9 +3900,13 @@ radius, every link's path and label place, and the drawing size agree on every g
 - **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; the text is the same.
 - **Link labels** are not wrapped at 200px as Mermaid does, and sit on a half-transparent patch of
   the background instead of its `labelBkg` box.
-- **Not drawn yet.** The other shapes, styling and markdown strings: see
-  [#3106](https://github.com/dfadler/zombie-mermaid/issues/3106),
-  [#3107](https://github.com/dfadler/zombie-mermaid/issues/3107).
+- **Styles.** `classDef`, `class` and `style` items are applied as Mermaid does (inline on the
+  rectangle, `color` on the label), except declarations with `url(`, `@import` or `expression(`,
+  which are dropped. A `style` on a block declared later, or on several ids, is a parse error (Mermaid
+  throws a `TypeError`); `class` on an id that is not declared is ignored.
+- **Markdown strings** (`["`**x**`"]`) are a parse error in Mermaid 12.3.0 and are one here.
+- **Not drawn yet.** The other shapes: see
+  [#3106](https://github.com/dfadler/zombie-mermaid/issues/3106).
 - **`~~~`.** Mermaid's lexer reads `~~~` as a block id (its id rule comes before the invisible-link rule); so does this parser.
 - **ASCII.** Mermaid has no ASCII output; the box grid is this library's own.
 

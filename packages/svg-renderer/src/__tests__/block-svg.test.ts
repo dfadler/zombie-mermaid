@@ -154,3 +154,50 @@ describe('block links', () => {
     expect(wide.viewBox.width).toBeGreaterThan(plain.viewBox.width)
   })
 })
+
+describe('block styling', () => {
+  const src =
+    'block-beta\n  columns 2\n  a b\n  classDef k fill:#66f,stroke:#33a,color:#fff\n  classDef m stroke:#f00\n  class a k\n  class a m\n  style b fill:#969, color:#000\n  block:g\n    c\n  end\n  style g fill:#eee,stroke:#f00\n  style c url(x):y'
+
+  it('merges classDef and style items per property and moves color to the label', () => {
+    const d = layout(src)
+    const css = (id: string) => d.nodes.find((n) => n.id === id)!.css
+    expect(css('a')).toEqual([
+      ['fill', '#66f'],
+      ['stroke', '#f00'],
+      ['color', '#fff'],
+    ])
+    expect(css('b')).toEqual([
+      ['fill', '#969'],
+      ['color', '#000'],
+    ])
+  })
+
+  it('writes inline styles, classes and label colours', () => {
+    const svg = renderMermaidSVG(src)
+    expect(svg).toContain('<g class="node k m">')
+    expect(svg).toContain('style="fill:#66f !important;stroke:#f00 !important"')
+    expect(svg).toContain('style="fill:#eee;stroke:#f00;"')
+    expect(svg).toContain('style="fill:#fff"')
+    expect(svg).not.toContain('url(x)')
+  })
+
+  it('drops declarations that are not plain', () => {
+    const d = layout(
+      'block-beta\n  a\n  style a fill:url(http://x/y),stroke:red,@bad:1,color:expression(1)',
+    )
+    expect(d.nodes[0]!.css).toEqual([['stroke', 'red']])
+  })
+
+  it('sizes blocks and gaps by block.padding', () => {
+    const wide = layout(
+      '%%{init: {"block": {"padding": 20}}}%%\nblock-beta\n  columns 2\n  a("r") b',
+    )
+    const plain = layout('block-beta\n  columns 2\n  a("r") b')
+    const [a, b] = wide.nodes
+    expect(a!.height).toBe(24 + 40)
+    expect(a!.width).toBe(b!.width)
+    expect(b!.x - a!.x).toBe(b!.width + 20)
+    expect(wide.viewBox.width).toBeGreaterThan(plain.viewBox.width)
+  })
+})

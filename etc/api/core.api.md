@@ -36,6 +36,11 @@ export interface ArchitectureInitLayout {
 }
 
 // @public
+export interface BlockInitConfig {
+    padding?: number;
+}
+
+// @public
 export function buildStyleBlock(font: string, mono: MonoFontEmbed | false, nonce?: string, body?: MonoFontEmbed): string;
 
 // @public (undocumented)
@@ -417,6 +422,7 @@ export function hasMeasuredAdvance(char: string): boolean;
 // @public
 export interface InitConfig {
     architectureLayout?: ArchitectureInitLayout;
+    block?: BlockInitConfig;
     c4Layout?: C4InitLayout;
     classLayout?: ClassInitLayout;
     erLayout?: ErInitLayout;
