@@ -31,10 +31,11 @@ import {
   PacketTile,
   GitGraphTile,
   SankeyTile,
+  UseCaseTile,
 } from '../../demo/components/gallery-tiles.tsx'
 
 describe('gallery tiles', () => {
-  it('GALLERY_TILES lists all twenty tiles in flowchart/state/sequence/class/er/xy-chart/c4/architecture/pie/quadrant/gantt/kanban/mindmap/timeline/requirement/journey/radar/packet/gitgraph/sankey order', () => {
+  it('GALLERY_TILES lists all twenty-one tiles in flowchart/state/sequence/class/er/xy-chart/c4/architecture/pie/quadrant/gantt/kanban/mindmap/timeline/requirement/journey/radar/packet/gitgraph/sankey/usecase order', () => {
     expect(GALLERY_TILES).toEqual([
       FlowchartTile,
       StateTile,
@@ -56,6 +57,7 @@ describe('gallery tiles', () => {
       PacketTile,
       GitGraphTile,
       SankeyTile,
+      UseCaseTile,
     ])
   })
 
@@ -80,6 +82,7 @@ describe('gallery tiles', () => {
     ['PacketTile', PacketTile],
     ['GitGraphTile', GitGraphTile],
     ['SankeyTile', SankeyTile],
+    ['UseCaseTile', UseCaseTile],
   ] as const)('%s renders a single 100x70-viewBox svg', (_name, Tile) => {
     const { container } = render(createElement(Tile))
     const svg = container.querySelector('svg')

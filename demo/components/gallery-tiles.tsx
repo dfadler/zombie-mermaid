@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 /**
- * The twenty small animated SVG illustrations `DiagramGalleryTeaser`
+ * The twenty-one small animated SVG illustrations `DiagramGalleryTeaser`
  * (`diagram-gallery-teaser.tsx`) links to, one per diagram type — kept
  * together in one file since they're trivial variants of the same shape
  * (a `viewBox="0 0 100 70"` SVG, no props, one accent color each) rather
@@ -691,6 +691,63 @@ export function SankeyTile() {
   )
 }
 
+/** Use Case: see the usecase hub card. */
+export function UseCaseTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <rect
+        x="40"
+        y="6"
+        width="52"
+        height="58"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+      />
+      <ellipse
+        cx="66"
+        cy="22"
+        rx="16"
+        ry="8"
+        fill="none"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+      />
+      <ellipse
+        cx="66"
+        cy="48"
+        rx="16"
+        ry="8"
+        fill="none"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+      />
+      <circle
+        cx="16"
+        cy="28"
+        r="5"
+        fill="none"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+      />
+      <path
+        d="M16 33 V46 M8 38 H24 M16 46 L9 58 M16 46 L23 58"
+        fill="none"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+      />
+      <path
+        d="M24 36 L50 24 M24 42 L50 48"
+        fill="none"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
 /**
  * One tile component per {@link GALLERY_TYPES} entry (`diagram-gallery-
  * teaser.tsx`), in the same order — index `i` here must line up with that
@@ -717,4 +774,5 @@ export const GALLERY_TILES = [
   PacketTile,
   GitGraphTile,
   SankeyTile,
+  UseCaseTile,
 ]

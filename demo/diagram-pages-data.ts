@@ -416,6 +416,22 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
       'Sankey diagrams are named after Captain Sankey’s 1898 chart of steam engine energy losses, and are now used for budgets, energy and traffic flows. Mermaid’s syntax starts with `sankey-beta` and is a CSV table of `source,target,value` rows, with quotes around names that contain commas.',
     docsUrl: 'https://mermaid.ai/open-source/syntax/sankey.html',
   },
+  {
+    slug: 'usecase',
+    label: 'Use case diagram',
+    keyword: 'usecase-beta',
+    source: sampleSource('Use Case: Basic'),
+    intro:
+      'Use case diagrams show who uses a system and what it does for them, with actors outside a system boundary and use cases inside it. zombie-mermaid renders actors, use case ovals, boundaries and labelled relationships in SVG and ASCII.',
+    accent: 'pink',
+    exampleHeading: 'Actors, use cases and the relationships between them.',
+    sourceFilename: 'usecase.mmd',
+    aboutHeading:
+      'Where use case diagrams come from, and how the syntax works.',
+    about:
+      'Use case diagrams come from UML, where they capture a system’s behaviour from the point of view of the people and systems that use it. Mermaid’s syntax starts with `usecase-beta`, declares `actor` and use case nodes, groups use cases in a `systemBoundary`, and joins them with associations or `include`, `extend` and generalization relationships.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/useCaseDiagram.html',
+  },
 ]
 
 /**
@@ -448,6 +464,7 @@ const GALLERY_CATEGORY: Record<string, string> = {
   packet: 'Packet',
   gitgraph: 'GitGraph',
   sankey: 'Sankey',
+  usecase: 'Use Case',
 }
 
 /**
