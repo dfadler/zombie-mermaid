@@ -66,7 +66,7 @@ const group = (v: string, width: number): string => {
   return out.reverse().join(',')
 }
 
-/** d3's `formatTrim`: drop insignificant zeros (and a bare `.`) of the mantissa. */
+/** The `~` trim of d3-format: drop insignificant zeros (and a bare `.`) of the mantissa. */
 const trim = (s: string): string => {
   const e = s.indexOf('e')
   const mant = e < 0 ? s : s.slice(0, e)
@@ -76,10 +76,12 @@ const trim = (s: string): string => {
   )
 }
 
-const decimal = (x: number): string =>
-  Math.abs((x = Math.round(x))) >= 1e21
+const decimal = (v: number): string => {
+  const x = Math.round(v)
+  return Math.abs(x) >= 1e21
     ? x.toLocaleString('en').replace(/,/g, '')
     : x.toString(10)
+}
 
 const TYPES: Record<string, (x: number, p: number) => string> = {
   '%': (x, p) => (x * 100).toFixed(p),
@@ -97,7 +99,7 @@ const TYPES: Record<string, (x: number, p: number) => string> = {
   x: (x) => Math.round(x).toString(16),
 }
 
-/** d3 `format(spec)`; throws on a specifier d3 rejects. */
+/** The d3-format `format(spec)`; throws on a specifier d3 rejects. */
 function d3Format(spec: string): (value: number) => string {
   const m = SPEC.exec(spec)
   if (!m) throw new Error(`invalid format: ${spec}`)
