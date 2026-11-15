@@ -18,6 +18,13 @@
 //   └─────────────────────────────┘
 //
 //   - Round blocks use rounded corners (Unicode only; ASCII keeps `+`).
+//   - Every other shape is the same box with its own delimiters, the glyphs the
+//     flowchart renderer gives that shape (shapes/corners.ts): `◯` corners for a
+//     circle, `◎` double circle, `◇` diamond, `⌜⌝⌞⌟` hexagon, `(` `)` stadium,
+//     `/ \` trapezoid, `╭╮╰╯` and a rim line under the top for a cylinder, a
+//     second bar inside each side for a subroutine, a `>` in the left side of an
+//     asymmetric block, `/` or `\` corners leaning right or left; a block arrow
+//     is a plain box with an arrow head in the middle of each side it points to.
 //   - `space` leaves its cell empty.
 //   - Cells are one column apart and touch vertically; a diagram with links
 //     leaves room between them (4 columns, 2 rows, wider for a link label).
@@ -33,6 +40,8 @@ import type { BlockEdge, BlockNode } from '@zombie-mermaid/mermaid-parser'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 import { colorizeText } from './ansi.ts'
 import { displayWidth } from './display-width.ts'
+import { SHAPE_CORNERS } from './shapes/corners.ts'
+import type { AsciiNodeShape } from './types.ts'
 
 const UNI = {
   h: '─',
@@ -88,6 +97,28 @@ const ASC = {
   cBR: '+',
 }
 
+/** The flowchart shape whose corner glyphs a block shape borrows. */
+const CORNER_SHAPE: Partial<Record<BlockNode['shape'], AsciiNodeShape>> = {
+  circle: 'circle',
+  doublecircle: 'doublecircle',
+  diamond: 'diamond',
+  hexagon: 'hexagon',
+  stadium: 'stadium',
+  subroutine: 'subroutine',
+  cylinder: 'cylinder',
+  rect_left_inv_arrow: 'asymmetric',
+  trapezoid: 'trapezoid',
+  inv_trapezoid: 'trapezoid-alt',
+  lean_right: 'parallelogram',
+  lean_left: 'parallelogram-alt',
+}
+
+/** Extra columns and rows a shape's delimiters need around its label. */
+const EXTRA: Partial<Record<BlockNode['shape'], Size>> = {
+  subroutine: { w: 2, h: 0 },
+  cylinder: { w: 0, h: 1 },
+}
+
 /** Room between neighbouring cells: columns across, rows down. */
 interface Gaps {
   x: number
@@ -140,9 +171,10 @@ function gridOf(node: BlockNode): { xSize: number; ySize: number } {
 function measure(node: BlockNode, gap: Gaps, root = false): Size {
   if (node.type === 'node') {
     const lines = labelLines(node.label)
+    const extra = EXTRA[node.shape] ?? { w: 0, h: 0 }
     return {
-      w: Math.max(0, ...lines.map(displayWidth)) + 4,
-      h: lines.length + 2,
+      w: Math.max(0, ...lines.map(displayWidth)) + 4 + extra.w,
+      h: lines.length + 2 + extra.h,
     }
   }
   const { xSize, ySize } = gridOf(node)
@@ -158,6 +190,52 @@ function measure(node: BlockNode, gap: Gaps, root = false): Size {
   return {
     w: xSize * cw + (xSize - 1) * gap.x + 2 * inset,
     h: ySize * ch + (ySize - 1) * gap.y + (root ? 0 : 2),
+  }
+}
+
+/** The marks inside a shape's frame: a rim, inner bars, a notch, arrow heads. */
+function decorate(
+  put: (cx: number, cy: number, s: string, line: boolean) => void,
+  node: BlockNode,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  g: typeof UNI,
+): void {
+  const mid = y + Math.floor(h / 2)
+  const midX = x + Math.floor(w / 2)
+  switch (node.shape) {
+    case 'cylinder':
+      // The rim of the top ellipse, as the flowchart cylinder draws it.
+      put(x, y + 1, g.v, true)
+      put(x + w - 1, y + 1, g.v, true)
+      for (let i = 1; i < w - 1; i++) put(x + i, y + 1, g.h, true)
+      break
+    case 'subroutine':
+      for (let j = 1; j < h - 1; j++) {
+        put(x + 1, y + j, g.v, true)
+        put(x + w - 2, y + j, g.v, true)
+      }
+      break
+    case 'rect_left_inv_arrow':
+      put(x, mid, '>', true)
+      break
+    case 'block_arrow': {
+      // Mermaid reads a direction by its exact name; `x` is right and left, `y` up and down.
+      const dirs = new Set<string>()
+      for (const d of node.directions) {
+        if (d === 'x') dirs.add('right').add('left')
+        else if (d === 'y') dirs.add('up').add('down')
+        else dirs.add(d)
+      }
+      if (dirs.has('right')) put(x + w - 1, mid, g.ar, true)
+      if (dirs.has('left')) put(x, mid, g.al, true)
+      if (dirs.has('up')) put(midX, y, g.au, true)
+      if (dirs.has('down')) put(midX, y + h - 1, g.ad, true)
+      break
+    }
+    default:
   }
 }
 
@@ -181,10 +259,16 @@ function draw(
     if (!rects.has(node.id)) rects.set(node.id, { x, y, w: size.w, h: size.h })
     const round = node.type === 'node' && node.shape === 'round'
     const { w, h } = size
-    put(x, y, round ? g.rtl : g.tl, true)
-    put(x + w - 1, y, round ? g.rtr : g.tr, true)
-    put(x, y + h - 1, round ? g.rbl : g.bl, true)
-    put(x + w - 1, y + h - 1, round ? g.rbr : g.br, true)
+    const corner = node.type === 'node' ? CORNER_SHAPE[node.shape] : undefined
+    const c = corner
+      ? SHAPE_CORNERS[corner][g === UNI ? 'unicode' : 'ascii']
+      : round
+        ? { tl: g.rtl, tr: g.rtr, bl: g.rbl, br: g.rbr }
+        : { tl: g.tl, tr: g.tr, bl: g.bl, br: g.br }
+    put(x, y, c.tl, true)
+    put(x + w - 1, y, c.tr, true)
+    put(x, y + h - 1, c.bl, true)
+    put(x + w - 1, y + h - 1, c.br, true)
     for (let i = 1; i < w - 1; i++) {
       put(x + i, y, g.h, true)
       put(x + i, y + h - 1, g.h, true)
@@ -193,10 +277,12 @@ function draw(
       put(x, y + j, g.v, true)
       put(x + w - 1, y + j, g.v, true)
     }
+    if (node.type === 'node') decorate(put, node, x, y, w, h, g)
   }
   if (node.type === 'node') {
     const lines = labelLines(node.label)
-    const top = y + 1 + Math.floor((size.h - 2 - lines.length) / 2)
+    const rim = EXTRA[node.shape]?.h ?? 0
+    const top = y + 1 + rim + Math.floor((size.h - 2 - rim - lines.length) / 2)
     lines.forEach((text, k) => {
       const left = x + 1 + Math.floor((size.w - 2 - displayWidth(text)) / 2)
       let cx = left

@@ -264,14 +264,79 @@ describe('parseBlock', () => {
     })
   })
 
-  describe('syntax tracked in issues', () => {
-    const tracked = (src: string, issue: number) =>
-      expect(() => parseBlock(src)).toThrow(`issues/${issue}`)
+  describe('shapes and block arrows', () => {
+    const shapeOf = (src: string) =>
+      parseBlock(`block-beta\n  ${src}`).root.children[0]!
 
-    it('names the shapes issue', () => {
-      for (const shape of ['(("x"))', '{"x"}', '{{"x"}}', '(["x"])', '[["x"]]'])
-        tracked(`block-beta\n  a${shape}`, 3106)
-      tracked('block-beta\n  a<["x"]>(down)', 3106)
+    it("maps each pair of delimiters to Mermaid's type", () => {
+      const cases: [string, string][] = [
+        ['a["x"]', 'square'],
+        ['a("x")', 'round'],
+        ['a(("x"))', 'circle'],
+        ['a((("x")))', 'doublecircle'],
+        ['a{"x"}', 'diamond'],
+        ['a{{"x"}}', 'hexagon'],
+        ['a(["x"])', 'stadium'],
+        ['a[["x"]]', 'subroutine'],
+        ['a[("x")]', 'cylinder'],
+        ['a>"x"]', 'rect_left_inv_arrow'],
+        ['a[/"x"/]', 'lean_right'],
+        ['a[\\"x"\\]', 'lean_left'],
+        ['a[/"x"\\]', 'trapezoid'],
+        ['a[\\"x"/]', 'inv_trapezoid'],
+        ['a<["x"]>(right)', 'block_arrow'],
+      ]
+      for (const [src, shape] of cases) {
+        const node = shapeOf(src)
+        expect(node.shape, src).toBe(shape)
+        expect(node.label, src).toBe('x')
+        expect(node.type, src).toBe('node')
+      }
+    })
+
+    it("reads a block arrow's directions as Mermaid lexes them", () => {
+      expect(shapeOf('a<["x"]>(right, down)').directions).toEqual([
+        'right',
+        'down',
+      ])
+      expect(shapeOf('a<["x"]>(x)').directions).toEqual(['x'])
+      expect(shapeOf('a<["x"]>(up,left , y)').directions).toEqual([
+        'up',
+        'left ',
+        'y',
+      ])
+      expect(shapeOf('a["x"]').directions).toEqual([])
+    })
+
+    it('draws a pair of delimiters Mermaid has no shape for as a square block', () => {
+      for (const src of ['a("x"]', 'a(("x")]', 'a{"x"}}', 'a)"x")'])
+        expect(shapeOf(src).shape, src).toBe('square')
+    })
+
+    it("rejects what Mermaid's lexer or parser rejects", () => {
+      for (const src of [
+        'a<["x"]>',
+        'a<["x"]>()',
+        'a<["x"]>(Right)',
+        'a<["x"]>(foo)',
+        'a<["x"]>(right',
+        'a<["x"]>(right,)',
+        'a[|"x"|]',
+        'a(((x)))',
+        'a{x}',
+      ])
+        expect(() => parseBlock(`block-beta\n  ${src}`), src).toThrow(
+          MermaidParseError,
+        )
+    })
+
+    it('takes a size and links after a shape, and a redeclaration changes the type', () => {
+      expect(shapeOf('a{{"x"}}:2').widthInColumns).toBe(2)
+      const d = parseBlock('block-beta\n  a b\n  a{{"x"}}\n  a --> b')
+      expect(d.root.children[0]).toMatchObject({ shape: 'hexagon', label: 'x' })
+      expect(d.edges).toHaveLength(1)
+      const e = parseBlock('block-beta\n  a(("x"))\n  a b')
+      expect(e.root.children[0]!.shape).toBe('circle')
     })
   })
 })
