@@ -562,6 +562,29 @@ export function spreadCandidates(
 const FLOW_FAN_LABEL_ROWS = 2
 
 /**
+ * The plain edges back from a group's target to its source that join the group's
+ * strokes on the facing faces: a duplicate pair (two or more) with a single
+ * unlabeled reciprocal, all in one column or row. Empty otherwise.
+ */
+export function reciprocalStrokes(
+  graph: AsciiGraph,
+  group: readonly AsciiEdge[],
+): AsciiEdge[] {
+  const { from, to } = group[0]!
+  const back = graph.edges.filter((o) => o.from === to && o.to === from)
+  const a = requireGridCoord(from)
+  const b = requireGridCoord(to)
+  return group.length >= 2 &&
+    back.length === 1 &&
+    back[0]!.text === '' &&
+    !back[0]!.clusterSource &&
+    !back[0]!.clusterTarget &&
+    (a.x === b.x || a.y === b.y)
+    ? back
+    : []
+}
+
+/**
  * Whether `group` (edges between one ordered pair of nodes) can run side by
  * side on the two nodes' facing faces (#1394) instead of taking side lanes:
  * unlabeled edges between nodes stacked in one grid column (or side by side in
@@ -591,7 +614,10 @@ function spreadsOnFaces(
   const size = vertical ? graph.columnWidth : graph.rowHeight
   const at = vertical ? a.x : a.y
   const extent = [0, 1, 2].reduce((n, i) => n + size.get(at + i)!, 0)
-  if (extent < 2 * group.length + 1) return false
+  // A plain reciprocal edge between the pair takes a stroke of its own among
+  // them (`spreadParallelEdges`), as Mermaid draws a pair with duplicates.
+  const recip = reciprocalStrokes(graph, group)
+  if (extent < 2 * (group.length + recip.length) + 1) return false
   // #1455: labels on side-by-side vertical strokes stagger onto their own
   // rows (a label wider than the 2-cell stroke spacing would overprint its
   // neighbour), so the gap needs a plain-stroke row-pair clear at each end
@@ -610,7 +636,7 @@ function spreadsOnFaces(
   // side of that node (a chain onward), never toward the partner or level.
   const axis = vertical ? 'y' : 'x'
   for (const e of graph.edges) {
-    if (group.includes(e) || e.from === e.to) continue
+    if (group.includes(e) || recip.includes(e) || e.from === e.to) continue
     // Face lanes take the outer end of the faces, beside the strokes (#2121).
     if (e.faceLanePlan) continue
     for (const [node, here, there] of [
