@@ -32,13 +32,15 @@ describe('front matter (#2585)', () => {
 
   describe('title: (mermaid 12.3.0 draws it on every type but C4/architecture)', () => {
     const titled = '---\ntitle: FM Title\n---\n'
-    // Drawn above the diagram by a post-pass: viewBox grows up by 54px.
+    // Drawn above the diagram by a post-pass: viewBox grows up by the band
+    // mermaid 12.3.0 uses (54px; class and ER 52px, #3166).
     for (const name of ['flowchart', 'class', 'er', 'state']) {
       it(`${name}: SVG band + ASCII row`, () => {
+        const band = name === 'class' || name === 'er' ? 52 : 54
         const plain = renderMermaidSVG(bodies[name]!)
         const svg = renderMermaidSVG(titled + bodies[name])
         const [, w, h] = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(plain)!
-        expect(svg).toContain(`viewBox="0 -54 ${w} ${Number(h) + 54}"`)
+        expect(svg).toContain(`viewBox="0 -${band} ${w} ${Number(h) + band}"`)
         expect(svg).toContain('>FM Title</text>')
         expect(svg).toContain('y="-25"')
         const ascii = renderMermaidASCII(titled + bodies[name], {
@@ -66,6 +68,12 @@ describe('front matter (#2585)', () => {
         )
       })
     }
+    it('sequence: the title band is 40px, as mermaid 12.3.0 (#3166)', () => {
+      const h = (s: string) => Number(/viewBox="[^"]*? ([\d.]+)"/.exec(s)![1])
+      expect(h(renderMermaidSVG(titled + bodies.sequence))).toBe(
+        h(renderMermaidSVG(bodies.sequence!)) + 40,
+      )
+    })
     it('xychart and quadrant take it as their chart title', () => {
       const xy = 'xychart-beta\n  x-axis [a, b]\n  bar [1, 2]'
       expect(renderMermaidSVG(titled + xy)).toBe(

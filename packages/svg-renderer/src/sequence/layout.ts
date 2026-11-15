@@ -96,7 +96,7 @@ const SEQ = {
    */
   boxPad: 10,
   /** Room reserved above everything for a `title` line */
-  titleBand: 36,
+  titleBand: 40,
 } as const
 
 /** Font size of the `title` line, shared with the renderer. */

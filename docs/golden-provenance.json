@@ -412,7 +412,7 @@
       "class": "b",
       "source": "this renderer's own output, accepted once when the test was written",
       "owner": "src/__tests__/front-matter-2585.test.ts",
-      "verdict": "title drawn on every type but C4/architecture, as mermaid 12.3.0; viewBox band identical for flowchart, state, pie, c4, architecture (54px, y -25); DIVERGES: er and class band is 52px in mermaid vs 54 here, sequence 40px vs 36 (#2679)",
+      "verdict": "title drawn on every type but C4/architecture, as mermaid 12.3.0; viewBox band matches for every type (flowchart, state, pie, c4, architecture 54px; er, class 52px; sequence 40px; text y -25) (#2679, #3166)",
       "mermaid": "12.3.0"
     },
     {
