@@ -263,6 +263,32 @@ function diamondFaceRows(graph: AsciiGraph, node: AsciiNode): number {
 }
 
 /**
+ * Cells a plain node's side face needs when ELK ends more than three edges on
+ * it (a hub with back edges): one cell per end, so each lands on ELK's face
+ * with an arrowhead of its own. 0 when the label's own height holds them.
+ */
+function hintedFaceCells(graph: AsciiGraph, node: AsciiNode): number {
+  if (
+    node.shape === 'diamond' ||
+    !graph.edgeHints ||
+    graph.config.graphDirection !== 'LR'
+  )
+    return 0
+  const count = { L: 0, R: 0 }
+  for (const e of graph.edges) {
+    const h = graph.edgeHints.get(e)
+    if (!h || e.from === e.to) continue
+    for (const [n, f] of [
+      [e.from, h.start.face],
+      [e.to, h.end.face],
+    ] as const)
+      if (n === node && (f === 'L' || f === 'R')) count[f]++
+  }
+  const most = Math.max(count.L, count.R)
+  return most > 3 ? most : 0
+}
+
+/**
  * How many self-loops ELK hooks out of `node`'s left face (TD) or top face (LR), when
  * there are duplicates to nest (#2913); 0 for a single loop, which keeps the
  * node's own size. A loop of a node inside a subgraph is routed another way.
@@ -381,6 +407,7 @@ export function setColumnWidth(
             rowHeights[idx]!,
             strokeCells(false),
             slantRows,
+            hintedFaceCells(graph, node),
             !lr && nest ? 4 * nest - 1 : 0,
           )
         : rowHeights[idx]!

@@ -2916,15 +2916,17 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       : undefined
   if (twin) hintedPath = [...twin.path].reverse()
   // A labelled reciprocal pair on one route in a horizontal flow: the second
-  // keeps the grid's faces only where either face holds more ends than its
-  // three cells, so its arrowhead would land on another end's stroke. Within
-  // the cells it takes ELK's face, as the first does.
+  // keeps the grid's faces only where either end is on a decision face that
+  // holds more ends than its three cells (a plain node grows a cell per end,
+  // `hintedFaceCells`), so its arrowhead would land on another end's stroke.
   const crowded = (): boolean => {
     const h = graph.edgeHints?.get(edge)
     return (
       !h ||
-      hintedEnds(graph, edge.from, h.start.face) > 3 ||
-      hintedEnds(graph, edge.to, h.end.face) > 3
+      (edge.from.shape === 'diamond' &&
+        hintedEnds(graph, edge.from, h.start.face) > 3) ||
+      (edge.to.shape === 'diamond' &&
+        hintedEnds(graph, edge.to, h.end.face) > 3)
     )
   }
   const sameRoute = (o: AsciiEdge): boolean =>

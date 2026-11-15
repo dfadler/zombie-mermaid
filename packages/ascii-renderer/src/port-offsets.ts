@@ -1418,7 +1418,11 @@ function hintedFaces(graph: AsciiGraph): Map<string, FaceEnd[]> {
       return { ...f, rank: flip ? -rank : rank }
     })
     if (list.length < 2 || ranked.some((r) => r === undefined)) continue
-    if (horizontal && list.some((f) => labelledBentPair(graph, f.edge)))
+    if (
+      horizontal &&
+      list.length <= 3 &&
+      list.some((f) => labelledBentPair(graph, f.edge))
+    )
       continue
     out.set(k, ranked as FaceEnd[])
   }
