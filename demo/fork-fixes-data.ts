@@ -1099,20 +1099,6 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before: one hook leaves `b` to the right and sits on S’s bottom wall. After: two nested hooks run over the top of `b`, inside the frame, as in mermaid 12.3.0.',
   },
-  {
-    id: 'ascii-sequence-wrap-long-words',
-    title:
-      'ASCII: a wrapped sequence word wider than the box ran past it whole',
-    symptom:
-      'With `wrap` on, a message or note word wider than the wrap width stayed on one line, and a `wrap:` participant name was not wrapped at all. mermaid@12.3.0 splits such a word mid-word with a trailing `-` and wraps the name inside a taller box.',
-    source:
-      'sequenceDiagram\n  participant A as wrap:Supercalifragilisticexpialidocious\n  participant B\n  A->>B: wrap: Supercalifragilisticexpialidocious_and_more_words here\n  Note over A: wrap: Pneumonoultramicroscopicsilicovolcanoconiosis is long',
-    fixCommit: '4858a6cfa',
-    pr: 3168,
-    render: 'ascii',
-    lookFor:
-      'Before: the long words stay whole and push the diagram wide. After: each splits with a trailing `-`, and the participant name wraps in its box, as in mermaid 12.3.0.',
-  },
 ]
 
 /** Entries shown on the page: everything not parked. */
