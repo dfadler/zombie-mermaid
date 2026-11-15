@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  deriveBorderColor,
   parseCssColor,
   parseHexColor,
   mixSrgb,
@@ -183,4 +184,27 @@ describe('formatCssColor', () => {
       'rgba(0, 0, 0, 0.333)',
     )
   })
+})
+
+describe('deriveBorderColor (mermaid 12.3.0 mkBorder, #3165)', () => {
+  // Hex of the border hsl() mermaid 12.3.0 computed: #ffcc00 -> hsl(48,60%,40%), #fff -> hsl(0,0%,90%), #222 -> hsl(0,0%,3.33%), hsl(120,50%,50%) -> hsl(120,10%,40%), red -> hsl(0,60%,40%).
+  it.each([
+    ['#ffcc00', '#a38b29'],
+    ['#ffffff', '#e6e6e6'],
+    ['#222222', '#090909'],
+    ['hsl(120,50%,50%)', '#5c705c'],
+    ['rgb(255,0,0)', '#a32929'],
+    ['#00ff00', '#29a329'],
+    ['#0000ff', '#2929a3'],
+  ])('%s', (input, out) => {
+    expect(deriveBorderColor(input)).toBe(out)
+  })
+  it('hsl() in space syntax and with deg', () => {
+    expect(deriveBorderColor('hsl(120deg 50% 50% / 0.5)')).toBe('#5c705c')
+  })
+  it.each(['hsl(120, 50, 50)', 'hsl(x, 50%, 50%)', 'hsl()', 'hsl(1 2% 3%'])(
+    'null for malformed %s',
+    (v) => expect(deriveBorderColor(v)).toBeNull(),
+  )
+  it('null for names', () => expect(deriveBorderColor('red')).toBeNull())
 })

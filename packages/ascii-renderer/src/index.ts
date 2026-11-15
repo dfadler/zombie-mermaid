@@ -37,6 +37,8 @@ import {
   checkLineLength,
   detectDiagramType,
   extractAccessibility,
+  assertThemeVariableColors,
+  deriveBorderColor,
   extractInitConfig,
   parseHexColor,
 } from '@zombie-mermaid/core'
@@ -159,7 +161,12 @@ function directiveTheme(
   const tv = extractInitConfig(text.split(/\r\n?|\n/)).themeVariables
   const hex = (v?: string) => (v && parseHexColor(v) ? v : undefined)
   const line = hex(tv?.lineColor)
-  const border = hex(tv?.primaryBorderColor)
+  // Mermaid derives the border from primaryColor when none is given (#3165).
+  const border =
+    hex(tv?.primaryBorderColor) ??
+    (tv?.primaryColor
+      ? (deriveBorderColor(tv.primaryColor) ?? undefined)
+      : undefined)
   const out: Partial<AsciiTheme> = {}
   if (line) {
     out.line = line
@@ -229,6 +236,8 @@ export function renderMermaidASCII(
   // accTitle/accDescr have no place in text output: drop them, never print.
   // The one exception is C4, where Mermaid draws accTitle as the title.
   const { text, accTitle, frontMatterTitle } = extractAccessibility(source)
+  // Mermaid throws on a colour it cannot derive from (#3163).
+  if (options.honorThemeVariables !== false) assertThemeVariableColors(text)
   const theme: AsciiTheme = {
     ...DEFAULT_ASCII_THEME,
     ...(options.honorThemeVariables !== false &&

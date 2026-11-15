@@ -3,7 +3,9 @@
  * Mermaid's `%%{init: {"themeVariables": ...}}%%` onto our colour tokens.
  *
  * Mermaid behaviour relied on (measured, mermaid 12.1.0 and 12.2.0, headless
- * Chromium, computed paint): `primaryColor`/`primaryBorderColor`/
+ * Chromium, computed paint; the border derivation, re-measured on 12.3.0, #3165:
+ * `primaryColor` alone gives the border `hsl(h, s-40%, l-10%)` of it, and leaves
+ * the flowchart line (#0b0b0b) and text (#333) at their defaults): `primaryColor`/`primaryBorderColor`/
  * `primaryTextColor` apply under `theme: base` only; `lineColor` and
  * `pie1`..`pie12` apply under every theme; `pieN` maps to the Nth slice in
  * source order and wraps after 12; an invalid pie colour paints #333.
@@ -45,13 +47,8 @@ const cases: Array<
   ['flowchart-base-all', flow(BASE_ALL, 'base'), ON],
   ['flowchart-default-theme-line-only', flow(BASE_ALL), ON],
   [
-    'flowchart-invalid-ignored',
-    flow({ primaryColor: '#12345', lineColor: 'x' }, 'base'),
-    ON,
-  ],
-  [
-    'flowchart-unsafe-ignored',
-    flow({ primaryColor: 'url(#x)', lineColor: 'red;}' }, 'base'),
+    'flowchart-primary-only-derives-border',
+    flow({ primaryColor: '#ffcc00' }, 'base'),
     ON,
   ],
   ['flowchart-named-colour', flow({ primaryColor: 'red' }, 'base'), ON],
@@ -185,22 +182,104 @@ describe('honorThemeVariables: behaviour', () => {
     expect(ascii).not.toMatch(/#00aa00|#aa00aa|#0000ff/i)
   })
 
-  it('invalid and unsafe values are ignored, never thrown', () => {
-    for (const bad of [
+  // Measured on mermaid 12.3.0 (flowchart, headless Chromium), #3163.
+  describe('colours mermaid cannot parse throw (#3163)', () => {
+    const THROWS = [
       '#12345',
+      'x',
       'notacolor',
       'url(#x)',
-      'var(--x)',
-      'red;}',
-      '"><script>',
-      '',
-    ]) {
-      const svg = renderMermaidSVG(
-        flow({ primaryColor: bad, lineColor: bad }, 'base'),
-        ON,
+      'oklch(60% 0.1 20)',
+      'lab(50 10 10)',
+      'hwb(10 10% 10%)',
+      'currentColor',
+      '  red ',
+    ]
+    const PARSES = [
+      'red',
+      'RED',
+      'transparent',
+      '#fc08',
+      '#ffcc0080',
+      'rgba(1,2,3,0.5)',
+      'hsl(120,50%,50%)',
+    ]
+    const plain = 'flowchart LR\n  A[Alpha] --> B[Beta]'
+    const both = (src: string, opts: Record<string, unknown> = {}) => [
+      () => renderMermaidSVG(src, opts),
+      () => renderMermaidASCII(src, opts),
+    ]
+
+    it.each(['primaryColor', 'lineColor', 'primaryTextColor'])(
+      '%s under theme base',
+      (name) => {
+        for (const bad of THROWS)
+          for (const run of both(flow({ [name]: bad }, 'base')))
+            expect(run, `${name}=${bad}`).toThrow(
+              `Unsupported color format: "${bad}"`,
+            )
+        for (const ok of PARSES)
+          for (const run of both(flow({ [name]: ok }, 'base')))
+            expect(run, `${name}=${ok}`).not.toThrow()
+      },
+    )
+
+    it('primaryColor also throws for "", var() and an unsafe value; lineColor and primaryTextColor render them', () => {
+      for (const bad of ['', 'var(--c)', 'red;}']) {
+        for (const run of both(flow({ primaryColor: bad }, 'base')))
+          expect(run, `primaryColor=${bad}`).toThrow('Unsupported color format')
+        for (const name of ['lineColor', 'primaryTextColor'])
+          for (const run of both(flow({ [name]: bad }, 'base')))
+            expect(run, `${name}=${bad}`).not.toThrow()
+      }
+    })
+
+    it('theme default: primaryColor throws, lineColor and primaryTextColor are not read', () => {
+      expect(() => renderMermaidSVG(flow({ primaryColor: 'x' }))).toThrow(
+        'Unsupported color format: "x"',
       )
-      expect(svg).toBe(renderMermaidSVG('flowchart LR\n  A[Alpha] --> B[Beta]'))
-    }
+      for (const name of ['lineColor', 'primaryTextColor'])
+        for (const run of both(flow({ [name]: 'x' })))
+          expect(run, name).not.toThrow()
+    })
+
+    it('primaryBorderColor never throws; an invalid one is ignored', () => {
+      for (const run of both(flow({ primaryBorderColor: 'x' }, 'base')))
+        expect(run).not.toThrow()
+      expect(
+        renderMermaidSVG(flow({ primaryBorderColor: 'x' }, 'base'), ON),
+      ).toBe(renderMermaidSVG(plain))
+    })
+
+    it('honorThemeVariables: false never throws and equals the plain diagram', () => {
+      for (const bad of ['x', 'url(#x)', '']) {
+        expect(renderMermaidSVG(flow({ primaryColor: bad }, 'base'), OFF)).toBe(
+          renderMermaidSVG(plain),
+        )
+        expect(() =>
+          renderMermaidASCII(flow({ lineColor: bad }, 'base'), OFF),
+        ).not.toThrow()
+      }
+    })
+
+    it('a later directive wins, and the theme may come after the colour', () => {
+      const late = `${init({ lineColor: 'x' })}\n${init({}, 'base')}\nflowchart LR\n  A --> B`
+      expect(() => renderMermaidSVG(late)).toThrow(
+        'Unsupported color format: "x"',
+      )
+      const fixed = `${init({ lineColor: 'x' }, 'base')}\n${init({ lineColor: 'red' })}\nflowchart LR\n  A --> B`
+      expect(() => renderMermaidSVG(fixed)).not.toThrow()
+    })
+
+    it('is a MermaidParseError with a code', () => {
+      expect.assertions(2)
+      try {
+        renderMermaidSVG(flow({ primaryColor: 'x' }, 'base'))
+      } catch (e) {
+        expect((e as Error).name).toBe('MermaidParseError')
+        expect((e as { code?: string }).code).toBe('UNSUPPORTED_COLOR_FORMAT')
+      }
+    })
   })
 
   it('pie: pieN follows source order and wraps after 12; others keep the palette', () => {

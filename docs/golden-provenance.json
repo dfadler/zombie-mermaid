@@ -152,7 +152,7 @@
       "class": "b",
       "source": "this renderer's own output, accepted once when the test was written; the themeVariables mapping rules were measured on mermaid 12.1.0 and 12.2.0 (test header)",
       "owner": "src/__tests__/theme-variables-2108.test.ts",
-      "verdict": "re-measured on 12.3.0: primary*/lineColor/pie1-3/pie12 and the wrap at 13 match; DIVERGES: an invalid pie colour paints #333 in mermaid, the default palette here; invalid or unsafe primaryColor/lineColor make mermaid throw, here they are ignored; theme base draws the node border as a gradient, here solid; primaryColor alone also derives border, line and text in mermaid, here only the fill (#2679)",
+      "verdict": "re-measured on 12.3.0: primary*/lineColor/pie1-3/pie12 and the wrap at 13 match; DIVERGES: an invalid pie colour paints #333 in mermaid, the default palette here; an unparsable primaryColor/lineColor/primaryTextColor makes mermaid throw and now throws here too (#3163); theme base draws the node border as a gradient, here solid; primaryColor alone derives the border (hsl s-40 l-10) in mermaid and here (#3165); it leaves the flowchart line and text at their defaults on 12.3.0 (#2679)",
       "mermaid": "12.3.0"
     },
     {
