@@ -289,6 +289,19 @@ function hintedFaceCells(graph: AsciiGraph, node: AsciiNode): number {
 }
 
 /**
+ * An edge whose end lies on a face that grew a cell per end (`hintedFaceCells`):
+ * its ends share the face's gutter cell in the grid and are given cells of their
+ * own after routing, so the overlap there is not a conflict to detour round.
+ */
+function onCrowdedFace(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  return (
+    edge.hintedFaces === true &&
+    (hintedFaceCells(graph, edge.from) > 0 ||
+      hintedFaceCells(graph, edge.to) > 0)
+  )
+}
+
+/**
  * How many self-loops ELK hooks out of `node`'s left face (TD) or top face (LR), when
  * there are duplicates to nest (#2913); 0 for a single loop, which keeps the
  * node's own size. A loop of a node inside a subgraph is routed another way.
@@ -620,7 +633,10 @@ function rerouteAroundStyleConflicts(
         ) ??
         // A lane already keeps off other edges' runs (`runTaken`); the stem
         // it shares with a chain partner is split by port-offsets.ts.
-        (edge.parallelLane?.index || edge.faceLane || edge.hintedLane
+        (edge.parallelLane?.index ||
+        edge.faceLane ||
+        edge.hintedLane ||
+        onCrowdedFace(graph, edge)
           ? null
           : findUnrelatedOverlap(
               nodeOnlyGrid,

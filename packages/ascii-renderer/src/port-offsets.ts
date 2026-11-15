@@ -1352,26 +1352,6 @@ const endsOf = (e: AsciiEdge): [PortRun | undefined, 'S' | 'E'][] => [
 const SIDE_FACE = { top: 'T', bottom: 'B', left: 'L', right: 'R' } as const
 
 /**
- * Both edges of a labelled reciprocal pair that bend (not straight strokes) run
- * along one bend row, so their labels land on the same run and print over each
- * other; a vertical flow gives each edge a jog row of its own (`planJogRows`,
- * #2888), a horizontal one does not yet, so there such a pair keeps the grid's
- * placement.
- */
-function labelledBentPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
-  const other = graph.edges.find(
-    (o) => o !== edge && o.from === edge.to && o.to === edge.from,
-  )
-  return (
-    other !== undefined &&
-    edge.text !== '' &&
-    other.text !== '' &&
-    !runsOf(edge)?.straight &&
-    !runsOf(other)?.straight
-  )
-}
-
-/**
  * The faces whose every end is a plain edge with an ELK hint for that very
  * face, as ends ranked by ELK's order along it (#2645). Within a reciprocal
  * pair ELK gives both ends one position: the forward end goes first. A face
@@ -1418,12 +1398,6 @@ function hintedFaces(graph: AsciiGraph): Map<string, FaceEnd[]> {
       return { ...f, rank: flip ? -rank : rank }
     })
     if (list.length < 2 || ranked.some((r) => r === undefined)) continue
-    if (
-      horizontal &&
-      list.length <= 3 &&
-      list.some((f) => labelledBentPair(graph, f.edge))
-    )
-      continue
     out.set(k, ranked as FaceEnd[])
   }
   return out

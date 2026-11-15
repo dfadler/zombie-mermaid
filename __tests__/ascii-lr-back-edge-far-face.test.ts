@@ -11,6 +11,14 @@ import { asciiLayoutProvider } from '../src/ascii-layout-provider.ts'
 import { allForkFixes } from '../demo/fork-fixes-data.ts'
 import { measureSample } from '../scripts/lib/ascii-topology.ts'
 
+const trimmed = (text: string): string[] => {
+  const rows = text.split('\n').map((l) => l.trimEnd())
+  const pad = Math.min(
+    ...rows.filter((l) => l.trim()).map((l) => l.length - l.trimStart().length),
+  )
+  return rows.map((l) => l.slice(pad))
+}
+
 const source = (dir: string): string => `stateDiagram-v2
   direction ${dir}
   [*] --> Closed
@@ -30,13 +38,33 @@ describe('back edge into the far face (LR/RL)', () => {
     expect(c.faceOk).toBe(c.faceEnds)
   })
 
-  it('LR: `success` enters Connected’s right face with its own arrowhead', () => {
+  it('LR: Connected’s right face takes close, error and success on rows of their own', () => {
     registerAsciiLayout(asciiLayoutProvider)
     const text = renderMermaidASCII(source('LR'), {
       colorMode: 'none',
       layoutHints: true,
     })
-    expect(text).toMatch(/├◄──┤ success/)
+    expect(trimmed(text)).toEqual([
+      '                                                                                  ╭───────────────╮',
+      '                                                                             ┌────┤               │',
+      '                ┌──────►◉                                                    │    │ Disconnecting │',
+      '                │                                                         ┌──┼───►│               │',
+      '     ╭────────╮ │                                                         │  │    ╰───────────────╯',
+      '     │        │◄┼─────────────────────────────done────────────────────────┼──┘',
+      '     │        ├─┘                                                         │',
+      '●───►│ Closed ├─────┐                                                   close',
+      '     │        │◄──┐ │                                                     │',
+      '     │        │◄┐ │ │                                                     │',
+      '     ╰────────╯ │ │ │            ╭────────────╮             ╭───────────╮ │',
+      '                │ │ └──connect──►│            │             │           ├─┘',
+      '                │ │              │ Connecting ├───success──►│ Connected ├───┐',
+      '                │ └───timeout────┤            │             │           │◄┐ │ success',
+      '                │                ╰────────────╯             ╰───────────╯ │ error ╭───────────────╮',
+      '                │                                                         │ └────►│               │',
+      '                │                                                         └───────┤  Reconnecting │',
+      '                └───────────────────────────max_retries───────────────────────────┤               │',
+      '                                                                                  ╰───────────────╯',
+    ])
   })
 })
 
@@ -54,22 +82,35 @@ describe('a hub with six ends on one face (ascii-longest-path-layering)', () => 
     },
   )
 
-  it('LR: A grows a cell per end, so none shares a cell with another', () => {
+  it('LR: the six ends take rows of their own on A’s face, labels on the runs', () => {
     registerAsciiLayout(asciiLayoutProvider)
     const text = renderMermaidASCII(longest.replace('graph TD', 'graph LR'), {
       colorMode: 'none',
       layoutHints: true,
     })
-    const rows = text.split('\n')
-    const top = rows.findIndex((r) => r.startsWith('┌───┐'))
-    const bottom = rows.findIndex((r) => r.startsWith('└───┘'))
-    // A's box holds one row per end on its right face (six ends).
-    expect(bottom - top).toBeGreaterThanOrEqual(8)
-    // Six ends on A's right face: three strokes meet it with no arrowhead, two arrowheads enter.
-    const face = rows.slice(top + 1, bottom).map((r) => r.slice(4, 6))
-    expect(face.filter((c) => c[0] === '├').length).toBe(3)
-    expect(face.filter((c) => c[1] === '◄').length).toBe(2)
-    expect(text.match(/long label/g)).toHaveLength(2)
+    expect(trimmed(text)).toEqual([
+      '                     ┌───┐',
+      '      ┌──────x──────►│   │',
+      '      │              │ B ├──┐',
+      '      │ ┌long label──┤   │  │',
+      '      │ │            └───┘  │',
+      '      │ │                   │',
+      '      │ │                   │',
+      '      │ │                   │',
+      '      │ │                   │',
+      '┌───┐ │ │            ┌───┐ mid',
+      '│   ├─┘ │            │   │  │',
+      '│   │◄──┘            │   │  │',
+      '│ A ├────long label─►│ C │  │',
+      '│   │◄──────ab───────┤   │  │',
+      '│   ├───┐            │   │  │',
+      '│   │◄┐ │            │   │  │',
+      '└───┘ │ │            └───┘  │  ┌───┐',
+      '      │ │                   └─►│   │',
+      '      │ └─────────ab──────────►│ D │',
+      '      └───────────x────────────┤   │',
+      '                               └───┘',
+    ])
   })
 })
 
@@ -113,6 +154,6 @@ D -->|a| B`,
         .split('\n')
         .filter((l) => l.includes('◄'))
         .map((l) => l.trim()),
-    ).toEqual(['< d ◄>─────┐', '╲ ◄╱──┐ │ │'])
+    ).toEqual(['< d ◄>─────┐', '╲ ◄╱──┼─┐ │'])
   })
 })

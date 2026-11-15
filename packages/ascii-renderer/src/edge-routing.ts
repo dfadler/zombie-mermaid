@@ -2841,7 +2841,12 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     // last leg runs into the face, not along it (as the lane siblings do).
     // A cardinal direction is (1, 1) plus its step.
     const gate =
-      edge.parallelLane || edge.clusterSource
+      edge.parallelLane ||
+      edge.clusterSource ||
+      (lrFlow &&
+        edge.to.shape !== 'diamond' &&
+        (hinted[1] === Left || hinted[1] === Right) &&
+        hintedEnds(graph, edge.to, graph.edgeHints!.get(edge)!.end.face) > 3)
         ? { x: to.x + hinted[1].x - 1, y: to.y + hinted[1].y - 1 }
         : undefined
     const via = gate
@@ -3341,6 +3346,37 @@ export function determineLabelLine(
     )
     if (long.length > 0) {
       suitableSegments = [long.reduce((a, b) => (b.width > a.width ? b : a))]
+    }
+  }
+
+  // A Z into or out of a hub whose side face grew a cell per end (#3205): its
+  // jogs bunch beside the hub, so the label goes on the run at the other node,
+  // as mermaid puts it on the long run, not beside a stroke on the vertical.
+  const hint = graph.edgeHints?.get(edge)
+  if (
+    hint &&
+    !edge.clusterSource &&
+    !edge.clusterTarget &&
+    graph.config.graphDirection === 'LR' &&
+    segments.length === 3 &&
+    segments[1]!.isVertical &&
+    !segments[0]!.isVertical &&
+    !segments[2]!.isVertical
+  ) {
+    const hubTo =
+      edge.to.shape !== 'diamond' &&
+      hintedEnds(graph, edge.to, hint.end.face) > 3
+    const hubFrom =
+      edge.from.shape !== 'diamond' &&
+      hintedEnds(graph, edge.from, hint.start.face) > 3
+    if (hubTo || hubFrom) {
+      applyLabelLine(
+        graph,
+        edge,
+        (hubTo ? segments[0]! : segments[2]!).line,
+        lenLabel,
+      )
+      return
     }
   }
 
