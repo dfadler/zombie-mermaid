@@ -4611,6 +4611,7 @@ each shape, each block arrow direction list, a wider cell and a two-line label.
 - **Shapes.** A stadium and an asymmetric block are rough.js paths in Mermaid (curved
   approximations of straight lines); here they are plain polygons with the same bounding box, and
   the oracle compares only that box and the centre.
+- **Links at a 2 x 4px gap.** A block arrow's tip sits exactly 8px from the next cell, twice the 4px arrow marker offset. Mermaid's offset rule has a strict `<` there, so a last-digit difference in text width flips it and the link collapses to a point in one renderer and not the other. The oracle's ring-of-links cases leave block arrows out for this reason.
 - **Links to a diamond.** Mermaid 12.3.0 throws `this.calcIntersect is not a function` when a link
   starts or ends at `{"x"}`, so the whole diagram fails to render there; here the link is clipped
   to the diamond's outline.
