@@ -196,11 +196,71 @@ describe('parseBlock', () => {
       fails('block-beta\n  a -- "text', /Unterminated string/)
       fails('block-beta\n  a -- "text" b', /Expected a link after "text"/)
     })
+  })
 
-    it('names the markdown-label issue', () => {
-      expect(() => parseBlock('block-beta\n  a -- "`x`" --> b')).toThrow(
-        'issues/3107',
+  describe('styling and config', () => {
+    it('reads classDef, class and style', () => {
+      const d = parseBlock(
+        'block-beta\n  a b c\n  classDef blue fill:#66f,stroke:#33a;\n  classDef default fill:#0f0\n  class a,c blue\n  class a other\n  style b fill:#969, stroke:#333\n  block:g\n    d\n  end\n  style g fill:#eee',
       )
+      expect(d.classDefs).toEqual({
+        blue: ['fill:#66f', 'stroke:#33a'],
+        default: ['fill:#0f0'],
+      })
+      const [a, b, c, g] = d.root.children
+      expect(a!.classes).toEqual(['blue', 'other'])
+      expect(c!.classes).toEqual(['blue'])
+      expect(b!.styles).toEqual(['fill:#969', 'stroke:#333'])
+      expect(g!.styles).toEqual(['fill:#eee'])
+    })
+
+    it('ignores a class on a block that does not exist and merges repeated classDefs', () => {
+      const d = parseBlock(
+        'block-beta\n  a\n  class zz blue\n  classDef k fill:#111\n  classDef k stroke:#222',
+      )
+      expect(d.root.children.map((c) => c.id)).toEqual(['a'])
+      expect(d.classDefs.k).toEqual(['fill:#111', 'stroke:#222'])
+    })
+
+    it('rejects what Mermaid rejects', () => {
+      const fails = (src: string, re: RegExp) =>
+        expect(() => parseBlock(src)).toThrow(re)
+      fails('block-beta\n  style a fill:#123\n  a', /declared above/)
+      fails('block-beta\n  a b\n  style a,b fill:#123', /declared above/)
+      fails('block-beta\n  a\n  class a', /Expected a class name/)
+      fails('block-beta\n  a\n  style a', /Expected style items/)
+      fails('block-beta\n  classDef a', /Expected a name and style items/)
+    })
+
+    it('treats a markdown string as the parse error Mermaid 12.3.0 gives', () => {
+      expect(() => parseBlock('block-beta\n  a["`**x**`"]')).toThrow(/MD_STR/)
+      expect(() => parseBlock('block-beta\n  a b\n  a -- "`x`" --> b')).toThrow(
+        /MD_STR/,
+      )
+    })
+
+    it('reads block.padding from front matter or an init directive, default 8', () => {
+      expect(parseBlock('block-beta\n  a').padding).toBe(8)
+      expect(
+        parseBlock(
+          '---\nconfig:\n  block:\n    padding: 20\n---\nblock-beta\n  a',
+        ).padding,
+      ).toBe(20)
+      expect(
+        parseBlock('%%{init: {"block": {"padding": 0}}}%%\nblock-beta\n  a')
+          .padding,
+      ).toBe(0)
+      expect(
+        parseBlock('%%{init: {"block": {"padding": -1}}}%%\nblock-beta\n  a')
+          .padding,
+      ).toBe(8)
+    })
+
+    it('ignores accTitle and accDescr in the body', () => {
+      expect(
+        parseBlock('block-beta\n  accTitle: T\n  accDescr: D\n  a').root
+          .children,
+      ).toHaveLength(1)
     })
   })
 
@@ -212,12 +272,6 @@ describe('parseBlock', () => {
       for (const shape of ['(("x"))', '{"x"}', '{{"x"}}', '(["x"])', '[["x"]]'])
         tracked(`block-beta\n  a${shape}`, 3106)
       tracked('block-beta\n  a<["x"]>(down)', 3106)
-    })
-    it('names the styling issue', () => {
-      tracked('block-beta\n  a\n  classDef c fill:#f9f', 3107)
-      tracked('block-beta\n  a\n  class a c', 3107)
-      tracked('block-beta\n  a\n  style a fill:#f9f', 3107)
-      tracked('block-beta\n  a["`**x**`"]', 3107)
     })
   })
 })

@@ -16,6 +16,8 @@ export interface BlockRect {
   height: number
   /** Corner radius (`rx`): 5 for a round block, 0 for a square one. */
   radius: number
+  /** The rect's inline style and the label colour, `name:value` items sorted (`!important` dropped). */
+  style: string
 }
 
 /** A drawn link: its path numbers (x, y, x, y ...) and its label's centre, relative to the viewBox origin. */
@@ -36,6 +38,8 @@ export interface BlockLayout {
 export interface BlockAgreement {
   blocks: number | null
   radii: number | null
+  /** Share of blocks whose inline styles (fill, stroke, label colour ...) agree. */
+  styles: number | null
   /** Share of links whose path points and label place agree. */
   edges: number | null
   /** 1 when the drawing size is within SIZE_TOLERANCE px, else 0. */
@@ -79,12 +83,22 @@ export function parseBlockSvg(svg: string): BlockLayout {
     const [tx, ty] = ours ? [0, 0] : [num(t?.[1]), num(t?.[2])]
     const rect = /<rect[^>]*class="[^"]*label-container[^>]*>/.exec(g)?.[0]
     if (rect === undefined) continue
+    const own = (attr(rect, 'style') ?? '')
+      .split(';')
+      .map((x) => x.replace(/\s*!important/, '').trim())
+      .filter(Boolean)
+    const color =
+      /<g class="label" style="color:\s*([^;"]*?)(?: !important)?"/.exec(
+        g,
+      )?.[1] ?? /<text class="block-label" style="fill:([^"]*)"/.exec(g)?.[1]
+    if (color !== undefined) own.push(`color:${color}`)
     layout.blocks.push({
       x: num(attr(rect, 'x')) + tx + ox,
       y: num(attr(rect, 'y')) + ty + oy,
       width: num(attr(rect, 'width')),
       height: num(attr(rect, 'height')),
       radius: num(attr(rect, 'rx')),
+      style: own.sort().join(';'),
     })
   }
   // Links: a path (Mermaid: `flowchart-link`, ours: `edge-path`) and the label after it.
@@ -145,6 +159,7 @@ export function blockAgreement(
   return {
     blocks: share(official.blocks, ours.blocks, sameRect),
     radii: share(official.blocks, ours.blocks, (a, b) => a.radius === b.radius),
+    styles: share(official.blocks, ours.blocks, (a, b) => a.style === b.style),
     edges: share(
       official.edges,
       ours.edges,

@@ -36,10 +36,6 @@ export const BLOCK = {
   /** Space between cells and around a group's cells (`block.padding`). */
   padding: 8,
   lineHeight: 24,
-  /** Space a block adds around its label: 16px high, 32px across (16px for a round block). */
-  labelPaddingX: 32,
-  roundPaddingX: 16,
-  labelPaddingY: 16,
   fontSize: 16,
   /** Margin of the viewBox around the drawn blocks. */
   margin: 5,
@@ -66,22 +62,21 @@ function labelLines(label: string): string[] {
   return label.split(/<br\s*\/?>/i).map((l) => l.replace(/\s+/g, ' ').trim())
 }
 
-function toCell(node: BlockNode): Cell {
+function toCell(node: BlockNode, padding: number): Cell {
   const lines = node.type === 'node' ? labelLines(node.label) : []
   const textW = Math.max(0, ...lines.map((l) => textWidth(l, BLOCK.fontSize)))
   const cell: Cell = {
     node,
     lines,
     textW,
-    children: node.children.map(toCell),
+    children: node.children.map((c) => toCell(c, padding)),
   }
   // Measured size of a plain block (`calculateBlockSize`); groups have none yet.
   if (node.type === 'node') {
     cell.size = {
-      width:
-        textW +
-        (node.shape === 'round' ? BLOCK.roundPaddingX : BLOCK.labelPaddingX),
-      height: lines.length * BLOCK.lineHeight + BLOCK.labelPaddingY,
+      // A block is its label plus `padding` on each of its four sides, twice over across (2p for a round block).
+      width: textW + (node.shape === 'round' ? 2 : 4) * padding,
+      height: lines.length * BLOCK.lineHeight + 2 * padding,
       x: 0,
       y: 0,
     }
@@ -349,11 +344,41 @@ function layoutEdges(
   return out
 }
 
+/**
+ * Mermaid's `getStylesFromArray` over the node's `classDef` items (in the order
+ * its classes were applied) and then its own `style` items: one value per
+ * property, a later one replacing an earlier one in place.
+ */
+function compileStyles(
+  classDefs: Record<string, string[]>,
+  node: BlockNode,
+): [string, string][] {
+  const props = new Map<string, string>()
+  const items = [
+    ...node.classes.flatMap((c) => classDefs[c] ?? []),
+    ...node.styles,
+  ]
+  for (const item of items) {
+    const at = item.indexOf(':')
+    const name = item.slice(0, at).trim()
+    const value = item.slice(at + 1).trim()
+    // Untrusted text lands in a style attribute: keep plain declarations only.
+    if (
+      !/^-?[a-z][a-z-]*$/i.test(name) ||
+      /url\s*\(|@import|expression\s*\(/i.test(value)
+    )
+      continue
+    props.set(name, value)
+  }
+  return [...props]
+}
+
 /** Lay a block diagram out; all coordinates are in Mermaid's space, `viewBox` says where its origin is. */
 export function layoutBlock(diagram: BlockDiagram): PositionedBlockDiagram {
-  const root = toCell(diagram.root)
-  setBlockSizes(root)
-  layoutBlocks(root)
+  const padding = diagram.padding
+  const root = toCell(diagram.root, padding)
+  setBlockSizes(root, 0, 0, padding)
+  layoutBlocks(root, padding)
 
   const nodes: PositionedBlockNode[] = []
   const walk = (cell: Cell): void => {
@@ -369,6 +394,8 @@ export function layoutBlock(diagram: BlockDiagram): PositionedBlockDiagram {
           width: child.size.width,
           height: child.size.height,
           text: { lines: child.lines, width: child.textW },
+          classes: child.node.classes,
+          css: compileStyles(diagram.classDefs, child.node),
         })
       }
       walk(child)

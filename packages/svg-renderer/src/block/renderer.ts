@@ -47,18 +47,40 @@ function blockStyles(nonce?: string): string {
 </style>`
 }
 
+/**
+ * Mermaid's inline styles: a block's rect gets every property but `color` as
+ * `name:value !important`, the label gets `color`; a group's rect gets them
+ * plain and `;`-terminated.
+ */
+function nodeStyle(n: PositionedBlockNode): { rect: string; color?: string } {
+  const own = n.css.filter(([k]) => k !== 'color')
+  const color = n.css.find(([k]) => k === 'color')?.[1]
+  const rect =
+    n.type === 'composite'
+      ? own.map(([k, v]) => `${k}:${v};`).join('')
+      : own.map(([k, v]) => `${k}:${v} !important`).join(';')
+  return color === undefined ? { rect } : { rect, color }
+}
+
 function nodeSvg(n: PositionedBlockNode): string {
   const x = n.x - n.width / 2
   const y = n.y - n.height / 2
   const rad = n.shape === 'round' ? BLOCK.cornerRadius : 0
   const cls = n.type === 'composite' ? 'composite ' : ''
+  const { rect, color } = nodeStyle(n)
+  const classes = [
+    ...(n.type === 'composite' ? ['composite'] : []),
+    ...n.classes,
+  ]
+    .map((c) => ` ${escapeXml(c)}`)
+    .join('')
   let out =
-    `<g class="node${n.type === 'composite' ? ' composite' : ''}">` +
-    `<rect class="${cls}label-container" rx="${rad}" ry="${rad}" x="${r(x)}" y="${r(y)}" width="${r(n.width)}" height="${r(n.height)}"/>`
+    `<g class="node${classes}">` +
+    `<rect class="${cls}label-container"${rect ? ` style="${escapeXml(rect)}"` : ''} rx="${rad}" ry="${rad}" x="${r(x)}" y="${r(y)}" width="${r(n.width)}" height="${r(n.height)}"/>`
   const lines = n.text.lines
   lines.forEach((line, k) => {
     const ly = n.y + (k - (lines.length - 1) / 2) * BLOCK.lineHeight
-    out += `<text class="block-label" x="${r(n.x)}" y="${r(ly)}" dy="0.35em" xml:space="preserve">${escapeXml(line)}</text>`
+    out += `<text class="block-label"${color === undefined ? '' : ` style="fill:${escapeXml(color)}"`} x="${r(n.x)}" y="${r(ly)}" dy="0.35em" xml:space="preserve">${escapeXml(line)}</text>`
   })
   return out + '</g>'
 }

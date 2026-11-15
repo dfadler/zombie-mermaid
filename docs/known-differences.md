@@ -1051,9 +1051,13 @@ radius, every link's path and label place, and the drawing size agree on every g
 - **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; the text is the same.
 - **Link labels** are not wrapped at 200px as Mermaid does, and sit on a half-transparent patch of
   the background instead of its `labelBkg` box.
-- **Not drawn yet.** The other shapes, styling and markdown strings: see
-  [#3106](https://github.com/dfadler/zombie-mermaid/issues/3106),
-  [#3107](https://github.com/dfadler/zombie-mermaid/issues/3107).
+- **Styles.** `classDef`, `class` and `style` items are applied as Mermaid does (inline on the
+  rectangle, `color` on the label), except declarations with `url(`, `@import` or `expression(`,
+  which are dropped. A `style` on a block declared later, or on several ids, is a parse error (Mermaid
+  throws a `TypeError`); `class` on an id that is not declared is ignored.
+- **Markdown strings** (`["`**x**`"]`) are a parse error in Mermaid 12.3.0 and are one here.
+- **Not drawn yet.** The other shapes: see
+  [#3106](https://github.com/dfadler/zombie-mermaid/issues/3106).
 - **`~~~`.** Mermaid's lexer reads `~~~` as a block id (its id rule comes before the invisible-link rule); so does this parser.
 - **ASCII.** Mermaid has no ASCII output; the box grid is this library's own.
 

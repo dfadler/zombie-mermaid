@@ -195,7 +195,9 @@ export type BlockArrow = '' | 'arrow_point' | 'arrow_cross' | 'arrow_circle';
 
 // @public
 export interface BlockDiagram {
+    classDefs: Record<string, string[]>;
     edges: BlockEdge[];
+    padding: number;
     root: BlockNode;
 }
 
@@ -220,11 +222,13 @@ export interface BlockEdge {
 // @public
 export interface BlockNode {
     children: BlockNode[];
+    classes: string[];
     columns?: number;
     id: string;
     label: string;
     // (undocumented)
     shape: BlockShape;
+    styles: string[];
     // (undocumented)
     type: 'node' | 'space' | 'composite';
     widthInColumns: number;
@@ -1157,6 +1161,8 @@ export interface PositionedBlockEdge {
 
 // @public
 export interface PositionedBlockNode {
+    classes: string[];
+    css: [string, string][];
     // (undocumented)
     height: number;
     // (undocumented)

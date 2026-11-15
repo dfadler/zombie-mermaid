@@ -2103,10 +2103,16 @@ block-beta
   b -.- d
 ```
 
+Styling: `classDef name fill:#f9f,stroke:#333,color:#fff` defines a class, `class a,b name` applies
+it and `style a fill:#969,stroke-width:4px` styles one block (declare the block above its `style`).
+`fill`, `stroke`, `stroke-width` and the other properties go on the block's rectangle, `color` on
+its label; a `style` item replaces the same property from a class. `block.padding` (front matter
+`config: block: padding: 20` or `%%{init: {"block": {"padding": 20}}}%%`, default 8) sets the space
+between cells and inside each block. A markdown label (`["`**x**`"]`) is a parse error in
+Mermaid 12.3.0, so it is one here.
+
 Not supported yet, and rejected with an error naming the issue: the other node shapes and block
-arrows ([#3106](https://github.com/dfadler/zombie-mermaid/issues/3106)), and `classDef`, `class`,
-`style`, markdown strings and `block.padding`
-([#3107](https://github.com/dfadler/zombie-mermaid/issues/3107)).
+arrows ([#3106](https://github.com/dfadler/zombie-mermaid/issues/3106)).
 
 Colours follow the theme, see [Known differences](known-differences.md#block-diagrams).
 
@@ -2126,6 +2132,7 @@ and a `block ... end` group is a larger box around its cells.
 ```
 
 - Round blocks use `╭╮╰╯` corners (`+` in ASCII mode); `space` leaves its cell empty.
+- Colours and `block.padding` are ignored (the box grid has fixed spacing).
 - Cells are one column apart and touch vertically (a diagram with links leaves 4 columns and 2 rows
   between cells, more for a long link label); labels are centred in both directions.
 - A link is a straight line in that room between blocks that share a row or a column, else one

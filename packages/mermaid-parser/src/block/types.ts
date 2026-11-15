@@ -24,6 +24,10 @@ export interface BlockNode {
   columns?: number
   /** A group's blocks, in order. */
   children: BlockNode[]
+  /** `class a name`: the class names, in the order applied. */
+  classes: string[]
+  /** `style a fill:#f9f,stroke:#333`: the `property:value` items, trimmed. */
+  styles: string[]
 }
 
 /** The end of an edge: Mermaid's `arrow_point` / `arrow_cross` / `arrow_circle`, `''` for a plain end. */
@@ -49,6 +53,10 @@ export interface BlockDiagram {
   root: BlockNode
   /** Links, in the order they are written. */
   edges: BlockEdge[]
+  /** `classDef name fill:#f9f,...`: each class's `property:value` items. */
+  classDefs: Record<string, string[]>
+  /** Space between cells and inside each block: `block.padding` from front matter or `%%{init}%%` (default 8). */
+  padding: number
 }
 
 /** A line of a block's label. */
@@ -68,6 +76,10 @@ export interface PositionedBlockNode {
   width: number
   height: number
   text: PositionedBlockText
+  /** The block's classes (`class a name`), on the node group. */
+  classes: string[]
+  /** Style properties after merging `classDef` items (in class order) and `style` items, `color` included. */
+  css: [string, string][]
 }
 
 /** An edge with its path points and label place (Mermaid's space). */

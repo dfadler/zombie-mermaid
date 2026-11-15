@@ -1,5 +1,5 @@
 /**
- * Compares block rectangles, corner radii, link paths and label places, and the drawing size of every block
+ * Compares block rectangles, corner radii, inline styles, link paths and label places, and the drawing size of every block
  * sample in official mermaid.js and in our SVG.
  *
  * Usage: tsx scripts/block-oracle.ts [--filter=<text>] [--thresholds]
@@ -23,10 +23,10 @@ async function main(): Promise<number> {
   const session = await startRealMermaid(distPath)
   try {
     const { results, breaches } = await scoreBlock(session, filter)
-    console.log('blocks radii edges frame  sample')
+    console.log('blocks radii styles edges frame  sample')
     for (const [title, r] of Object.entries(results)) {
       console.log(
-        `${pct(r.blocks)}   ${pct(r.radii)}  ${pct(r.edges)}  ${pct(r.frame)}   ${title}`,
+        `${pct(r.blocks)}   ${pct(r.radii)}  ${pct(r.styles)}  ${pct(r.edges)}  ${pct(r.frame)}   ${title}`,
       )
     }
     if (args.includes('--thresholds') && breaches.length > 0) {

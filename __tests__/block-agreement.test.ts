@@ -17,7 +17,7 @@ const LINKED = `<svg viewBox="-5 -25 150 50"><g class="block"><path d="M41.438,0
 describe('parseBlockSvg', () => {
   it('reads rectangles relative to the viewBox, radii and the size', () => {
     expect(parseBlockSvg(OFFICIAL)).toEqual({
-      blocks: [{ x: 5, y: 5, width: 46, height: 40, radius: 5 }],
+      blocks: [{ x: 5, y: 5, width: 46, height: 40, radius: 5, style: '' }],
       edges: [],
       size: { width: 56, height: 50 },
     })
@@ -35,6 +35,19 @@ describe('parseBlockSvg', () => {
     expect(ours[0]!.label).not.toBeNull()
   })
 
+  it('reads inline styles and the label colour from Mermaid and from our markup', () => {
+    const official = `<svg viewBox="0 0 10 10"><g class="node blue" transform="translate(5, 5)"><rect class="basic label-container" style="fill:#66f !important;stroke:#33a !important" x="0" y="0" width="1" height="1"></rect><g class="label" style="color:#fff !important"></g></g></svg>`
+    expect(parseBlockSvg(official).blocks[0]!.style).toBe(
+      'color:#fff;fill:#66f;stroke:#33a',
+    )
+    const ours = parseBlockSvg(
+      renderMermaidSVG(
+        'block-beta\n  a\n  classDef blue fill:#66f,stroke:#33a,color:#fff\n  class a blue',
+      ),
+    )
+    expect(ours.blocks[0]!.style).toBe('color:#fff;fill:#66f;stroke:#33a')
+  })
+
   it('reads our own markup to the same shape', () => {
     const ours = parseBlockSvg(renderMermaidSVG(SOURCE))
     expect(ours.blocks).toHaveLength(1)
@@ -45,7 +58,7 @@ describe('parseBlockSvg', () => {
     const svg =
       '<svg><g class="node"><rect class="label-container"></rect></g><g class="node"><circle></circle></g></svg>'
     expect(parseBlockSvg(svg)).toEqual({
-      blocks: [{ x: 0, y: 0, width: 0, height: 0, radius: 0 }],
+      blocks: [{ x: 0, y: 0, width: 0, height: 0, radius: 0, style: '' }],
       edges: [],
       size: { width: 0, height: 0 },
     })
@@ -59,6 +72,7 @@ describe('blockAgreement', () => {
     expect(blockAgreement(base(), base())).toEqual({
       blocks: 1,
       radii: 1,
+      styles: 1,
       edges: null,
       frame: 1,
     })
@@ -66,6 +80,7 @@ describe('blockAgreement', () => {
     expect(blockAgreement(empty, empty)).toMatchObject({
       blocks: null,
       radii: null,
+      styles: null,
       edges: null,
     })
   })
@@ -78,6 +93,7 @@ describe('blockAgreement', () => {
     expect(blockAgreement(base(), ours)).toEqual({
       blocks: 0,
       radii: 0,
+      styles: 1,
       edges: null,
       frame: 0,
     })
@@ -111,7 +127,7 @@ describe('blockAgreement', () => {
 
 describe('blockBreaches', () => {
   it('lists samples under 100% and the errored ones', () => {
-    const ok = { blocks: 1, radii: null, edges: null, frame: 1 }
+    const ok = { blocks: 1, radii: null, styles: null, edges: null, frame: 1 }
     expect(blockBreaches({ a: ok, b: { ...ok, blocks: 0.5 } }, ['c'])).toEqual([
       'b',
       'c',

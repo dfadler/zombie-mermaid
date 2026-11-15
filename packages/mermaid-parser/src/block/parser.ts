@@ -1,6 +1,7 @@
 import {
   MermaidParseError,
   decodeMermaidEntities,
+  extractInitConfig,
   stripFrontMatter,
 } from '@zombie-mermaid/core'
 import type {
@@ -36,9 +37,15 @@ import type {
 //     a --> b  a -- "text" --> b     links between two blocks (`==>`, `-.-`,
 //                                    `--x`, `--o`, `<-->`); both blocks are declared
 //
+//     classDef name fill:#f9f,...    a class; `class a,b name` applies it
+//     style a fill:#969,stroke:#333  styles one block (it must be declared above)
+//     %%{init: {"block": {"padding": 20}}}%% or front matter `config.block.padding`
+//
+// Markdown strings (`["`**bold**`"]`) are a parse error in Mermaid 12.3.0
+// ("Expecting 'STR', got 'MD_STR'"), so they are one here too.
+//
 // Not supported yet, and rejected with an error naming the issue: the other
-// shapes and block arrows (#3106), classDef, class, style and markdown strings
-// (#3107).
+// shapes and block arrows (#3106).
 // ============================================================================
 
 const SYNTAX_HELP =
@@ -52,6 +59,9 @@ type TokenKind =
   | 'SPACE'
   | 'ID'
   | 'LINK'
+  | 'CLASSDEF'
+  | 'CLASS'
+  | 'STYLE'
   | 'SIZE'
   | 'NODE'
   | 'EOF'
@@ -61,6 +71,9 @@ interface Token {
   text: string
   /** `COLUMNS` / `SPACE` / `SIZE`: the number (`COLUMNS` -1 is `auto`). */
   num?: number
+  /** `CLASSDEF` / `CLASS` / `STYLE`: the id (or comma-separated ids) and the rest of the line. */
+  ids?: string
+  rest?: string
   /** `LINK`: the label of `-- "text" -->`. */
   linkLabel?: string
   /** `NODE`: the label and the opening + closing delimiters. */
@@ -162,6 +175,16 @@ const unsupported = (
     `Tracked in https://github.com/dfadler/zombie-mermaid/issues/${issue}`,
   )
 
+const markdownString = (
+  lines: readonly string[],
+  line: number,
+): MermaidParseError =>
+  parseError(
+    lines,
+    line,
+    "A markdown string is a parse error in Mermaid 12.3.0 (Expecting 'STR', got 'MD_STR')",
+  )
+
 function tokenize(source: string, lines: readonly string[]): Token[] {
   const tokens: Token[] = []
   let pos = 0
@@ -198,8 +221,18 @@ function tokenize(source: string, lines: readonly string[]): Token[] {
       push({ kind: 'SPACE', text: m[0], num: Number(m[1]) })
     } else if ((m = /^space\b/.exec(here)) !== null) {
       push({ kind: 'SPACE', text: m[0], num: 1 })
+    } else if ((m = /^classDef\s+(\w+)\s+([^\n]*)/.exec(here)) !== null) {
+      push({ kind: 'CLASSDEF', text: m[0], ids: m[1], rest: m[2]!.trim() })
+    } else if (
+      (m = /^class\s+(\w+(?:,\s*\w+)*)[ \t]*([^\n]*)/.exec(here)) !== null
+    ) {
+      push({ kind: 'CLASS', text: m[0], ids: m[1], rest: m[2]!.trim() })
+    } else if (
+      (m = /^style\s+(\w+(?:,\s*\w+)*)[ \t]*([^\n]*)/.exec(here)) !== null
+    ) {
+      push({ kind: 'STYLE', text: m[0], ids: m[1], rest: m[2]!.trim() })
     } else if (/^(?:classDef|class|style)\s+/.test(here)) {
-      throw unsupported(lines, line, 'classDef, class and style', 3107)
+      throw parseError(lines, line, 'Expected a name and style items')
     } else if ((m = /^accTitle\s*:\s*[^\n]*/.exec(here)) !== null) {
       // Accessibility statements are handled before parsing; ignored here.
     } else if ((m = /^accDescr\s*:\s*[^\n]*/.exec(here)) !== null) {
@@ -219,7 +252,7 @@ function tokenize(source: string, lines: readonly string[]): Token[] {
             3106,
           )
         if (here[start.length] === '"' && here[start.length + 1] === '`')
-          throw unsupported(lines, line, 'A markdown string', 3107)
+          throw markdownString(lines, line)
         if (here[start.length] !== '"')
           throw parseError(
             lines,
@@ -261,8 +294,7 @@ function tokenize(source: string, lines: readonly string[]): Token[] {
       if (startLink) {
         // `-- "text" -->`: a quoted label, then the closing link (Mermaid's LLABEL state).
         const after = here.slice(startLink[0].length)
-        if (after.startsWith('"`'))
-          throw unsupported(lines, line, 'A markdown string', 3107)
+        if (after.startsWith('"`')) throw markdownString(lines, line)
         if (!after.startsWith('"'))
           throw parseError(lines, line, 'Expected a quoted link label')
         const close = after.indexOf('"', 1)
@@ -305,7 +337,15 @@ interface RawBlock {
   id: string
   label?: string
   /** Mermaid's `type`: `na` for a bare id. */
-  type: BlockShape | 'na' | 'space' | 'composite' | 'edge'
+  type:
+    | BlockShape
+    | 'na'
+    | 'space'
+    | 'composite'
+    | 'edge'
+    | 'classDef'
+    | 'applyClass'
+    | 'applyStyles'
   widthInColumns?: number
   /** Width of a `space` statement. */
   width?: number
@@ -314,6 +354,11 @@ interface RawBlock {
   columnSetting?: number
   /** `edge`: the link. */
   edge?: Omit<BlockEdge, 'id'>
+  /** `classDef` (`id`, `items`), `applyClass` (`ids`, `name`), `applyStyles` (`ids`, `items`). */
+  ids?: string
+  items?: string[]
+  classes?: string[]
+  styles?: string[]
 }
 
 /**
@@ -406,6 +451,12 @@ export function parseBlock(text: string): BlockDiagram {
     ]
   }
 
+  const splitItems = (css: string): string[] =>
+    css
+      .split(',')
+      .map((x) => x.replace(/([^;]*);/, '$1').trim())
+      .filter((x) => x.includes(':'))
+
   const document = (): RawBlock[] => {
     const out: RawBlock[] = []
     for (;;) {
@@ -441,6 +492,30 @@ export function parseBlock(text: string): BlockDiagram {
           label: '',
           children,
         })
+      } else if (t.kind === 'CLASSDEF') {
+        i++
+        out.push({
+          id: t.ids!,
+          type: 'classDef',
+          items: splitItems(t.rest!.replace(/;$/, '')),
+        })
+      } else if (t.kind === 'CLASS' || t.kind === 'STYLE') {
+        i++
+        if (t.rest === '')
+          throw parseError(
+            lines,
+            t.line,
+            t.kind === 'CLASS'
+              ? 'Expected a class name'
+              : 'Expected style items',
+          )
+        out.push({
+          id: t.ids!,
+          type: t.kind === 'CLASS' ? 'applyClass' : 'applyStyles',
+          ids: t.ids,
+          items: t.kind === 'CLASS' ? [t.rest!] : splitItems(t.rest!),
+          line: t.line,
+        } as RawBlock)
       } else if (t.kind === 'ID') {
         const head = nodeStatement()
         if (peek().kind === 'LINK' && head.widthInColumns === 1)
@@ -460,10 +535,33 @@ export function parseBlock(text: string): BlockDiagram {
   const root: RawBlock = { id: 'root', type: 'composite', columns: -1 }
   db.set('root', root)
   const edges: BlockEdge[] = []
+  const classDefs: Record<string, string[]> = {}
   const edgeCount = new Map<string, number>()
   const populate = (blockList: RawBlock[], parent: RawBlock): void => {
     const children: RawBlock[] = []
     for (const block of blockList) {
+      if (block.type === 'classDef') {
+        classDefs[block.id] = [...(classDefs[block.id] ?? []), ...block.items!]
+        continue
+      }
+      if (block.type === 'applyClass') {
+        for (const id of block.ids!.split(',')) {
+          const target = db.get(id.trim())
+          if (target) (target.classes ??= []).push(block.items![0]!)
+        }
+        continue
+      }
+      if (block.type === 'applyStyles') {
+        const target = db.get(block.ids!.split(',')[0]!.trim())
+        if (!target || block.ids!.includes(','))
+          throw parseError(
+            lines,
+            (block as RawBlock & { line: number }).line,
+            `Cannot style "${block.ids}": a block must be declared above its style statement`,
+          )
+        target.styles = block.items
+        continue
+      }
       if (block.type === 'edge') {
         const n = (edgeCount.get(block.id) ?? 0) + 1
         edgeCount.set(block.id, n)
@@ -516,9 +614,14 @@ export function parseBlock(text: string): BlockDiagram {
       shape: b.type === 'round' ? 'round' : 'square',
       widthInColumns: b.widthInColumns ?? 1,
       children: (b.children ?? []).map(convert),
+      classes: b.classes ?? [],
+      styles: b.styles ?? [],
     }
     if (b.columns !== undefined) node.columns = b.columns
     return node
   }
-  return { root: convert(root), edges }
+  const padding = extractInitConfig(
+    stripFrontMatter(text.replace(/\r\n?/g, '\n')).split('\n'),
+  ).block?.padding
+  return { root: convert(root), edges, classDefs, padding: padding ?? 8 }
 }
