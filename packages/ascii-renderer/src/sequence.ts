@@ -181,7 +181,21 @@ function wrapDiagramText(d: SequenceDiagram): SequenceDiagram {
   const l = d.layout ?? {}
   const wrap = (text: string, px: number, on = l.wrap) => {
     if (!on) return text
-    const cols = px / 8
+    return wrapAt(text, px / 8)
+  }
+  // Mermaid wraps a message twice: at `width - 20`, which sizes the lifeline
+  // gap (widest line + 20 + actorMargin, never under `width`), then at that
+  // gap - 8 + 20 (#3197). Adjacent lifelines assumed.
+  const wrapMessage = (text: string, on = l.wrap) => {
+    if (!on) return text
+    const first = wrapAt(text, (w - 20) / 8)
+    const w1 = Math.max(...first.split('\n').map((s) => displayWidth(s))) * 8
+    return wrapAt(
+      text,
+      (Math.max(w1 + 20, w) + (l.actorMargin ?? 50) - 8 + 20) / 8,
+    )
+  }
+  const wrapAt = (text: string, cols: number): string => {
     return splitLines(text)
       .map((line) => {
         const rows: string[] = []
@@ -216,7 +230,7 @@ function wrapDiagramText(d: SequenceDiagram): SequenceDiagram {
     })),
     messages: d.messages.map((m) => ({
       ...m,
-      label: wrap(m.label, w + (l.actorMargin ?? 50), m.wrap ?? l.wrap),
+      label: wrapMessage(m.label, m.wrap ?? l.wrap),
     })),
   }
 }
