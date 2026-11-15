@@ -153,11 +153,4 @@ describe('block links', () => {
     const plain = layout('block-beta\n  a space b\n  a --> b')
     expect(wide.viewBox.width).toBeGreaterThan(plain.viewBox.width)
   })
-
-  it('moves the label with the clipped path when its point leaves the path text', () => {
-    const e = layout('block-beta\n  columns 2\n  a b\n  c d\n  a -- "x" --> d')
-      .edges[0]!
-    expect(Number.isFinite(e.labelX)).toBe(true)
-    expect(Number.isFinite(e.labelY)).toBe(true)
-  })
 })

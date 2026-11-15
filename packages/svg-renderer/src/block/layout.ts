@@ -249,36 +249,6 @@ function intersectRect(n: Box, p: Pt): Pt {
   return { x: n.x + w, y: n.y + (dx === 0 ? 0 : (w * dy) / dx) }
 }
 
-const dist = (a: Pt, b: Pt): number => Math.hypot(b.x - a.x, b.y - a.y)
-
-/** Mermaid's `calcLabelPosition`: the point half-way along the polyline. */
-function halfway(points: Pt[]): Pt {
-  let total = 0
-  for (let i = 1; i < points.length; i++)
-    total += dist(points[i - 1]!, points[i]!)
-  let left = total / 2
-  let prev: Pt | undefined
-  for (const p of points) {
-    if (prev) {
-      const d = dist(p, prev)
-      if (d === 0) return prev
-      if (d < left) left -= d
-      else {
-        const t = left / d
-        if (t <= 0) return prev
-        if (t >= 1) return { x: p.x, y: p.y }
-        const r = (n: number) => Math.round(n * 1e5) / 1e5
-        return {
-          x: r((1 - t) * prev.x + t * p.x),
-          y: r((1 - t) * prev.y + t * p.y),
-        }
-      }
-    }
-    prev = p
-  }
-  return points[points.length - 1]!
-}
-
 /** Mermaid's `markerOffsets` for the arrow types a block edge can have. */
 const markerOffset = (type: string): number | undefined =>
   type === 'arrow_point' ? 4 : undefined
@@ -330,10 +300,8 @@ function withMarkerOffsets(data: Pt[], start: string, end: string): Pt[] {
 
 const f3 = (n: number): string => String(Math.round(n * 1000) / 1000)
 
-/** D3's `curveBasis` path through `p` (3 digits, as Mermaid prints it). */
+/** D3's `curveBasis` path through three or more points (3 digits, as Mermaid prints it). */
 function basisPath(p: Pt[]): string {
-  if (p.length < 3)
-    return p.map((q, i) => `${i ? 'L' : 'M'}${f3(q.x)},${f3(q.y)}`).join('')
   let d = `M${f3(p[0]!.x)},${f3(p[0]!.y)}`
   d += `L${f3((5 * p[0]!.x + p[1]!.x) / 6)},${f3((5 * p[0]!.y + p[1]!.y) / 6)}`
   const bez = (a: Pt, b: Pt, c: Pt) =>
@@ -343,17 +311,6 @@ function basisPath(p: Pt[]): string {
   const b = p[p.length - 1]!
   d += bez(a, b, b)
   return d + `L${f3(b.x)},${f3(b.y)}`
-}
-
-/** Mermaid's `isLabelCoordinateInPath`: false moves the label by how far clipping moved the path's middle. */
-function labelInPath(p: Pt, d: string): boolean {
-  const rounded = d.replace(/(\d+\.\d+)/g, (m) =>
-    String(Math.round(parseFloat(m))),
-  )
-  return (
-    rounded.includes(String(Math.round(p.x))) ||
-    rounded.includes(String(Math.round(p.y)))
-  )
 }
 
 /** Mermaid's `insertEdges`: start centre, midpoint, end centre, clipped to the two blocks. */
@@ -369,26 +326,17 @@ function layoutEdges(
     const b = byId.get(e.end)
     if (!a || !b) continue
     const mid = { x: a.x + (b.x - a.x) / 2, y: a.y + (b.y - a.y) / 2 }
-    const original = [{ x: a.x, y: a.y }, mid, { x: b.x, y: b.y }]
     const points = [intersectRect(a, mid), mid, intersectRect(b, mid)]
     const path = basisPath(
       withMarkerOffsets(points, e.arrowTypeStart, e.arrowTypeEnd),
     )
-    let lx = mid.x
-    let ly = mid.y
-    if (!labelInPath(points[1]!, path)) {
-      const u = halfway(points)
-      const o = halfway(original)
-      lx = mid.x + (u.x - o.x)
-      ly = mid.y + (u.y - o.y)
-    }
     out.push({
       id: e.id,
       points,
       path,
       label: e.label,
-      labelX: lx,
-      labelY: ly,
+      labelX: mid.x,
+      labelY: mid.y,
       labelWidth: e.label
         ? textWidth(e.label.replace(/\s+/g, ' ').trim(), BLOCK.fontSize)
         : 0,
