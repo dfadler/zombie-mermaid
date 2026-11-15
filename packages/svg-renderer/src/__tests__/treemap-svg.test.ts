@@ -274,6 +274,17 @@ describe('renderMermaidSVG – treemap', () => {
     expect(svg).toContain('$1,500')
   })
 
+  it('draws an unnamed section transparent with no label, and no totals with showValues: false', () => {
+    const svg = renderMermaidSVG(
+      '%%{init: {"treemap": {"showValues": false}}}%%\ntreemap-beta\n""\n  "A": 5:::kk\nclassDef kk color:url(x)',
+    )
+    expect(svg).toContain('class="treemapSection" width=')
+    expect(svg).toContain('fill="transparent"')
+    expect(svg).not.toContain('treemapSectionLabel"')
+    expect(svg).not.toContain('treemapSectionValue"')
+    expect(svg).not.toContain('url(x)')
+  })
+
   it('ignores a classDef font-size it cannot measure', () => {
     const p = layout(
       'treemap-beta\n"R":::big\n  "A": 5:::big\nclassDef big font-size:2em',

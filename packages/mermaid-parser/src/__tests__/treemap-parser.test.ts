@@ -159,6 +159,16 @@ describe('treemapValueFormatter (d3-format, as mermaid@12.3.0 wraps it)', () => 
     ['f', NaN, 'NaN'],
     ['zzz', 1234.5, '1,234.5'],
     ['.2', 1234.5, '1.2e+3'],
+    ['r', Infinity, 'Infinity'],
+    ['s', Infinity, 'Infinity'],
+    ['s', 1e30, '1000000Y'],
+    ['s', 1e-30, '0.000001y'],
+    ['.1s', 1, '1'],
+    ['.2s', 1234, '1.2k'],
+    ['d', 1e21, '1000000000000000000000'],
+    ['0=8.1f', 1.5, '000001.5'],
+    ['#.1f', 1.5, '1.5'],
+    ['$,', 1234.5, '$1,234.5'],
   ])('%j formats %s as %s', (spec, v, out) => {
     expect(treemapValueFormatter(spec)(v)).toBe(out)
   })
