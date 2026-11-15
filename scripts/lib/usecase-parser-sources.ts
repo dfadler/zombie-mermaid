@@ -125,4 +125,19 @@ export const USECASE_PARSER_SOURCES: Record<string, string> = {
   'include self': 'usecase-beta\nA ..> : include A',
   'dot arrow plain': 'usecase-beta\nA ..> B',
   'backward label markerless only': 'usecase-beta\nA <-- hi --> B',
+  'circle labeled': 'usecase-beta\nA -- hi --o B',
+  'cross start': 'usecase-beta\nA x-- B',
+  'circle start': 'usecase-beta\nA o-- B',
+  'edge id metadata':
+    'usecase-beta\nA e1@--> B\ne1@{ animate: true, animation: fast }',
+  'edge id labeled': 'usecase-beta\nA e1@-- hi --> B',
+  'stereotype both':
+    'usecase-beta\nactor A(Alice) <<sys>>\nU(Do) <<ui>>\nA --> U',
+  'class styles':
+    'usecase-beta\nclassDef foo fill:#f00,stroke:#333\nactor A:::foo\nU:::foo\nclass A foo\nstyle U stroke:#0f0',
+  'classdef default': 'usecase-beta\nclassDef default fill:#eee\nA --> B',
+  'class list': 'usecase-beta\nA\nB\nclass A,B foo',
+  'class undeclared': 'usecase-beta\nclass Z foo',
+  'class suffix relation': 'usecase-beta\nA:::foo --> B',
+  'markdown label': 'usecase-beta\nA("`**bold** it`") --> B',
 }

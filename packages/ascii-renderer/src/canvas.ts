@@ -474,6 +474,23 @@ export function mergeJunctions(c1: string, c2: string): string {
   return JUNCTION_MAP[c1]?.[c2] ?? c1
 }
 
+/**
+ * A dotted `┄` arm that ends against a solid tee on the tee's open side, which
+ * the line layer's first-claim rule left without an arm back (`┄├` / `┤┄`),
+ * becomes a crossing `┼`: the dotted edge runs through (#3132).
+ */
+export function healDottedTees(canvas: Canvas): void {
+  for (let x = 0; x < canvas.length; x++)
+    for (let y = 0; y < (canvas[x]?.length ?? 0); y++) {
+      const c = canvas[x]![y]
+      if (
+        (c === '├' && canvas[x - 1]?.[y] === '┄') ||
+        (c === '┤' && canvas[x + 1]?.[y] === '┄')
+      )
+        canvas[x]![y] = '┼'
+    }
+}
+
 // ============================================================================
 // Canvas merging — composite multiple canvases with offset
 // ============================================================================
