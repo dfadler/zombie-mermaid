@@ -3044,6 +3044,25 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // path instead of each needing its own diagonal-awareness.
   edge.startDir = preferredDir
   edge.endDir = preferredOppositeDir
+  // A side-face port whose gap cell another edge already holds is sealed
+  // (#1474), and the horizontal-first L would run its vertical leg up the
+  // node's own wall column, over the wall (#3132). Run it in the gap column
+  // beside the wall instead, and join the port from the side.
+  const side = dirEquals(preferredOppositeDir, Left)
+    ? -1
+    : dirEquals(preferredOppositeDir, Right)
+      ? 1
+      : 0
+  const gap = prefTo.x + side
+  if (side !== 0 && prefFrom.y !== prefTo.y && (prefFrom.x - gap) * side > 0) {
+    edge.path = [
+      prefFrom,
+      { x: gap, y: prefFrom.y },
+      { x: gap, y: prefTo.y },
+      prefTo,
+    ]
+    return
+  }
   edge.path = expandDiagonalSegments([prefFrom, prefTo])
 }
 

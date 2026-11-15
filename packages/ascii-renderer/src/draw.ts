@@ -27,6 +27,7 @@ import type {
 import {
   cellAt,
   firstClaimWins,
+  healDottedTees,
   forEachInk,
   mergeCanvases,
   scanBounds,
@@ -512,6 +513,7 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
   )
   fillRolesFromCanvases(graph.roleCanvas, arrowHeadStartCanvases, zero, 'arrow')
 
+  if (!useAscii) healDottedTees(graph.canvas)
   bridgeSlantedFaces(graph, useAscii)
   drawJunctions(graph, useAscii)
 

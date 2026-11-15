@@ -4,6 +4,11 @@ export interface UsecaseActor {
   label: string
   /** The `systemBoundary` it is declared in. */
   parentId?: string
+  /** `<<stereotype>>`, drawn as «stereotype» above the label. */
+  stereotype?: string
+  /** `:::class` / `class` names, and `style` declarations. */
+  classes?: string[]
+  styles?: string[]
 }
 
 /** Any other named element: a use case. `Name(label)` / `Name` is an ellipse, `Name[label]` a rectangle. */
@@ -12,6 +17,9 @@ export interface UsecaseCase {
   label: string
   shape: 'ellipse' | 'rect'
   parentId?: string
+  stereotype?: string
+  classes?: string[]
+  styles?: string[]
 }
 
 /** `systemBoundary Name … end`. */
@@ -36,8 +44,25 @@ export interface UsecaseRelationship {
    * An association's line: `-->` (`forward`), `<--` (`backward`) or `--`
    * (`none`). The other types always draw an arrowhead at the target.
    */
-  arrow: 'forward' | 'backward' | 'none'
+  arrow:
+    | 'forward'
+    | 'backward'
+    | 'none'
+    | 'circleEnd' // --o
+    | 'crossEnd' // --x
+    | 'circleStart' // o--
+    | 'crossStart' // x--
   label?: string
+  /** `A e1@--> B`; set by the edge id, so `e1@{ animate: true }` can name it. */
+  id?: string
+  animate?: boolean
+  animation?: string
+}
+
+/** `classDef name fill:#f00,stroke:#333`; `styles` are the `prop:value` declarations. */
+export interface UsecaseClassDef {
+  id: string
+  styles: string[]
 }
 
 /** `note for Id "text"`. */
@@ -55,4 +80,5 @@ export interface UsecaseDiagram {
   boundaries: UsecaseBoundary[]
   relationships: UsecaseRelationship[]
   notes: UsecaseNote[]
+  classDefs: UsecaseClassDef[]
 }
