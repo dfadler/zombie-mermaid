@@ -311,4 +311,45 @@ describe('block styling', () => {
       expect(every('right down')).toBe(7)
     })
   })
+
+  describe('links in every direction', () => {
+    // A 3x3 grid with the shape in the middle, linked to its eight neighbours in both
+    // directions, so every side, corner and marker offset of the clipping runs.
+    const ring = (centre: string) =>
+      `block-beta\n  columns 3\n  a b c\n  d ${centre} f\n  g h i\n` +
+      ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'i']
+        .flatMap((n) => [`e ${'<-->'} ${n}`, `${n} --x e`, `e --o ${n}`])
+        .join('\n')
+        .replace(/^/, '  ')
+        .replace(/\n/g, '\n  ')
+
+    for (const centre of [
+      'e[("db")]',
+      'e(("c"))',
+      'e{{"hex"}}',
+      'e[/"lean"/]',
+      'e<["go"]>(x, y)',
+      'e["plain"]',
+    ]) {
+      it(`clips every link around ${centre} onto the shape's outline`, () => {
+        const d = layout(ring(centre))
+        const mid = d.nodes.find((n) => n.id === 'e')!
+        expect(d.edges.length).toBe(24)
+        for (const e of d.edges) {
+          for (const p of e.points)
+            expect(Number.isFinite(p.x + p.y)).toBe(true)
+          const [first, , last] = e.points
+          const ends = [first!, last!]
+          // One end of each link is on the middle block's outline, within its extent.
+          const near = ends.some(
+            (p) =>
+              Math.abs(p.x - mid.x) <= mid.width / 2 + 40 &&
+              Math.abs(p.y - mid.y) <= mid.height / 2 + 40,
+          )
+          expect(near).toBe(true)
+        }
+        expect(renderMermaidSVG(ring(centre))).toContain('marker-start=')
+      })
+    }
+  })
 })

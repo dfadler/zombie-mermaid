@@ -85,6 +85,22 @@ block-beta
     c d
   end`,
   },
+  ...[
+    'e[("db")]',
+    'e(("c"))',
+    'e{{"hex"}}',
+    'e[/"lean"/]',
+    // Not a block arrow: its tip sits exactly 2 x the 4px marker offset from the next cell,
+    // where a float-level difference in the text width flips mermaid's offset rule.
+  ].map((centre) => ({
+    title: `Links around ${centre}`,
+    source: `block-beta
+  columns 3
+  a b c
+  d ${centre} f
+  g h i
+${['a', 'b', 'c', 'd', 'f', 'g', 'h', 'i'].map((n) => `  e <--> ${n}\n  ${n} --x e`).join('\n')}`,
+  })),
   {
     title: 'Shapes in a grid',
     source: `block-beta

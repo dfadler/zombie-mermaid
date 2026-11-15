@@ -184,4 +184,40 @@ describe('block ASCII', () => {
       ).toContain('v')
     })
   })
+
+  describe('links in every direction', () => {
+    const ring = (centre: string, mark: string) =>
+      `block-beta\n  columns 3\n  a b c\n  d ${centre} f\n  g h i\n` +
+      ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'i']
+        .map((n) => `  e ${mark} ${n}\n  ${n} ${mark} e`)
+        .join('\n')
+
+    it('draws every link of a ring of blocks without overwriting a box', () => {
+      for (const mark of ['-->', '==x', '-.-o', '<-->']) {
+        for (const useAscii of [false, true]) {
+          const out = render(ring('e["mid"]', mark), useAscii)
+          // Every block keeps its frame: three rows of three labels.
+          expect(out.match(/mid/g)).toHaveLength(1)
+          for (const n of 'abcdfghi') expect(out).toContain(` ${n} `)
+        }
+      }
+    })
+
+    it('draws labels on horizontal, vertical and elbow links, and links in both directions', () => {
+      const out = render(
+        'block-beta\n  columns 2\n  a b\n  c d\n  a -- "right" --> b\n  b -- "down" --> d\n  d -- "left" --> c\n  c -- "up" --> a\n  a -- "diag" --> d\n  d -- "back" --> a',
+      )
+      // Where two labels would overlap the first one drawn wins.
+      expect(out).toContain('right')
+      expect(out).toContain('▶')
+      expect(out).toContain('▼')
+      expect(out).toContain('◀')
+      expect(out).toContain('▲')
+    })
+
+    it('draws shapes in a diagram with links', () => {
+      const out = render(ring('e(("mid"))', '-->').replace(/\be\b/g, 'e'))
+      expect(out).toContain('◯')
+    })
+  })
 })

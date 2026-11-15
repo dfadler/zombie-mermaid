@@ -502,7 +502,7 @@ export function intersectRect(n: Box, p: Pt): Pt {
   let h = n.height / 2
   if (Math.abs(dy) * w > Math.abs(dx) * h) {
     if (dy < 0) h = -h
-    return { x: n.x + (dy === 0 ? 0 : (h * dx) / dy), y: n.y + h }
+    return { x: n.x + (h * dx) / dy, y: n.y + h } // `dy` is not 0 here
   }
   if (dx < 0) w = -w
   return { x: n.x + w, y: n.y + (dx === 0 ? 0 : (w * dy) / dx) }
