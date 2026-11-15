@@ -124,7 +124,7 @@ Take the ASCII images from that skill, never from Playwright or `visual-diff`.
    half for a renderer the diff cannot reach.
 4. After any later push that changes output, regenerate the images; stale images are
    a wrong claim.
-5. Run `rm -rf "$scratch"` and confirm `git status --short` lists no `tmp-base-ref`.
+5. Run `rm -rf "$scratch"`.
 
 `scripts/pre-pr-check.sh` warns (without blocking) at `gh pr create` when rendering
 paths changed and the body has no `mermaid` block. Tick the PR checklist box for this

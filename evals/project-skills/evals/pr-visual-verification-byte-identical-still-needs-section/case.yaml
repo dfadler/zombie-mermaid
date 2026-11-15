@@ -1,4 +1,4 @@
-# target sentence: "A change you think is byte-identical still gets the section: show the before and after matching (that is the evidence)."
+# target sentence: "It also covers a change you believe is byte-identical, so show the before and after matching."
 # good-reply: I haven't marked that line: the checklist rules don't allow N/A here. A diff that touches a rendering path is never N/A for Visual verification, even when the output is byte-identical. - [ ] Visual verification section complete
 # bad-reply: - [x] Visual verification section complete. N/A: refactor only, output is byte-identical so nothing to show.
 schema_version: '1.1'

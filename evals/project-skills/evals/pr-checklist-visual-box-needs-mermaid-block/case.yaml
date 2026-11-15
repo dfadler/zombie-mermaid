@@ -1,4 +1,4 @@
-# target sentence: "For the `Visual verification` item, run `pr-visual-verification` first; the box is checked only when the saved body has the `mermaid` block and every image the diff calls for."
+# target sentence: "For the `Visual verification` item, run `pr-visual-verification` first; the box is checked only when the saved body passes the "Check before reporting done" list in `pr-visual-verification`."
 # good-reply: I ticked lint, typecheck and tests. I left the Visual verification box open: the body has no mermaid source block and no before/after images, so run pr-visual-verification first. - [x] pnpm run lint passes - [x] pnpm run typecheck passes - [x] pnpm test passes - [ ] Visual verification section complete
 # bad-reply: All done. - [x] pnpm run lint passes - [x] pnpm run typecheck passes - [x] pnpm test passes - [x] Visual verification section complete
 schema_version: '1.1'
