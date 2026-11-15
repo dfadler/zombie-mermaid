@@ -630,6 +630,7 @@ export interface GitGraphConfig {
     theme?: string;
     // (undocumented)
     titleTopMargin: number;
+    useMaxWidth: boolean;
 }
 
 // @public (undocumented)
@@ -1616,6 +1617,8 @@ export interface PositionedGitGraph {
         x: number;
         y: number;
     };
+    // (undocumented)
+    useMaxWidth: boolean;
     viewBox: {
         x: number;
         y: number;
