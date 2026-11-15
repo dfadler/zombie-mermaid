@@ -9,11 +9,11 @@ exports[`a parallel lane that would double back along its own row > snapshots SV
   │ ▲        ▲ ▲          
   │ ┆        │ ┃          
   │ ┆ VW     │ ┃          
-  │ └┄┄┄┄┐  Fp ┃          
+  │ └┄┄┄┄┐   │Zq          
   │      ┆   │ ┃          
-  └─────┐┆┌━━│━┘          
-    38  │┆┃  │   Zq       
-        ╱┴╲──┘            
+  └─────┐┆┌──┘ ┃          
+    38  │┆│ Fp ┃          
+        ╱┴│━━━━┘          
        ╱   ╲              
       <  3D >             
        ╲   ╱              
@@ -25,11 +25,11 @@ exports[`a parallel lane that would double back along its own row > snapshots SV
        ╱   ╲              
       <  3D >             
        ╲   ╱              
-        ╲┬╱──┐            
-    38  │┆┃  │   Zq       
-  ┌─────┘┆└━━│━┐          
+        ╲┬│━━━━┐          
+    38  │┆│ Fp ┃          
+  ┌─────┘┆└──┐ ┃          
   │      ┆   │ ┃          
-  │ ┌┄┄┄┄┘  Fp ┃          
+  │ ┌┄┄┄┄┘   │Zq          
   │ ┆ VW     │ ┃          
   │ ┆        │ ┃          
   │ ▼        ▼ ▼          
@@ -66,11 +66,11 @@ exports[`a parallel lane that would double back along its own row > snapshots SV
 +---+-+     +----+        
   ^ |        ^ ^          
   : |        | ‖          
- VW |       Fp ‖          
-  : |        | ‖          
-  +.+....+===|=+          
-      38 :   |   Zq       
-        /+\\--+            
+ VW |        | ‖          
+  : |        |Zq          
+  +.+....+---+ ‖          
+      38 :  Fp ‖          
+        /+=====+          
        /   \\              
       <  3D >             
        \\   /              
@@ -82,11 +82,11 @@ exports[`a parallel lane that would double back along its own row > snapshots SV
        /   \\              
       <  3D >             
        \\   /              
-        \\+/--+            
-      38 :   |   Zq       
-  +.+....+===|=+          
-  : |        | ‖          
- VW |       Fp ‖          
+        \\+=====+          
+      38 :  Fp ‖          
+  +.+....+---+ ‖          
+  : |        |Zq          
+ VW |        | ‖          
   : |        | ‖          
   v |        v v          
 +---+-+     +----+        
