@@ -20,8 +20,8 @@ Visibility
 |                  :                 : ---\           :                  
 |                  :                 :     --\        :                  
 |                  :                 :        ---\    :                  
-|                  :                 :            -o Power               
-|                  :                 :                :                  
+|                  :                 :            -o  :                  
+|                  :                 :           Power:                  
 |                  :                 :                :                  
 +------------------+-----------------+----------------+------------------
        Genesis         Custom Built        Product         Commodity  Evolution
