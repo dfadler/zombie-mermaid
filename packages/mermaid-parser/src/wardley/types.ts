@@ -7,6 +7,8 @@
 // 100 top). The SVG and ASCII renderers both draw from this model directly.
 // ============================================================================
 
+import type { InitConfig } from '@zombie-mermaid/core'
+
 export type WardleyNodeKind = 'anchor' | 'component' | 'pipeline-component'
 
 export type WardleyStrategy = 'build' | 'buy' | 'outsource' | 'market'
@@ -90,6 +92,8 @@ export interface WardleyMap {
   notes: WardleyNote[]
   accelerators: WardleyArrow[]
   deaccelerators: WardleyArrow[]
+  /** `%%{init: {"themeVariables": {"wardley": {...}}}}%%` colours. */
+  theme?: InitConfig['wardleyTheme']
 }
 
 /** Mermaid's default stage names for the evolution axis. */

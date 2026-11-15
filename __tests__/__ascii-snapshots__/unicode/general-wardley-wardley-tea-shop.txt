@@ -20,8 +20,8 @@ Visibility
 │                  ┊                 ┊ ───╲           ┊                  
 │                  ┊                 ┊     ──╲        ┊                  
 │                  ┊                 ┊        ───╲    ┊                  
-│                  ┊                 ┊            ─● Power               
-│                  ┊                 ┊                ┊                  
+│                  ┊                 ┊            ─●  ┊                  
+│                  ┊                 ┊           Power┊                  
 │                  ┊                 ┊                ┊                  
 └──────────────────┴─────────────────┴────────────────┴──────────────────
        Genesis         Custom Built        Product         Commodity  Evolution
