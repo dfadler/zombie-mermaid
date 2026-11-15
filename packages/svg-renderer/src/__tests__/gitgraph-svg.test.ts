@@ -188,13 +188,31 @@ describe('renderMermaidSVG – gitGraph', () => {
     expect(out).not.toContain('class="branchLabel"')
   })
 
-  it('moves the viewBox origin to 0,0 and sizes the svg to it', () => {
+  it('moves the viewBox origin to 0,0 and sizes the svg to it (useMaxWidth: false)', () => {
+    const fixed = renderMermaidSVG(
+      '%%{init: {"gitGraph": {"useMaxWidth": false}}}%%\n' + BASIC,
+    )
     const m =
       /viewBox="0 0 ([\d.]+) ([\d.]+)" width="([\d.]+)" height="([\d.]+)"/.exec(
-        svg,
+        fixed,
       )!
     expect(m[1]).toBe(m[3])
     expect(m[2]).toBe(m[4])
+  })
+
+  it('emits width="100%" and a max-width style by default, as Mermaid does', () => {
+    const tag = /<svg[^>]*>/.exec(svg)![0]
+    const vbw = /viewBox="0 0 ([\d.]+) /.exec(tag)![1]
+    expect(tag).toContain('width="100%"')
+    expect(tag).not.toMatch(/ height="/)
+    expect(Number(/max-width: ([\d.]+)px/.exec(tag)![1])).toBeCloseTo(
+      Number(vbw),
+      1,
+    )
+    const bare = /<svg[^>]*>/.exec(
+      renderMermaidSVG(BASIC, { styleAttribute: false } as never),
+    )![0]
+    expect(bare).toMatch(/width="100%" style="max-width: [\d.]+px;"/)
   })
 
   it('themes through the accent: colours are custom properties', () => {

@@ -36,6 +36,9 @@ export interface ArchitectureInitLayout {
 }
 
 // @public
+export function assertThemeVariableColors(text: string): void;
+
+// @public
 export interface BlockInitConfig {
     padding?: number;
 }
@@ -206,6 +209,9 @@ export const DEFAULTS: Readonly<{
     fg: string;
     muted: string;
 }>;
+
+// @public
+export function deriveBorderColor(value: string): string | null;
 
 // @public
 export function describeIgnored(config: InitConfig): string[];
@@ -409,6 +415,8 @@ export interface GitGraphInitConfig {
     showCommitLabel?: boolean;
     // (undocumented)
     titleTopMargin?: number;
+    // (undocumented)
+    useMaxWidth?: boolean;
 }
 
 // @public
@@ -428,6 +436,7 @@ export interface InitConfig {
     erLayout?: ErInitLayout;
     gitGraph?: GitGraphInitConfig;
     ignored: string[];
+    ishikawaPadding?: number;
     journey?: JourneyInitConfig;
     kanban?: KanbanInitConfig;
     look?: string;
@@ -439,6 +448,7 @@ export interface InitConfig {
     quadrant?: QuadrantConfig;
     radar?: RadarInitConfig;
     radarTheme?: RadarStyleConfig;
+    rawThemeColors?: Partial<Record<RawThemeColor, string>>;
     sankey?: SankeyInitConfig;
     sequenceHideUnused?: boolean;
     sequenceLayout?: SequenceInitLayout;
@@ -448,6 +458,8 @@ export interface InitConfig {
     theme?: string;
     themeVariables?: ThemeVariables;
     timeline?: TimelineInitConfig;
+    treemap?: TreemapInitConfig;
+    wardleyTheme?: Partial<Record<WardleyThemeKey, string>>;
     xyChart?: XyChartInitConfig;
 }
 
@@ -462,6 +474,9 @@ export function isEdgeWithinOwnCluster(edge: {
 
 // @public
 export function isInitDirective(line: string): boolean;
+
+// @public
+export function isMermaidThemeColor(value: string): boolean;
 
 // @public
 export function isMonospaceFont(font: string): boolean;
@@ -1107,6 +1122,18 @@ export interface TimelineInitConfig {
 export function toDirection(raw: string | undefined): Direction;
 
 // @public
+export interface TreemapInitConfig {
+    // (undocumented)
+    diagramPadding?: number;
+    nodeHeight?: number;
+    nodeWidth?: number;
+    padding?: number;
+    // (undocumented)
+    showValues?: boolean;
+    valueFormat?: string;
+}
+
+// @public
 export function tryApplyClassAssignment(line: string, target: StyleDirectives): boolean;
 
 // @public
@@ -1117,6 +1144,12 @@ export function tryApplyCssClass(line: string, target: StyleDirectives): boolean
 
 // @public
 export function tryApplyStyleStatement(line: string, target: StyleDirectives): boolean;
+
+// @public
+export const WARDLEY_THEME_KEYS: readonly ["backgroundColor", "axisColor", "axisTextColor", "componentFill", "componentStroke", "componentLabelColor", "linkStroke", "evolutionStroke", "annotationStroke", "annotationTextColor", "annotationFill"];
+
+// @public (undocumented)
+export type WardleyThemeKey = (typeof WARDLEY_THEME_KEYS)[number];
 
 // @public
 export function withDirectionOverride<T extends {

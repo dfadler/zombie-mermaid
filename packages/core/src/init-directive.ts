@@ -16,7 +16,9 @@
 // should not be able to override the host application's rendering choices.
 // ============================================================================
 
-import { isValidCssColor } from './css-color.ts'
+import { deriveBorderColor } from './color-utils.ts'
+import { isMermaidThemeColor, isValidCssColor } from './css-color.ts'
+import { MermaidParseError } from './parse-error.ts'
 import type { C4InitLayout } from './c4-metrics.ts'
 import type { RenderOptions } from './types.ts'
 
@@ -117,6 +119,7 @@ export interface GitGraphInitConfig {
   parallelCommits?: boolean
   titleTopMargin?: number
   diagramPadding?: number
+  useMaxWidth?: boolean
 }
 
 /** The `kanban.*` init keys that change mermaid's output. */
@@ -142,6 +145,25 @@ export interface PacketInitConfig {
   bitOrder?: 'ascending' | 'descending'
 }
 
+/**
+ * The `treemap.*` init keys mermaid@12.3.0 reads that change the drawing. Not
+ * listed: `useMaxWidth` (only the root `width`/`max-width`, which this renderer
+ * sizes by its viewBox) and `borderWidth`, `valueFontSize`, `labelFontSize`
+ * (mermaid never reads them: its inline sizes win).
+ */
+export interface TreemapInitConfig {
+  /** Gap between siblings. */
+  padding?: number
+  /** The canvas is `nodeWidth` x 10 wide (960 when 0). */
+  nodeWidth?: number
+  /** The canvas is `nodeHeight` x 10 tall (500 when 0). */
+  nodeHeight?: number
+  showValues?: boolean
+  /** A d3-format specifier (`,`, `$0,0`, `.1%`...); a bad one falls back to `,`. */
+  valueFormat?: string
+  diagramPadding?: number
+}
+
 /** The `sankey.*` init keys that change mermaid's output (a bad value is dropped). */
 export interface SankeyInitConfig {
   width?: number
@@ -158,6 +180,23 @@ export interface SankeyInitConfig {
   /** Node id -> CSS colour. */
   nodeColors?: Record<string, string>
 }
+
+/** The `themeVariables.wardley` colours mermaid 12.3.0 reads (`gridColor` only matters with the site-config `showGrid`, which is not read). */
+export const WARDLEY_THEME_KEYS = [
+  'backgroundColor',
+  'axisColor',
+  'axisTextColor',
+  'componentFill',
+  'componentStroke',
+  'componentLabelColor',
+  'linkStroke',
+  'evolutionStroke',
+  'annotationStroke',
+  'annotationTextColor',
+  'annotationFill',
+] as const
+
+export type WardleyThemeKey = (typeof WARDLEY_THEME_KEYS)[number]
 
 /** Drop C0/C1 control characters (and DEL): they would reach a terminal or an XML parser. */
 function stripControls(s: string): string {
@@ -348,7 +387,8 @@ const PIE_LEGEND_POSITIONS = new Set([
  * The `themeVariables` subset this renderer can map onto its own colour
  * tokens (see `RenderOptions.honorThemeVariables`). Every value has passed
  * `isValidCssColor` and a stricter safe-character check; invalid ones are
- * dropped, never thrown.
+ * dropped. A `primaryColor`, `lineColor` or `primaryTextColor` mermaid cannot
+ * parse throws instead, see {@link assertThemeVariableColors}.
  */
 export interface ThemeVariables {
   /** → `surface` (node fill). Mermaid reads it under `theme: base` only. */
@@ -472,6 +512,8 @@ export interface InitConfig {
   timeline?: TimelineInitConfig
   /** `radar.*` keys ({@link RadarInitConfig}); other keys and bad values are dropped. */
   radar?: RadarInitConfig
+  /** `ishikawa.diagramPadding` (a number or numeric string, negative allowed, as mermaid 12.3.0 takes it). */
+  ishikawaPadding?: number
   /** `themeVariables.radar` sizes and opacities ({@link RadarStyleConfig}); 0 is kept, as mermaid does. */
   radarTheme?: RadarStyleConfig
   /** `journey.*` geometry keys ({@link JourneyInitConfig}); other keys and bad values are dropped. */
@@ -486,6 +528,10 @@ export interface InitConfig {
   packet?: PacketInitConfig
   /** The `sankey` block (see {@link SankeyInitConfig}). */
   sankey?: SankeyInitConfig
+  /** `themeVariables.wardley` colours (see {@link WARDLEY_THEME_KEYS}); a value that is not a safe colour is dropped. */
+  wardleyTheme?: Partial<Record<WardleyThemeKey, string>>
+  /** The `treemap` block (see {@link TreemapInitConfig}); a bad value is dropped. */
+  treemap?: TreemapInitConfig
   /** The `class` block: `padding` and `hideEmptyMembersBox` (a bad value is dropped). */
   classLayout?: ClassInitLayout
   /** The `er` block: `diagramPadding`, `entityPadding` and `minEntityWidth` (numbers >= 0). */
@@ -505,9 +551,21 @@ export interface InitConfig {
    * merged config says `theme: base`, as in Mermaid.
    */
   themeVariables?: ThemeVariables
+  /**
+   * `primaryColor`, `lineColor` and `primaryTextColor` as written (strings
+   * only, later directives win), for {@link assertThemeVariableColors}.
+   */
+  rawThemeColors?: Partial<Record<RawThemeColor, string>>
   /** Recognized but not acted on — see `IGNORED_KEYS`. */
   ignored: string[]
 }
+
+type RawThemeColor = 'primaryColor' | 'lineColor' | 'primaryTextColor'
+const RAW_THEME_COLORS: readonly RawThemeColor[] = [
+  'primaryColor',
+  'lineColor',
+  'primaryTextColor',
+]
 
 /**
  * Directive keys that are parsed and deliberately not acted on, with the
@@ -685,11 +743,28 @@ export function parseInitDirective(line: string): InitConfig | undefined {
           config.radarTheme = radarNumbers({ ...vv }, RADAR_STYLE_KEYS)
           continue
         }
+        if (
+          typeof vv === 'string' &&
+          (RAW_THEME_COLORS as readonly string[]).includes(vk)
+        ) {
+          ;(config.rawThemeColors ??= {})[vk as RawThemeColor] = vv
+        }
+        if (vk === 'wardley' && typeof vv === 'object' && vv !== null) {
+          const w: Partial<Record<WardleyThemeKey, string>> = {}
+          for (const wk of WARDLEY_THEME_KEYS) {
+            const c = directiveColor((vv as Record<string, unknown>)[wk])
+            if (c) w[wk] = c
+          }
+          config.wardleyTheme = w
+          continue
+        }
         const color = directiveColor(vv)
         if ((QUADRANT_COLOR_VARIABLES as readonly string[]).includes(vk)) {
           if (color) (tv.quadrant ??= {})[vk as QuadrantColorVariable] = color
         } else if (PIE_VARIABLE.test(vk)) {
-          if (color) (tv.pieColors ??= {})[Number(vk.slice(3)) - 1] = color
+          // Mermaid 12.3.0 paints an invalid pieN as the root `fill: #333`,
+          // not the default palette (#3162).
+          ;(tv.pieColors ??= {})[Number(vk.slice(3)) - 1] = color ?? '#333'
         } else if (
           (BASE_ONLY_VARIABLES as readonly string[]).includes(vk) ||
           (ANY_THEME_VARIABLES as readonly string[]).includes(vk)
@@ -880,6 +955,7 @@ export function parseInitDirective(line: string): InitConfig | undefined {
         'showBranches',
         'rotateCommitLabel',
         'parallelCommits',
+        'useMaxWidth',
       ] as const)
         if (typeof rec[k] === 'boolean') g[k] = rec[k]
       // Mermaid coerces numeric strings ("60") and lets a negative number through.
@@ -906,6 +982,13 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       if (rec.disableMulticolor !== undefined && rec.disableMulticolor !== null)
         t.disableMulticolor = Boolean(rec.disableMulticolor)
       config.timeline = t
+      continue
+    }
+
+    if (lower === 'ishikawa' && typeof value === 'object' && value !== null) {
+      const v = numeric((value as Record<string, unknown>).diagramPadding)
+      if (typeof v === 'number' && Number.isFinite(v))
+        config.ishikawaPadding = v
       continue
     }
 
@@ -1048,6 +1131,25 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'treemap' && typeof value === 'object' && value !== null) {
+      const t: TreemapInitConfig = {}
+      const rec: Record<string, unknown> = { ...value }
+      for (const k of [
+        'padding',
+        'nodeWidth',
+        'nodeHeight',
+        'diagramPadding',
+      ] as const) {
+        const v = numeric(rec[k])
+        if (typeof v === 'number' && v >= 0 && v <= 1e5) t[k] = v
+      }
+      if (typeof rec.showValues === 'boolean') t.showValues = rec.showValues
+      if (typeof rec.valueFormat === 'string' && rec.valueFormat.length <= 64)
+        t.valueFormat = stripControls(rec.valueFormat)
+      config.treemap = t
+      continue
+    }
+
     if (lower === 'pie' && typeof value === 'object' && value !== null) {
       for (const [pk, pv] of Object.entries({ ...value })) {
         const pl = pk.toLowerCase()
@@ -1118,6 +1220,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
     if (config.timeline)
       merged.timeline = { ...merged.timeline, ...config.timeline }
     if (config.radar) merged.radar = { ...merged.radar, ...config.radar }
+    if (config.ishikawaPadding !== undefined)
+      merged.ishikawaPadding = config.ishikawaPadding
     if (config.radarTheme)
       merged.radarTheme = { ...merged.radarTheme, ...config.radarTheme }
     if (config.journey)
@@ -1125,6 +1229,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
     if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }
     if (config.block) merged.block = { ...merged.block, ...config.block }
     if (config.packet) merged.packet = { ...merged.packet, ...config.packet }
+    if (config.treemap)
+      merged.treemap = { ...merged.treemap, ...config.treemap }
     if (config.sankey) {
       const earlier = merged.sankey?.nodeColors
       merged.sankey = { ...merged.sankey, ...config.sankey }
@@ -1137,6 +1243,8 @@ export function extractInitConfig(lines: string[]): InitConfig {
         )
       }
     }
+    if (config.wardleyTheme)
+      merged.wardleyTheme = { ...merged.wardleyTheme, ...config.wardleyTheme }
     if (config.classLayout)
       merged.classLayout = { ...merged.classLayout, ...config.classLayout }
     if (config.erLayout)
@@ -1157,6 +1265,12 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.quadrant)
       merged.quadrant = { ...merged.quadrant, ...config.quadrant }
+    if (config.rawThemeColors) {
+      merged.rawThemeColors = {
+        ...merged.rawThemeColors,
+        ...config.rawThemeColors,
+      }
+    }
     if (config.themeVariables) {
       const { pieColors, quadrant, ...rest } = config.themeVariables
       const mergedTv = (merged.themeVariables ??= {})
@@ -1190,7 +1304,12 @@ export function applyThemeVariables(
   if (!tv) return options
   const out = { ...options }
   out.surface ??= tv.primaryColor
-  out.border ??= tv.primaryBorderColor
+  // Mermaid derives the border from primaryColor when none is given (#3165).
+  out.border ??=
+    tv.primaryBorderColor ??
+    (tv.primaryColor
+      ? (deriveBorderColor(tv.primaryColor) ?? undefined)
+      : undefined)
   out.fg ??= tv.primaryTextColor
   out.line ??= tv.lineColor
   return out
@@ -1202,4 +1321,32 @@ export function describeIgnored(config: InitConfig): string[] {
     (key) =>
       `${key}: ${IGNORED_KEYS[key.toLowerCase()] ?? IGNORED_KEYS[key.split('.')[0]!.toLowerCase()] ?? 'not supported'}`,
   )
+}
+
+/**
+ * Throw like mermaid@12.3.0 when a `themeVariables` colour it derives other
+ * colours from cannot be parsed: `Unsupported color format: "<value>"`
+ * (#3163). Measured on 12.3.0, flowchart: `primaryColor` throws under every
+ * theme, including an empty string and `var()`; `lineColor` and
+ * `primaryTextColor` only under `theme: base`, where an empty string, `var()`
+ * and a value mermaid's own sanitiser drops (`;`, `{`, `}`) render.
+ * `primaryBorderColor` and the pie and other per-diagram colours never throw
+ * here. Call it only when the caller honours theme variables.
+ */
+export function assertThemeVariableColors(text: string): void {
+  const { theme, rawThemeColors } = extractInitConfig(text.split(/\r\n?|\n/))
+  if (!rawThemeColors) return
+  for (const name of RAW_THEME_COLORS) {
+    const v = rawThemeColors[name]
+    if (v === undefined) continue
+    if (name !== 'primaryColor') {
+      if (theme !== 'base') continue
+      if (v === '' || /^var\(|[;{}]/.test(v)) continue
+    }
+    if (!isMermaidThemeColor(v)) {
+      throw new MermaidParseError(`Unsupported color format: "${v}"`, {
+        code: 'UNSUPPORTED_COLOR_FORMAT',
+      })
+    }
+  }
 }

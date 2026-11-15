@@ -4,7 +4,11 @@
  */
 import { describe, it, expect } from 'vitest'
 import { MermaidParseError } from '@zombie-mermaid/core'
-import { formatTreemapValue, parseTreemap } from '../index.ts'
+import {
+  formatTreemapValue,
+  parseTreemap,
+  treemapValueFormatter,
+} from '../index.ts'
 
 describe('parseTreemap', () => {
   it('nests rows by indentation and keeps leaf values', () => {
@@ -111,5 +115,72 @@ describe('formatTreemapValue', () => {
     [1.5e21, '1.5e+21'],
   ])('formats %s as %s', (v, out) => {
     expect(formatTreemapValue(v)).toBe(out)
+  })
+})
+
+describe('treemapValueFormatter (d3-format, as mermaid@12.3.0 wraps it)', () => {
+  it.each([
+    [undefined, 1234.5, '1,234.5'],
+    ['', 1234.5, '1,234.5'],
+    ['$0,0', 1234.5, '$1,234.5'],
+    ['$,.2f', 1234.5, '$1.2e+3'],
+    ['$.1f', 1234.5, '$1234.5'],
+    ['$', 1234.5, '$1234.5'],
+    ['.1%', 0.256, '25.6%'],
+    ['.2p', 0.256, '26%'],
+    ['.2f', 3, '3.00'],
+    ['~g', 1500, '1500'],
+    ['s', 0.25, '250.000m'],
+    ['s', 4634.75, '4.63475k'],
+    ['.3~s', 4634.75, '4.63k'],
+    ['.2s', 0.00012, '120µ'],
+    ['e', 1234.5, '1.234500e+3'],
+    ['d', 1234.5, '1235'],
+    [',d', -1234567, '−1,234,567'],
+    ['+,.1f', 1234.56, '+1,234.6'],
+    ['(.1f', -2.5, '(2.5)'],
+    ['x', 255, 'ff'],
+    ['#X', 255, '0xFF'],
+    ['#b', 5, '0b101'],
+    ['o', 8, '10'],
+    ['c', 65, '65'],
+    ['08.2f', 3.14159, '00003.14'],
+    ['0,.0f', 1234, '1,234'],
+    ['010,.0f', 1234, '00,001,234'],
+    ['>10,.1f', 1234.5, '   1,234.5'],
+    ['<10.1f', 1.5, '1.5       '],
+    ['^10.1f', 1.5, '   1.5    '],
+    ['=+10.1f', 1.5, '+      1.5'],
+    ['*>8.1f', 1.5, '*****1.5'],
+    ['n', 1234.5, '1,234.50'],
+    ['r', 1234.5678, '1234.57'],
+    ['.3r', 0.00012345, '0.000123'],
+    ['.0f', -0.2, '0'],
+    ['f', NaN, 'NaN'],
+    ['zzz', 1234.5, '1,234.5'],
+    ['.2', 1234.5, '1.2e+3'],
+    ['r', Infinity, 'Infinity'],
+    ['s', Infinity, 'Infinity'],
+    ['s', 1e30, '1000000Y'],
+    ['s', 1e-30, '0.000001y'],
+    ['.1s', 1, '1'],
+    ['.2s', 1234, '1.2k'],
+    ['d', 1e21, '1000000000000000000000'],
+    ['0=8.1f', 1.5, '000001.5'],
+    ['#.1f', 1.5, '1.5'],
+    ['$,', 1234.5, '$1,234.5'],
+  ])('%j formats %s as %s', (spec, v, out) => {
+    expect(treemapValueFormatter(spec)(v)).toBe(out)
+  })
+})
+
+describe('parseTreemap config', () => {
+  it('reads the treemap init keys from a directive', () => {
+    expect(
+      parseTreemap(
+        '%%{init: {"treemap": {"nodeWidth": 60, "showValues": false}}}%%\ntreemap-beta\n"A": 1',
+      ).config,
+    ).toEqual({ nodeWidth: 60, showValues: false })
+    expect(parseTreemap('treemap-beta\n"A": 1').config).toBeUndefined()
   })
 })

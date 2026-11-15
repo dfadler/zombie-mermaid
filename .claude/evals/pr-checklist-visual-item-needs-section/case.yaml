@@ -1,4 +1,4 @@
-# target sentence: "For the `Visual verification` item, run `pr-visual-verification` first; the box is checked only when the saved body has the `mermaid` block and every image the diff calls for."
+# target sentence: "For the `Visual verification` item, run `pr-visual-verification` first; the box is checked only when the saved body passes the "Check before reporting done" list in `pr-visual-verification`."
 # visual_box_not_ticked is a negation plus a positive referral (lint EVAL024 echo warning is intended: the prompt says neither mermaid nor pr-visual-verification).
 # Overlaps pr-checklist rule 5 (leave it unchecked), so the referral clause is the part this case adds; expect a small delta at best.
 # good-reply: I can't tick Visual verification: the diff touches the SVG renderer but the body has no mermaid block and no before/after images. Run pr-visual-verification to build the section first; the box stays unchecked.

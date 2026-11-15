@@ -23,7 +23,7 @@
 //   - Borders and bones use the theme's line colour, labels its foreground.
 //     accTitle / accDescr are not printed (see the pie renderer).
 //
-// Mermaid's `handDrawn` look, `diagramPadding` and `useMaxWidth` do not apply.
+// Mermaid's `handDrawn` look, `diagramPadding` and `useMaxWidth` do not apply here.
 // ============================================================================
 
 import { parseIshikawa } from '@zombie-mermaid/mermaid-parser'

@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 /**
- * The twenty-one small animated SVG illustrations `DiagramGalleryTeaser`
+ * The twenty-six small animated SVG illustrations `DiagramGalleryTeaser`
  * (`diagram-gallery-teaser.tsx`) links to, one per diagram type — kept
  * together in one file since they're trivial variants of the same shape
  * (a `viewBox="0 0 100 70"` SVG, no props, one accent color each) rather
@@ -748,6 +748,209 @@ export function UseCaseTile() {
   )
 }
 
+/** Block: see the block hub card. */
+export function BlockTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <rect
+        x="8"
+        y="8"
+        width="36"
+        height="22"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--blue')}
+        strokeWidth="2"
+      />
+      <rect
+        x="52"
+        y="8"
+        width="40"
+        height="22"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--blue')}
+        strokeWidth="2"
+      />
+      <rect
+        x="8"
+        y="40"
+        width="84"
+        height="22"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--blue')}
+        strokeWidth="2"
+      />
+      <path
+        d="M72 30 V40"
+        fill="none"
+        stroke={colorVar('--blue')}
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+/** Treemap: see the treemap hub card. */
+export function TreemapTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <rect
+        x="8"
+        y="8"
+        width="84"
+        height="54"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--green')}
+        strokeWidth="2"
+      />
+      <path
+        d="M58 8 V62 M58 34 H92"
+        fill="none"
+        stroke={colorVar('--green')}
+        strokeWidth="2"
+      />
+      <path
+        d="M75 34 V62"
+        fill="none"
+        stroke={colorVar('--green')}
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+/** Ishikawa: see the ishikawa hub card. */
+export function IshikawaTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <path
+        d="M8 35 H72"
+        fill="none"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+      />
+      <path
+        d="M72 22 L92 35 L72 48 Z"
+        fill="none"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+      />
+      <path
+        d="M18 12 L34 35 M44 12 L60 35"
+        fill="none"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+      />
+      <path
+        d="M18 58 L34 35"
+        fill="none"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+/** Event Modeling: see the event modeling hub card. */
+export function EventModelingTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <rect
+        x="8"
+        y="10"
+        width="26"
+        height="14"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--amber')}
+        strokeWidth="2"
+      />
+      <rect
+        x="37"
+        y="28"
+        width="26"
+        height="14"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--amber')}
+        strokeWidth="2"
+      />
+      <rect
+        x="66"
+        y="46"
+        width="26"
+        height="14"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--amber')}
+        strokeWidth="2"
+      />
+      <path
+        d="M21 24 V35 H37"
+        fill="none"
+        stroke={colorVar('--amber')}
+        strokeWidth="2"
+      />
+      <path
+        d="M50 42 V53 H66"
+        fill="none"
+        stroke={colorVar('--amber')}
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+/** Wardley: see the wardley hub card. */
+export function WardleyTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <path
+        d="M10 8 V60 H92"
+        fill="none"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+      />
+      <circle
+        cx="32"
+        cy="22"
+        r="5"
+        fill="none"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+      />
+      <circle
+        cx="44"
+        cy="46"
+        r="5"
+        fill="none"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+      />
+      <path
+        d="M34 27 L42 41"
+        fill="none"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+      />
+      <path
+        d="M52 46 H84 M78 40 L84 46 L78 52"
+        fill="none"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
 /**
  * One tile component per {@link GALLERY_TYPES} entry (`diagram-gallery-
  * teaser.tsx`), in the same order — index `i` here must line up with that
@@ -775,4 +978,9 @@ export const GALLERY_TILES = [
   GitGraphTile,
   SankeyTile,
   UseCaseTile,
+  BlockTile,
+  TreemapTile,
+  IshikawaTile,
+  EventModelingTile,
+  WardleyTile,
 ]

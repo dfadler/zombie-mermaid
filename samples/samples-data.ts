@@ -4567,6 +4567,27 @@ data Details {
   A->>B: wrap: Supercalifragilisticexpialidocious_and_more_words here
   Note over A: wrap: Pneumonoultramicroscopicsilicovolcanoconiosis is long`,
   },
+  {
+    title: 'Sequence: Wrapped Message Width',
+    category: 'Sequence',
+    description:
+      'A wrapped message wraps at the lifeline gap that its own first wrap sized, so a long word splits in two lines at width 120, as mermaid 12.3.0 does (#3197).',
+    source: `%%{init: {"sequence": {"wrap": true, "width": 120}}}%%
+sequenceDiagram
+  participant A as Supercalifragilisticexpialidocious
+  A->>B: Pneumonoultramicroscopicsilicovolcanoconiosis
+  Note over B: Pneumonoultramicroscopicsilicovolcanoconiosis`,
+  },
+  {
+    title: 'Sequence: Wrapped Message Prefix Width',
+    category: 'Sequence',
+    description:
+      'A wrap: message at the default width wraps at the sized lifeline gap, and a wider width keeps the word whole (#3197).',
+    source: `sequenceDiagram
+  A->>B: wrap: one two three four five six seven eight nine ten eleven twelve
+  B->>A: wrap: Pneumonoultramicroscopicsilicovolcanoconiosis
+  Note over A,B: nowrap: Pneumonoultramicroscopicsilicovolcanoconiosis`,
+  },
   // ── Block shapes and block arrows (#3106). Appended last so earlier samples keep their baseline index. ──
   {
     title: 'Block: Node Shapes',

@@ -5,7 +5,11 @@ import type {
   MermaidNode,
   MermaidSubgraph,
 } from '@zombie-mermaid/core'
+import { parseStyleProps } from '@zombie-mermaid/core'
 import type { UsecaseDiagram } from './types.ts'
+
+const markerAt = (arrow: string, kind: 'circle' | 'cross') =>
+  arrow.endsWith('Start') ? { startMarker: kind } : { endMarker: kind }
 
 /** The node id of the note drawn for `note for <target>`, the nth in the source. */
 export const usecaseNoteId = (n: number): string => `note-${n}`
@@ -18,14 +22,31 @@ export const usecaseNoteId = (n: number): string => `note-${n}`
  */
 export function usecaseToGraph(diagram: UsecaseDiagram): MermaidGraph {
   const nodes = new Map<string, MermaidNode>()
-  for (const a of diagram.actors)
-    nodes.set(a.id, { id: a.id, label: a.label, shape: 'usecase-actor' })
-  for (const u of diagram.useCases)
+  const classDefs = new Map<string, Record<string, string>>()
+  for (const c of diagram.classDefs)
+    classDefs.set(c.id, parseStyleProps(c.styles.join(',')))
+  const classAssignments = new Map<string, string>()
+  const nodeStyles = new Map<string, Record<string, string>>()
+  // The stereotype is folded into the label, as «stereotype» above it.
+  const labelOf = (e: { label: string; stereotype?: string }): string =>
+    e.stereotype === undefined ? e.label : `«${e.stereotype}»\n${e.label}`
+  const styled = (e: { id: string; classes?: string[]; styles?: string[] }) => {
+    if (e.classes?.length) classAssignments.set(e.id, e.classes.at(-1)!)
+    if (e.styles?.length)
+      nodeStyles.set(e.id, parseStyleProps(e.styles.join(',')))
+  }
+  for (const a of diagram.actors) {
+    styled(a)
+    nodes.set(a.id, { id: a.id, label: labelOf(a), shape: 'usecase-actor' })
+  }
+  for (const u of diagram.useCases) {
+    styled(u)
     nodes.set(u.id, {
       id: u.id,
-      label: u.label,
+      label: labelOf(u),
       shape: u.shape === 'rect' ? 'usecase-rect' : 'usecase-ellipse',
     })
+  }
   diagram.notes.forEach((note, i) =>
     nodes.set(usecaseNoteId(i), {
       id: usecaseNoteId(i),
@@ -40,9 +61,20 @@ export function usecaseToGraph(diagram: UsecaseDiagram): MermaidGraph {
       source: r.source,
       target: r.target,
       style: dotted ? 'dotted' : 'solid',
-      hasArrowStart: r.type === 'association' && r.arrow === 'backward',
-      hasArrowEnd: r.type !== 'association' || r.arrow === 'forward',
+      hasArrowStart:
+        r.type === 'association' &&
+        (r.arrow === 'backward' || r.arrow.endsWith('Start')),
+      hasArrowEnd:
+        r.type !== 'association' ||
+        r.arrow === 'forward' ||
+        r.arrow.endsWith('End'),
       ...(r.type === 'generalization' && { endMarker: 'triangle' as const }),
+      ...(r.arrow.startsWith('circle') && markerAt(r.arrow, 'circle')),
+      ...(r.arrow.startsWith('cross') && markerAt(r.arrow, 'cross')),
+      ...(r.id !== undefined && { id: r.id }),
+      ...((r.animate !== undefined || r.animation !== undefined) && {
+        animate: r.animate !== false,
+      }),
       ...(dotted
         ? { label: `«${r.type}»` }
         : r.label !== undefined
@@ -72,9 +104,9 @@ export function usecaseToGraph(diagram: UsecaseDiagram): MermaidGraph {
     nodes,
     edges,
     subgraphs,
-    classDefs: new Map(),
-    classAssignments: new Map(),
-    nodeStyles: new Map(),
+    classDefs,
+    classAssignments,
+    nodeStyles,
     linkStyles: new Map(),
     interactions: new Map(),
   }

@@ -1,4 +1,4 @@
-# target sentence: "**ASCII**: invoke `verify-ascii-terminal` and use its before.png/after.png. Never Playwright or visual-diff output for ASCII."
+# target sentence: "**ASCII**: invoke `verify-ascii-terminal` and use its before.png/after.png. Take the ASCII images from that skill, never from Playwright or `visual-diff`."
 # No skill_fired grader: first paid run showed the skill is not invoked for this yes/no question (0 of 3 and 2 of 3 fires) while the reply still carried the rule.
 # good-reply: Yes for the SVG half, a browser screenshot is fine there. For the ASCII half no: it must be a real terminal capture (verify-ascii-terminal), not the demo panel or a Playwright shot.
 # bad-reply: Sounds good. Playwright works for both the SVG and the ASCII panel; a real terminal capture or verify-ascii-terminal is overkill here.

@@ -152,7 +152,7 @@
       "class": "b",
       "source": "this renderer's own output, accepted once when the test was written; the themeVariables mapping rules were measured on mermaid 12.1.0 and 12.2.0 (test header)",
       "owner": "src/__tests__/theme-variables-2108.test.ts",
-      "verdict": "re-measured on 12.3.0: primary*/lineColor/pie1-3/pie12 and the wrap at 13 match; DIVERGES: an invalid pie colour paints #333 in mermaid, the default palette here; invalid or unsafe primaryColor/lineColor make mermaid throw, here they are ignored; theme base draws the node border as a gradient, here solid; primaryColor alone also derives border, line and text in mermaid, here only the fill (#2679)",
+      "verdict": "re-measured on 12.3.0: primary*/lineColor/pie1-3/pie12 and the wrap at 13 match; DIVERGES: an invalid pie colour paints #333 in mermaid, the default palette here; an unparsable primaryColor/lineColor/primaryTextColor makes mermaid throw and now throws here too (#3163); theme base draws the node border as a gradient, here solid; primaryColor alone derives the border (hsl s-40 l-10) in mermaid and here (#3165); it leaves the flowchart line and text at their defaults on 12.3.0 (#2679)",
       "mermaid": "12.3.0"
     },
     {
@@ -412,7 +412,7 @@
       "class": "b",
       "source": "this renderer's own output, accepted once when the test was written",
       "owner": "src/__tests__/front-matter-2585.test.ts",
-      "verdict": "title drawn on every type but C4/architecture, as mermaid 12.3.0; viewBox band identical for flowchart, state, pie, c4, architecture (54px, y -25); DIVERGES: er and class band is 52px in mermaid vs 54 here, sequence 40px vs 36 (#2679)",
+      "verdict": "title drawn on every type but C4/architecture, as mermaid 12.3.0; viewBox band matches for every type (flowchart, state, pie, c4, architecture 54px; er, class 52px; sequence 40px; text y -25) (#2679, #3166)",
       "mermaid": "12.3.0"
     },
     {
@@ -550,7 +550,7 @@
       "source": "this renderer's own output, accepted once when the test was written",
       "owner": "__tests__/ascii-parallel-lane-reversal.test.ts",
       "mermaid": "12.3.0",
-      "verdict": "mermaid 12.3.0 draws the four labelled edges (VW, 38, Fp, Zq) as four separate strokes; the ASCII snapshots draw the same four with no stray +, checked by the test's assertions; the snapshots pin this renderer's output only"
+      "verdict": "mermaid 12.3.0 draws the four labelled edges (VW, 38, Fp, Zq) as four separate strokes; the ASCII snapshots draw the same four with no stray + and no crossing (#3161), checked by the test's assertions, though VW and 38 still leave in the opposite order from mermaid 12.3.0; the snapshots pin this renderer's output only"
     },
     {
       "paths": [

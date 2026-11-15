@@ -50,11 +50,19 @@ describe('cluster-exit siblings use the target flow face (#2737)', () => {
     expect(out).not.toMatch(/[◄►]/)
   })
 
-  it('leaves a lone pair of siblings to ordinary routing', () => {
-    const out = render(src(2))
-    expect(checkAll(out, { unicode: true })).toEqual([])
-    expect(out.match(/[▼◄►]/g)).toHaveLength(3)
-  })
+  it.each([false, true])(
+    'draws a lone pair as two parallel strokes into the top face (#2787, useAscii=%s)',
+    (useAscii) => {
+      const out = render(src(2), useAscii)
+      const lines = below(out)
+      const heads = useAscii ? /v/g : /▼/g
+      const headRows = lines.filter((l) => (l.match(heads) ?? []).length > 0)
+      expect(headRows).toHaveLength(1)
+      expect(headRows[0]!.match(heads)).toHaveLength(2)
+      expect(lines.some((l) => /[◄►]/.test(l) || /[<>]/.test(l))).toBe(false)
+      expect(checkAll(out, { unicode: !useAscii })).toEqual([])
+    },
+  )
 
   it('keeps the side faces for a wide label', () => {
     const out = render(src(3).replace('|2|', '|second|'))

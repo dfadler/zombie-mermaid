@@ -9,6 +9,7 @@ import { C4InitLayout } from '@zombie-mermaid/core';
 import { ClassInitLayout } from '@zombie-mermaid/core';
 import { Direction } from '@zombie-mermaid/core';
 import { ErInitLayout } from '@zombie-mermaid/core';
+import { InitConfig } from '@zombie-mermaid/core';
 import { JourneyInitConfig } from '@zombie-mermaid/core';
 import { MermaidGraph } from '@zombie-mermaid/core';
 import { NodeInteraction } from '@zombie-mermaid/core';
@@ -24,6 +25,7 @@ import { Statement } from '@zombie-mermaid/core';
 import { StyleDirectives } from '@zombie-mermaid/core';
 import { ThemeVariables } from '@zombie-mermaid/core';
 import { toDirection } from '@zombie-mermaid/core';
+import { TreemapInitConfig } from '@zombie-mermaid/core';
 import { XyChartInitConfig } from '@zombie-mermaid/core';
 
 // @public
@@ -690,6 +692,7 @@ export interface GitGraphConfig {
     theme?: string;
     // (undocumented)
     titleTopMargin: number;
+    useMaxWidth: boolean;
 }
 
 // @public (undocumented)
@@ -721,6 +724,7 @@ export function isExcludedDate(chart: Pick<GanttChart, 'includes' | 'excludes' |
 
 // @public
 export interface Ishikawa {
+    diagramPadding?: number;
     // (undocumented)
     root?: IshikawaNode;
 }
@@ -1707,6 +1711,8 @@ export interface PositionedGitGraph {
         x: number;
         y: number;
     };
+    // (undocumented)
+    useMaxWidth: boolean;
     viewBox: {
         x: number;
         y: number;
@@ -2763,6 +2769,7 @@ export { toDirection }
 
 // @public
 export interface Treemap {
+    config?: TreemapInitConfig;
     roots: TreemapNode[];
     // (undocumented)
     title?: string;
@@ -2787,12 +2794,19 @@ export interface TreemapStyle {
 }
 
 // @public
+export function treemapValueFormatter(spec?: string): (v: number) => string;
+
+// @public
 export interface UsecaseActor {
+    classes?: string[];
     // (undocumented)
     id: string;
     // (undocumented)
     label: string;
     parentId?: string;
+    stereotype?: string;
+    // (undocumented)
+    styles?: string[];
 }
 
 // @public
@@ -2807,6 +2821,8 @@ export interface UsecaseBoundary {
 // @public
 export interface UsecaseCase {
     // (undocumented)
+    classes?: string[];
+    // (undocumented)
     id: string;
     // (undocumented)
     label: string;
@@ -2814,6 +2830,18 @@ export interface UsecaseCase {
     parentId?: string;
     // (undocumented)
     shape: 'ellipse' | 'rect';
+    // (undocumented)
+    stereotype?: string;
+    // (undocumented)
+    styles?: string[];
+}
+
+// @public
+export interface UsecaseClassDef {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    styles: string[];
 }
 
 // @public (undocumented)
@@ -2822,6 +2850,8 @@ export interface UsecaseDiagram {
     actors: UsecaseActor[];
     // (undocumented)
     boundaries: UsecaseBoundary[];
+    // (undocumented)
+    classDefs: UsecaseClassDef[];
     // (undocumented)
     direction: UsecaseDirection;
     // (undocumented)
@@ -2848,7 +2878,12 @@ export const usecaseNoteId: (n: number) => string;
 
 // @public (undocumented)
 export interface UsecaseRelationship {
-    arrow: 'forward' | 'backward' | 'none';
+    // (undocumented)
+    animate?: boolean;
+    // (undocumented)
+    animation?: string;
+    arrow: 'forward' | 'backward' | 'none' | 'circleEnd' | 'crossEnd' | 'circleStart' | 'crossStart';
+    id?: string;
     // (undocumented)
     label?: string;
     // (undocumented)
@@ -2932,6 +2967,7 @@ export interface WardleyMap {
     };
     stageBoundaries?: number[];
     stages?: string[];
+    theme?: InitConfig['wardleyTheme'];
     title?: string;
     // (undocumented)
     trends: WardleyTrend[];

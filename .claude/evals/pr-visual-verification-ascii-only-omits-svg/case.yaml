@@ -1,4 +1,4 @@
-# target sentence: "A heading or sentence for a half that does not apply is deleted, not left empty. Say why in one line"
+# target sentence: "Delete the heading and table of a half that does not apply, and add one line saying why"
 # no_svg_heading is a pure negation (lint EVAL024 echo warning is intended); it sits beside positive graders.
 # good-reply: ## Visual verification ```mermaid graph LR A --> B ``` SVG unchanged: ASCII-only path. ### ASCII (real terminal) | Before (main @ abc1234) | After | ![before](URL) ![after](URL)
 # bad-reply: ## Visual verification ```mermaid graph LR A --> B ``` ### SVG | Before | After | TODO ### ASCII | Before | After | ![before](URL)

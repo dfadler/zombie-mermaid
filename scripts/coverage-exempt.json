@@ -327,7 +327,12 @@
   {
     "file": "scripts/treemap-oracle.ts",
     "reason": "dev/QA tooling CLI: runs on import and needs a real Chromium to render the mermaid.js oracle; the comparison is unit-tested in scripts/lib/treemap-agreement.ts",
-    "maxLines": 79
+    "maxLines": 50
+  },
+  {
+    "file": "scripts/lib/treemap-measure.ts",
+    "reason": "Playwright-driven helper: needs a real Chromium (official mermaid render), only reachable from the treemap-oracle and layout-oracle CLIs",
+    "maxLines": 50
   },
   {
     "file": "scripts/wardley-oracle.ts",
@@ -392,7 +397,7 @@
   {
     "file": "scripts/lib/separate-scores.ts",
     "reason": "Playwright-driven helper: needs a real Chromium (official mermaid renders), only reachable from the layout-oracle CLI; each figure is unit-tested in its own *-agreement.ts",
-    "maxLines": 65
+    "maxLines": 68
   },
   {
     "file": "scripts/lib/kanban-measure.ts",

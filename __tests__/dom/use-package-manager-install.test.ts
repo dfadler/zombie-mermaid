@@ -173,6 +173,27 @@ describe('usePackageManagerInstall', () => {
     expect(result.current.copied).toBe(false)
   })
 
+  it('does not arm the copied-revert timer when the write resolves after unmount (#3177)', async () => {
+    vi.useFakeTimers()
+    let resolveWrite: () => void = () => {}
+    const writeText = vi.fn(
+      () => new Promise<void>((resolve) => (resolveWrite = resolve)),
+    )
+    const { result, unmount } = renderHook(() =>
+      usePackageManagerInstall('npm install zombie-mermaid', {
+        clipboard: { writeText },
+      }),
+    )
+    act(() => {
+      result.current.copyCommand()
+    })
+    unmount()
+    await vi.advanceTimersByTimeAsync(0)
+    resolveWrite()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('copyCommand does nothing when the injected environment has no clipboard', async () => {
     const { result } = renderHook(() =>
       usePackageManagerInstall(COMMAND, { clipboard: undefined }),

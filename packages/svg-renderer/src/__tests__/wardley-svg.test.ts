@@ -160,3 +160,48 @@ evolve Nowhere 0.9`)
     expect(out.match(/class="wardley-stage-divider"/g)).toHaveLength(1)
   })
 })
+
+describe('themeVariables.wardley', () => {
+  const body =
+    'wardley-beta\ncomponent A [0.5, 0.5]\ncomponent B [0.2, 0.2]\nA -> B\nevolve B 0.6'
+  const tv = (v: string): string =>
+    `%%{init: {"themeVariables": {"wardley": ${v}}}}%%\n${body}`
+
+  it('recolours the drawing after the library defaults', () => {
+    const svg = renderMermaidSVG(
+      tv(
+        '{"backgroundColor":"#0f0","axisColor":"#f01","axisTextColor":"#f02","componentFill":"#f03","componentStroke":"#f04","componentLabelColor":"#f05","linkStroke":"#f06","evolutionStroke":"#f07","annotationStroke":"#f08","annotationTextColor":"#f09","annotationFill":"#f0a"}',
+      ),
+    )
+    for (const c of [
+      '0f0',
+      'f01',
+      'f02',
+      'f03',
+      'f04',
+      'f05',
+      'f06',
+      'f07',
+      'f08',
+      'f09',
+      'f0a',
+    ])
+      expect(svg).toContain(`#${c}`)
+    expect(svg.lastIndexOf('#f01')).toBeGreaterThan(
+      svg.indexOf('.wardley-pipeline-box'),
+    )
+  })
+
+  it('drops a value that is not a safe colour and adds no block without one', () => {
+    expect(renderMermaidSVG(tv('{"axisColor":"url(http://x)"}'))).not.toContain(
+      'url(http',
+    )
+    expect(renderMermaidSVG(body)).not.toContain('#f01')
+  })
+
+  it('applies one colour on its own', () => {
+    const svg = renderMermaidSVG(tv('{"linkStroke":"#abc123"}'))
+    expect(svg).toContain('#abc123')
+    expect(svg).not.toContain('.wardley-background { fill: #')
+  })
+})

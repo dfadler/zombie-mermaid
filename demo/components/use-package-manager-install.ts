@@ -156,6 +156,7 @@ export function usePackageManagerInstall(
   const revertTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   )
+  const unmounted = useRef(false)
   const triggerRef = useRef<HTMLSpanElement | null>(null)
   const popoverRef = useRef<HTMLSpanElement | null>(null)
   const itemRefs = useRef<(HTMLSpanElement | null)[]>([])
@@ -227,6 +228,16 @@ export function usePackageManagerInstall(
     // observably differ.
   }, [popoverOpen])
 
+  // A clipboard write that resolves after unmount must not arm a new revert
+  // timer: it would fire setState on a dead root, after jsdom teardown in
+  // tests (react-dom "window is not defined", #3177).
+  useEffect(() => {
+    unmounted.current = false
+    return () => {
+      unmounted.current = true
+    }
+  }, [])
+
   function copyCommand(): void {
     // `env` omitted entirely -> read `navigator.clipboard` fresh (this
     // hook's pre-#933 behavior); `env` passed explicitly -> use exactly
@@ -239,6 +250,7 @@ export function usePackageManagerInstall(
         : navigator.clipboard
     if (!displayedCommand || !clipboard) return
     clipboard.writeText(displayedCommand).then(() => {
+      if (unmounted.current) return
       setCopied(true)
       if (revertTimer.current) clearTimeout(revertTimer.current)
       revertTimer.current = setTimeout(
