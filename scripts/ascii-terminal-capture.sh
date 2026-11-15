@@ -146,10 +146,11 @@ python3 + pillow are still required for the crop. The PNG is rendered at 2x.
 Not combinable with ASCII_AGG_RUNTIME=docker. Default is agg.
 
 Example (before/after a change, comparing against main):
-  mkdir -p tmp-base-ref
-  git archive main src packages tsconfig.json | tar -x -C tmp-base-ref
+  base=$(mktemp -d /tmp/scratch.XXXXXX)
+  git archive main src packages tsconfig.json | tar -x -C "$base"
+  ln -s "$PWD/node_modules" "$base/node_modules"
   scripts/ascii-terminal-capture.sh ./src/index.ts 12 /tmp/after
-  scripts/ascii-terminal-capture.sh ./tmp-base-ref/src/index.ts 12 /tmp/before
+  scripts/ascii-terminal-capture.sh "$base/src/index.ts" 12 /tmp/before
   diff /tmp/before.txt /tmp/after.txt
 
 Requires (install once): brew install asciinema agg && pip3 install pillow

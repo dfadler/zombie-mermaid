@@ -489,7 +489,8 @@ function renderMermaidSVGRaw(
     emit,
   }
   let svg = registered.renderSvg(positioned, ctx, options)
-  if (acc.frontMatterTitle) svg = addFrontMatterTitle(svg, acc.frontMatterTitle)
+  if (acc.frontMatterTitle)
+    svg = addFrontMatterTitle(svg, acc.frontMatterTitle, diagramType)
   return { svg, colors }
 }
 

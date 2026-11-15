@@ -3,7 +3,7 @@
  * labels, label column, milestones, vert markers, charsets and colour.
  * Whole-output goldens live in testdata/*\/gantt_*.txt.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { displayWidth } from '../display-width.ts'
 
@@ -202,5 +202,46 @@ describe('gantt ASCII: review fixes', () => {
     })
     expect(out).toContain('&lt;b&gt;x&lt;/b&gt;')
     expect(out).not.toContain('<b>')
+  })
+})
+
+describe('gantt ASCII: excludes and today', () => {
+  const ex =
+    head + '  excludes weekends\n  A :2024-03-01, 1d\n  B :2024-03-11, 1d'
+
+  it('shades empty cells of excluded days and lists them in the legend', () => {
+    const out = render(ex)
+    expect(out).toContain('·')
+    expect(out).toContain('· excluded')
+    expect(render(ex, true)).toContain(', excluded')
+    // Without excludes there is no shading
+    expect(render(head + '  A :2024-03-01, 10d')).not.toContain('·')
+  })
+
+  it('leaves bars on top of the shading', () => {
+    const out = lines(
+      render(
+        head + '  excludes weekends\n  A :2024-03-04, 5d\n  B :2024-03-11, 1d',
+      ),
+    )
+    // The weekend inside the stretched bar stays solid
+    expect(out[0]).toMatch(/^A █{30,}/)
+  })
+
+  it('draws the today line only when the clock is inside the chart', () => {
+    const src = head + '  A :2024-03-01, 10d'
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(new Date('2024-03-06T00:00:00Z'))
+      const inside = render(src)
+      expect(inside).toContain('│')
+      expect(inside).toContain('│ today')
+      expect(render(src, true)).toContain('| today')
+      expect(render(src + '\n  todayMarker off')).not.toContain('today')
+      vi.setSystemTime(new Date('2030-01-01T00:00:00Z'))
+      expect(render(src)).not.toContain('today')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

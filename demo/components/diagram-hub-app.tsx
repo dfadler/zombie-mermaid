@@ -29,6 +29,12 @@ import {
   PacketIcon,
   GitGraphIcon,
   SankeyIcon,
+  UseCaseIcon,
+  BlockIcon,
+  TreemapIcon,
+  IshikawaIcon,
+  EventModelingIcon,
+  WardleyIcon,
   PieIcon,
   QuadrantIcon,
   SequenceIcon,
@@ -72,6 +78,12 @@ const HUB_TYPE_ICONS: Record<
   packet: PacketIcon,
   gitgraph: GitGraphIcon,
   sankey: SankeyIcon,
+  usecase: UseCaseIcon,
+  block: BlockIcon,
+  treemap: TreemapIcon,
+  ishikawa: IshikawaIcon,
+  eventmodeling: EventModelingIcon,
+  wardley: WardleyIcon,
 }
 const HUB_ICON_SIZE = 200
 

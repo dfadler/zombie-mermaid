@@ -454,7 +454,10 @@ function planOne(
   if (
     exits.size < 2 &&
     !regions &&
-    !(exits.size === 1 && (only!.parallelLane?.total ?? 0) >= 3)
+    !(
+      exits.size === 1 &&
+      ((only!.parallelLane?.total ?? 0) >= 3 || clusterFlowGroup(graph, only!))
+    )
   )
     return null
 

@@ -46,6 +46,8 @@ export interface GitGraphConfig {
   parallelCommits: boolean
   titleTopMargin: number
   diagramPadding: number
+  /** `true` (Mermaid's default): `width="100%"` plus `max-width`; `false`: fixed `width` and `height`. */
+  useMaxWidth: boolean
   /** `theme` as written (`redux`, `neo-dark`, ...): picks Mermaid's geometry and font; colours stay the caller's. */
   theme?: string
   /** `look` as written; `neo` adds a drop shadow to the branch label boxes. */
@@ -62,6 +64,7 @@ export const GIT_GRAPH_DEFAULTS: GitGraphConfig = {
   parallelCommits: false,
   titleTopMargin: 25,
   diagramPadding: 8,
+  useMaxWidth: true,
 }
 
 /** A parsed Mermaid gitGraph. */
@@ -171,6 +174,7 @@ export interface PositionedGitGraph {
   /** The centred heading; `x` is the middle of the drawing. */
   title?: { text: string; x: number; y: number }
   showBranches: boolean
+  useMaxWidth: boolean
   look: PositionedGitLook
 }
 

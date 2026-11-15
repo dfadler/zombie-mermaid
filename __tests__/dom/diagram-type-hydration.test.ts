@@ -372,7 +372,12 @@ describe('demo/diagram-hub-client.tsx props contract', () => {
 })
 
 describe('NavIsland hydrates side by side with each diagram app (#805)', () => {
+  let navRoot: Root | undefined
   afterEach(() => {
+    // Unmount the nav root too (#3177): its copy-feedback timer otherwise
+    // outlives jsdom teardown and react-dom throws "window is not defined".
+    if (navRoot) act(() => navRoot?.unmount())
+    navRoot = undefined
     vi.restoreAllMocks()
     // See nav-hydration.test.ts's identical afterEach comment: userEvent's
     // own jsdom Clipboard polyfill must not leak between tests.
@@ -417,7 +422,7 @@ describe('NavIsland hydrates side by side with each diagram app (#805)', () => {
       )
     })
     act(() => {
-      hydrateNav()
+      navRoot = hydrateNav()
     })
 
     const user = userEvent.setup()
@@ -450,7 +455,7 @@ describe('NavIsland hydrates side by side with each diagram app (#805)', () => {
       root = hydrateRoot(container, createElement(DiagramHubApp, HUB_PROPS))
     })
     act(() => {
-      hydrateNav()
+      navRoot = hydrateNav()
     })
 
     const user = userEvent.setup()

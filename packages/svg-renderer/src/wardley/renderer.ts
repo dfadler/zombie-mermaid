@@ -16,8 +16,9 @@
 // `--fg`, text is `--_text`, the evolution arrows (Mermaid's `#dc3545`) use the
 // theme accent. Mermaid's fixed greys on the build/buy/outsource overlays
 // become mixes of `--fg` into `--bg`. There is no interactivity: Mermaid has
-// none for this type. The `wardley-beta` config keys and
-// `themeVariables.wardley` are not read (see docs/known-differences.md).
+// none for this type. `themeVariables.wardley` recolours it. The `wardley-beta`
+// config keys are not read: Mermaid 12.3.0 drops them from a directive or
+// front matter (only `mermaid.initialize` sets them; see docs/known-differences.md).
 // ============================================================================
 
 import type { WardleyMap, WardleyNode } from '@zombie-mermaid/mermaid-parser'
@@ -49,16 +50,19 @@ function n(v: number): string {
   return s === '-0' ? '0' : s
 }
 
-const STYLE = (nonce?: string): string => `${styleOpenTag(nonce)}
+const STYLE = (
+  cfg: { axisFontSize: number; labelFontSize: number },
+  nonce?: string,
+): string => `${styleOpenTag(nonce)}
   .wardley-background { fill: var(--bg); }
-  .wardley-title { fill: var(--_text); font-size: ${n(WARDLEY.axisFontSize * 1.05)}px; font-weight: bold; text-anchor: middle; dominant-baseline: middle; }
+  .wardley-title { fill: var(--_text); font-size: ${n(cfg.axisFontSize * 1.05)}px; font-weight: bold; text-anchor: middle; dominant-baseline: middle; }
   .wardley-axes line { stroke: var(--fg); stroke-width: 1; }
-  .wardley-axis-label { fill: var(--_text); font-size: ${WARDLEY.axisFontSize}px; font-weight: bold; text-anchor: middle; }
-  .wardley-stage-label { fill: var(--_text); font-size: ${WARDLEY.axisFontSize - 2}px; text-anchor: middle; }
+  .wardley-axis-label { fill: var(--_text); font-size: ${cfg.axisFontSize}px; font-weight: bold; text-anchor: middle; }
+  .wardley-stage-label { fill: var(--_text); font-size: ${cfg.axisFontSize - 2}px; text-anchor: middle; }
   .wardley-stage-divider { stroke: var(--fg); stroke-width: 1; stroke-dasharray: 5 5; opacity: 0.8; }
   .wardley-link { stroke: var(--fg); stroke-width: 1; }
   .wardley-link--dashed { stroke-dasharray: 6 6; }
-  .wardley-link-label { fill: var(--_text); font-size: ${WARDLEY.labelFontSize}px; text-anchor: middle; dominant-baseline: middle; }
+  .wardley-link-label { fill: var(--_text); font-size: ${cfg.labelFontSize}px; text-anchor: middle; dominant-baseline: middle; }
   .wardley-link-arrow { fill: var(--fg); stroke: none; }
   .wardley-pipeline-box { fill: none; stroke: var(--fg); stroke-width: 1.5; }
   .wardley-pipeline-evolution-link { stroke: var(--fg); stroke-width: 1; stroke-dasharray: 4 4; }
@@ -71,7 +75,7 @@ const STYLE = (nonce?: string): string => `${styleOpenTag(nonce)}
   .wardley-node .wardley-market-dot { stroke-width: 2; }
   .wardley-node line { stroke: var(--fg); stroke-width: 1; }
   .wardley-node line.wardley-inertia { stroke-width: 6; }
-  .wardley-node-label { fill: var(--_text); font-size: ${WARDLEY.labelFontSize}px; }
+  .wardley-node-label { fill: var(--_text); font-size: ${cfg.labelFontSize}px; }
   .wardley-node--anchor .wardley-node-label { fill: var(--fg); font-weight: bold; text-anchor: middle; dominant-baseline: middle; }
   .wardley-annotation-line { stroke: var(--fg); stroke-width: 1.5; stroke-dasharray: 4 4; }
   .wardley-annotation circle, .wardley-annotations-box rect { fill: var(--bg); stroke: var(--fg); stroke-width: 1.5; }
@@ -81,6 +85,61 @@ const STYLE = (nonce?: string): string => `${styleOpenTag(nonce)}
   .wardley-accelerators path, .wardley-deaccelerators path { fill: var(--bg); stroke: var(--fg); stroke-width: 1; }
   .wardley-accelerators text, .wardley-deaccelerators text { fill: var(--_text); font-size: 10px; font-weight: bold; text-anchor: middle; }
 </style>`
+
+/** `themeVariables.wardley` as CSS, after the defaults it overrides (same specificity, later wins). */
+function themeOverrides(theme: WardleyMap['theme'], nonce?: string): string {
+  if (!theme) return ''
+  const t = theme
+  const rule = (sel: string, prop: string, v: string | undefined): string =>
+    v ? `  ${sel} { ${prop}: ${v}; }\n` : ''
+  const css =
+    rule('.wardley-background', 'fill', t.backgroundColor) +
+    rule('.wardley-axes line', 'stroke', t.axisColor) +
+    rule(
+      '.wardley-title, .wardley-axis-label, .wardley-stage-label, .wardley-link-label, .wardley-notes text, .wardley-accelerators text, .wardley-deaccelerators text',
+      'fill',
+      t.axisTextColor,
+    ) +
+    rule(
+      '.wardley-node circle:not([class]), .wardley-node rect:not([class])',
+      'fill',
+      t.componentFill,
+    ) +
+    rule(
+      '.wardley-node circle, .wardley-node rect, .wardley-node line, .wardley-pipeline-box, .wardley-accelerators path, .wardley-deaccelerators path',
+      'stroke',
+      t.componentStroke,
+    ) +
+    rule(
+      '.wardley-node:not(.wardley-node--anchor) .wardley-node-label',
+      'fill',
+      t.componentLabelColor,
+    ) +
+    rule(
+      '.wardley-link, .wardley-pipeline-evolution-link',
+      'stroke',
+      t.linkStroke,
+    ) +
+    rule('.wardley-link-arrow', 'fill', t.linkStroke) +
+    rule('.wardley-trend', 'stroke', t.evolutionStroke) +
+    rule('.wardley-trend-arrow', 'fill', t.evolutionStroke) +
+    rule(
+      '.wardley-annotation-line, .wardley-annotation circle, .wardley-annotations-box rect',
+      'stroke',
+      t.annotationStroke,
+    ) +
+    rule(
+      '.wardley-annotation text, .wardley-annotations-box text',
+      'fill',
+      t.annotationTextColor,
+    ) +
+    rule(
+      '.wardley-annotation circle, .wardley-annotations-box rect',
+      'fill',
+      t.annotationFill,
+    )
+  return css ? `${styleOpenTag(nonce)}\n${css}</style>` : ''
+}
 
 interface Pos {
   x: number
@@ -99,11 +158,12 @@ export function renderWardleySvg(
   decorative?: boolean,
   emit: SvgEmitOptions = {},
 ): string {
-  const pad = WARDLEY.padding
-  const r = WARDLEY.nodeRadius
+  const cfg = WARDLEY
+  const pad = cfg.padding
+  const r = cfg.nodeRadius
   const squareSize = r * 1.6
-  const width = map.size?.width ?? WARDLEY.width
-  const height = map.size?.height ?? WARDLEY.height
+  const width = map.size?.width ?? cfg.width
+  const height = map.size?.height ?? cfg.height
   const chartW = width - pad * 2
   const chartH = height - pad * 2
   const projectX = (v: number): number => pad + (v / 100) * chartW
@@ -130,7 +190,8 @@ export function renderWardleySvg(
       embedSource,
     ),
     buildStyleBlock(font, false, emit.nonce, emit.bodyFont),
-    STYLE(emit.nonce),
+    STYLE(cfg, emit.nonce),
+    ...(map.theme ? [themeOverrides(map.theme, emit.nonce)] : []),
     '<defs>',
     `<marker id="${markerTrend}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="wardley-trend-arrow"/></marker>`,
     `<marker id="${markerEnd}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="wardley-link-arrow"/></marker>`,
@@ -362,12 +423,10 @@ export function renderWardleySvg(
     } else {
       lx =
         x +
-        (node.labelOffsetX ??
-          WARDLEY.nodeLabelOffset + (node.strategy ? 10 : 0))
+        (node.labelOffsetX ?? cfg.nodeLabelOffset + (node.strategy ? 10 : 0))
       ly =
         y +
-        (node.labelOffsetY ??
-          -(WARDLEY.nodeLabelOffset + (node.strategy ? 10 : 0)))
+        (node.labelOffsetY ?? -(cfg.nodeLabelOffset + (node.strategy ? 10 : 0)))
     }
     p.push(
       `<text class="wardley-node-label" x="${n(lx)}" y="${n(ly)}">${escapeXml(node.label)}</text>`,

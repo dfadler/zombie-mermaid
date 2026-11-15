@@ -1113,6 +1113,32 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before: the long words stay whole and push the diagram wide. After: each splits with a trailing `-`, and the participant name wraps in its box, as in mermaid 12.3.0.',
   },
+  {
+    id: 'ascii-parallel-lanes-hint-order',
+    title: 'ASCII: two parallel pairs out of a decision crossed (BT/TD)',
+    symptom:
+      'Two pairs of parallel edges leaving one decision in a vertical flow drew the second pair’s stroke across the first pair’s. mermaid@12.3.0 nests the strokes without crossing.',
+    source:
+      'flowchart BT\n  n1["F1"]\n  n2["l2"]\n  n3{"3D"}\n  n3 -.->|VW| n2\n  n3 ---|38| n2\n  n3 -->|Fp| n1\n  n3 ==>|Zq| n1',
+    fixCommit: 'c4616191e',
+    pr: 3185,
+    render: 'ascii',
+    lookFor:
+      'Before: the `Zq` stroke runs across the `Fp` stroke. After: the two strokes to `F1` nest and do not cross. `VW` and `38` still leave in the opposite order from mermaid 12.3.0.',
+  },
+  {
+    id: 'ascii-cluster-exit-lone-pair',
+    title: 'ASCII: two edges out of a subgraph to one node',
+    symptom:
+      'Two edges from one subgraph to a node straight below it, with no other exit from the subgraph, left the cluster through a side wall once this fork attached subgraph edges to the frame (#2737). mermaid@12.3.0 draws two parallel strokes from the cluster’s bottom wall into the target’s top face. Upstream beautiful-mermaid does not attach edges to a subgraph at all: it draws a loose `S` node and one edge.',
+    source:
+      'flowchart TD\n  subgraph S [Cluster]\n    a\n  end\n  Start --> S\n  S -->|1| T\n  S -->|2| T',
+    fixCommit: '88cf6d00b',
+    pr: 3193,
+    render: 'ascii',
+    lookFor:
+      'Before (upstream): the frame floats apart from `Start`, a separate `S` box takes the edges, and only the `1` edge reaches `T`. After: `Start` feeds the frame, and both edges leave its bottom wall as parallel strokes into `T`’s top face, labels `1` and `2` side by side, as in mermaid 12.3.0.',
+  },
 ]
 
 /** Entries shown on the page: everything not parked. */

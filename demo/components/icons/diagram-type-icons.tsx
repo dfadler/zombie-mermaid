@@ -831,3 +831,113 @@ export function SankeyIcon({
     </StrokeIcon>
   )
 }
+
+/** The shared fade used by the icons below: one `cls` path pulses, still under reduced motion. */
+function PulseStyle({ cls }: { cls: string }) {
+  return (
+    <style>{`
+      .${cls} { animation: ${cls}-k 2s ease-in-out infinite; }
+      @keyframes ${cls}-k { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+      @media (prefers-reduced-motion: reduce) { .${cls} { animation: none; } }
+    `}</style>
+  )
+}
+
+/** Use case — an actor linked to two use case ovals; the lower link fades. Accent `--pink`. */
+export function UseCaseIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--pink">
+      {animated ? <PulseStyle cls="zm-uc-a" /> : null}
+      <circle cx="5" cy="8" r="2" />
+      <path d="M5 10 V15 M2 12 H8 M5 15 L3 19 M5 15 L7 19" />
+      <ellipse cx="17" cy="7" rx="5" ry="3" />
+      <ellipse cx="17" cy="17" rx="5" ry="3" />
+      <path d="M8 11 L12 8" />
+      <path className={animated ? 'zm-uc-a' : undefined} d="M8 13 L12 16" />
+    </StrokeIcon>
+  )
+}
+
+/** Block — boxes on a grid, one spanning two columns; the lower right fades. Accent `--blue`. */
+export function BlockIcon({ animated = true, ...props }: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--blue">
+      {animated ? <PulseStyle cls="zm-bl-a" /> : null}
+      <rect x="3" y="4" width="7" height="6" rx="1" />
+      <rect x="12" y="4" width="9" height="6" rx="1" />
+      <rect x="3" y="14" width="18" height="6" rx="1" />
+      <path className={animated ? 'zm-bl-a' : undefined} d="M16.5 10 V14" />
+    </StrokeIcon>
+  )
+}
+
+/** Treemap — a rectangle split into nested cells; one cell fades. Accent `--green`. */
+export function TreemapIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--green">
+      {animated ? <PulseStyle cls="zm-tm-a" /> : null}
+      <rect x="3" y="4" width="18" height="16" rx="1" />
+      <path d="M13 4 V20 M13 11 H21" />
+      <path className={animated ? 'zm-tm-a' : undefined} d="M17 11 V20" />
+    </StrokeIcon>
+  )
+}
+
+/** Ishikawa — a fishbone: spine, head and two slanted bones; the lower bone fades. Accent `--violet`. */
+export function IshikawaIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--violet">
+      {animated ? <PulseStyle cls="zm-ik-a" /> : null}
+      <path d="M2 12 H17" />
+      <path d="M17 8 L22 12 L17 16 Z" />
+      <path d="M5 5 L9 12 M11 5 L15 12" />
+      <path className={animated ? 'zm-ik-a' : undefined} d="M5 19 L9 12" />
+    </StrokeIcon>
+  )
+}
+
+/** Event modeling — frames in three lanes joined by arrows; the last arrow fades. Accent `--amber`. */
+export function EventModelingIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--amber">
+      {animated ? <PulseStyle cls="zm-em-a" /> : null}
+      <rect x="2" y="4" width="6" height="4" rx="1" />
+      <rect x="9" y="10" width="6" height="4" rx="1" />
+      <rect x="16" y="16" width="6" height="4" rx="1" />
+      <path d="M5 8 V12 H9" />
+      <path className={animated ? 'zm-em-a' : undefined} d="M12 14 V18 H16" />
+    </StrokeIcon>
+  )
+}
+
+/** Wardley — axes with a component chain and an evolve arrow; the arrow fades. Accent `--cyan`. */
+export function WardleyIcon({
+  animated = true,
+  ...props
+}: DiagramTypeIconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--cyan">
+      {animated ? <PulseStyle cls="zm-wd-a" /> : null}
+      <path d="M3 3 V21 H21" />
+      <circle cx="8" cy="7" r="1.6" />
+      <circle cx="10" cy="15" r="1.6" />
+      <path d="M8 8.6 L10 13.4" />
+      <path
+        className={animated ? 'zm-wd-a' : undefined}
+        d="M12 15 H18 M16 13 L18 15 L16 17"
+      />
+    </StrokeIcon>
+  )
+}

@@ -1,6 +1,7 @@
 {
   "ascii-arrowless-cluster-entry": "d2f439dc3a1c93a9",
   "ascii-back-edges-flow-faces": "4a06510640f417b8",
+  "ascii-cluster-exit-lone-pair": "cd165fe916987289",
   "ascii-edge-line-style-bleed": "bc6de290a14b4c17",
   "ascii-er-stacked-center": "be9351bb20d33098",
   "ascii-face-capacity-loops": "e6b0600b6475c35d",
@@ -13,6 +14,7 @@
   "ascii-lr-bypass-dip": "24ea495ad68a3a11",
   "ascii-lr-compact-labeled-fanout": "88af2db8b7b3c56e",
   "ascii-opposing-edges-diamond": "2b51b41ab773efa9",
+  "ascii-parallel-lanes-hint-order": "8532aadd05ae5cbd",
   "ascii-sequence-self-arrow-in-block": "b5f9bc601253aa62",
   "ascii-sequence-wrap-long-words": "8738c8e1d5cd9acd",
   "ascii-subgraph-self-loops-frame-direction": "4cf86cd944f2a86a",

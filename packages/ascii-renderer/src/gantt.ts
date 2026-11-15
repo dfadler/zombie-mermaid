@@ -32,14 +32,19 @@
 //     `┆` line through every row, with its label under the axis.
 //   - Legend lists only the glyph kinds that appear.
 //
-// Deliberately not drawn: `excludes`/`includes` shading (bars already stretch
-// over excluded days via `renderEnd`) and the `todayMarker` line (it would make
-// the output depend on the clock). accTitle/accDescr are not printed (see the
-// pie renderer). All widths are display widths, like everywhere else here.
+//   - `excludes`/`includes`: empty cells of excluded days show `·` (`,` in
+//     ASCII), as the SVG's shaded ranges. `todayMarker`: a `│` (`|`) column when
+//     the clock is inside the chart's range, as in the SVG; otherwise nothing,
+//     so charts of other periods do not depend on the clock. Both get a legend
+//     entry when drawn.
+//
+// accTitle/accDescr are not printed (see the pie renderer). All widths are
+// display widths, like everywhere else here.
 // ============================================================================
 
 import {
   formatD3Time,
+  isExcludedDate,
   packGanttSection,
   parseGantt,
   timeTicks,
@@ -61,6 +66,8 @@ const UNI = {
   crit: '▓',
   milestone: '◆',
   vert: '┆',
+  shade: '·',
+  today: '│',
   axis: '─',
   tickBottom: '┬',
   tickTop: '┴',
@@ -73,6 +80,8 @@ const ASC = {
   crit: '%',
   milestone: '*',
   vert: ':',
+  shade: ',',
+  today: '|',
   axis: '-',
   tickBottom: '+',
   tickTop: '+',
@@ -116,6 +125,7 @@ export function renderGanttAscii(
   config: AsciiConfig,
   colorMode: ColorMode,
   theme: AsciiTheme,
+  now: number = Date.now(),
 ): string {
   const chart = parseGantt(text)
   const g = config.useAscii ? ASC : UNI
@@ -226,9 +236,43 @@ export function renderGanttAscii(
   if (chart.topAxis) lines.push(tickLabels, axisLine(g.tickTop))
 
   const vertCols = verts.map((v) => pointCol(v.start))
+
+  // `excludes`/`includes`: the columns of excluded days, as the SVG's shaded
+  // ranges. Like Mermaid, a run is shaded only when a non-excluded day follows
+  // it; charts over five years are left unshaded.
+  const DAY = 86_400_000
+  const shadeCols = new Set<number>()
+  if (
+    (chart.excludes.length > 0 || chart.includes.length > 0) &&
+    t1 - t0 <= 5 * 366 * DAY
+  ) {
+    let run: number[] = []
+    for (let d = t0; d <= t1; d += DAY) {
+      if (isExcludedDate(chart, d)) {
+        run.push(d)
+        continue
+      }
+      for (const day of run) {
+        const sod = Math.floor(day / DAY) * DAY
+        const to = Math.min(W, Math.ceil(frac(sod + DAY) * W))
+        for (let c = Math.floor(frac(sod) * W); c < to; c++) shadeCols.add(c)
+      }
+      run = []
+    }
+  }
+
+  // `todayMarker`: drawn only when `now` is inside the chart, as in the SVG, so
+  // charts of other periods stay independent of the clock.
+  const todayCol =
+    chart.todayMarker !== 'off' && now >= t0 && now <= t1
+      ? pointCol(now)
+      : undefined
+  const todayHex = '#ff0000'
   const used = new Set<Kind>()
   rows.forEach((r, i) => {
     const cells: (Cell | undefined)[] = new Array<Cell | undefined>(W)
+    for (const c of shadeCols) cells[c] = { ch: g.shade, hex: theme.line }
+    if (todayCol !== undefined) cells[todayCol] = { ch: g.today, hex: todayHex }
     for (const c of vertCols) cells[c] = { ch: g.vert, hex: theme.line }
     for (const t of r.tasks) {
       const kind = kindOf(t)
@@ -289,6 +333,8 @@ export function renderGanttAscii(
     ([k, name]) => `${paint(g[k], k === 'done' ? theme.line : accent)} ${name}`,
   )
   if (verts.length > 0) legend.push(`${paint(g.vert, theme.line)} marker`)
+  if (shadeCols.size > 0) legend.push(`${paint(g.shade, theme.line)} excluded`)
+  if (todayCol !== undefined) legend.push(`${paint(g.today, todayHex)} today`)
   if (legend.length > 0) lines.push('', '  ' + legend.join('  '))
   return lines.join('\n')
 }

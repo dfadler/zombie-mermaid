@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { renderMermaidSVG } from '../src/index.ts'
+import { scoreTreemap } from '../scripts/lib/treemap-measure.ts'
+import type { RealMermaidSession } from '../scripts/lib/real-mermaid.ts'
 import {
   parseTreemapSvg,
   treemapAgreement,
@@ -101,5 +104,39 @@ describe('treemapBreaches', () => {
       'low (50% < 95%)',
     ])
     expect(treemapBreaches({ ok })).toEqual([])
+  })
+})
+
+describe('scoreTreemap', () => {
+  // A stand-in session whose "official" render is our own, so every sample agrees.
+  const session = {
+    page: {
+      evaluate: async (_fn: unknown, [, src]: [string, string]) =>
+        renderMermaidSVG(src),
+    },
+  } as unknown as RealMermaidSession
+
+  it('scores each treemap sample and filters by title', async () => {
+    const all = await scoreTreemap(session)
+    const titles = Object.keys(all.results)
+    expect(titles.length).toBeGreaterThan(0)
+    expect(all.breaches).toEqual([])
+    const one = await scoreTreemap(session, titles[0]!.toUpperCase())
+    expect(Object.keys(one.results)).toContain(titles[0])
+  })
+
+  it('reports a sample that fails to render as errored', async () => {
+    const bad = {
+      page: {
+        evaluate: async () => {
+          throw new Error('boom\nstack')
+        },
+      },
+    } as unknown as RealMermaidSession
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const r = await scoreTreemap(bad)
+    spy.mockRestore()
+    expect(r.errored.length).toBeGreaterThan(0)
+    expect(r.breaches.length).toBe(r.errored.length)
   })
 })

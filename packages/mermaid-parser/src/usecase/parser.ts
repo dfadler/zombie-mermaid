@@ -1,5 +1,10 @@
-import { MermaidParseError, stripFrontMatter } from '@zombie-mermaid/core'
+import {
+  MermaidParseError,
+  parseStyleProps,
+  stripFrontMatter,
+} from '@zombie-mermaid/core'
 import type {
+  UsecaseClassDef,
   UsecaseActor,
   UsecaseBoundary,
   UsecaseCase,
@@ -37,9 +42,12 @@ import type {
 //   - `Name[Label]` is a rectangle, everything else an ellipse.
 //   - `TD` is `TB`.
 //
-// Not supported yet (an error saying so): `@{ … }` metadata, `<<stereotype>>`,
-// `:::class`, `classDef` / `class` / `style`, `json` nodes, `--o` / `--x`
-// markers, `id@` edge ids and markdown strings.
+// Also read: `<<stereotype>>` and `:::class` after a name, `classDef` / `class`
+// / `style`, `--o` / `--x` / `o--` / `x--` markers, `id@` edge ids with an
+// `id@{ animate: true }` line, and markdown strings (backticks dropped).
+//
+// Not supported yet (an error saying so): `@{ … }` metadata on a node and
+// `json` nodes (#3131).
 // ============================================================================
 
 const RESERVED = new Set([
@@ -66,11 +74,7 @@ const isReserved = (id: string): boolean =>
 
 const UNSUPPORTED: Array<[RegExp, string]> = [
   [/@\{/, '`@{ … }` metadata'],
-  [/<</, '`<<stereotype>>`'],
-  [/:::/, '`:::class` suffixes'],
-  [/^(?:classDef|class|style)\s/, '`classDef`, `class` and `style`'],
   [/^json\s/, '`json` nodes'],
-  [/"`/, 'markdown strings'],
 ]
 
 interface Entity {
@@ -78,6 +82,8 @@ interface Entity {
   label: string
   explicit: boolean
   shape: 'ellipse' | 'rect'
+  stereotype?: string
+  classes?: string[]
 }
 
 interface Element {
@@ -86,6 +92,9 @@ interface Element {
   label: string
   explicit: boolean
   shape: 'ellipse' | 'rect'
+  stereotype?: string
+  classes: string[]
+  styles: string[]
   parentId?: string
   /** Only named in a relationship so far: an `actor` statement can still claim it. */
   weak: boolean
@@ -111,12 +120,34 @@ export function parseUsecase(source: string): UsecaseDiagram {
   let sawHeader = false
   let accBlock = false
 
-  const stringBody = (s: string): string | undefined =>
-    /^(?:"[^"\r\n]*"|'[^'\r\n]*')$/.test(s) ? s.slice(1, -1) : undefined
+  // A quoted string's body; a markdown string (`"`**x**`"`) loses its backticks.
+  const stringBody = (s: string): string | undefined => {
+    if (!/^(?:"[^"\r\n]*"|'[^'\r\n]*')$/.test(s)) return undefined
+    const body = s.slice(1, -1)
+    return /^`[^`]*`$/.test(body) ? body.slice(1, -1) : body
+  }
   const idOf = (text: string): string => text.replace(/\W/g, '_')
 
-  /** The entity at the start of `s` and the text after it. */
+  /** The entity at the start of `s` (with its `<<stereotype>>` and `:::class`) and the text after it. */
   const entity = (
+    s: string,
+    allowBracket: boolean,
+  ): { ent: Entity; rest: string } => {
+    const r = bareEntity(s, allowBracket)
+    const st = /^<<([^<>]*)>>/.exec(r.rest)
+    if (st) {
+      r.ent.stereotype = st[1]!.trim()
+      r.rest = r.rest.slice(st[0].length).trim()
+    }
+    const cl = /^:::([\w-]+)/.exec(r.rest)
+    if (cl) {
+      r.ent.classes = [cl[1]!]
+      r.rest = r.rest.slice(cl[0].length).trim()
+    }
+    return r
+  }
+
+  const bareEntity = (
     s: string,
     allowBracket: boolean,
   ): { ent: Entity; rest: string } => {
@@ -171,13 +202,27 @@ export function parseUsecase(source: string): UsecaseDiagram {
     const kind =
       wanted === 'ref' || wanted === 'weak' ? (prev?.kind ?? 'usecase') : wanted
     if (boundaries.has(e.id)) fail(`ID '${e.id}' is already a system boundary`)
+    const meta = (el: Element): void => {
+      if (e.stereotype !== undefined) el.stereotype = e.stereotype
+      for (const c of e.classes ?? [])
+        if (!el.classes.includes(c)) el.classes.push(c)
+    }
     if (!prev) {
-      const el: Element = { kind, ...e, weak: wanted === 'weak' }
+      const { classes: _c, ...own } = e
+      const el: Element = {
+        kind,
+        ...own,
+        classes: [],
+        styles: [],
+        weak: wanted === 'weak',
+      }
+      meta(el)
       if (boundary) el.parentId = boundary.id
       elements.set(e.id, el)
       if (boundary) boundary.members.push(e.id)
       return el
     }
+    meta(prev)
     if (prev.weak && wanted === 'actor') {
       prev.kind = 'actor'
       prev.weak = false
@@ -225,8 +270,17 @@ export function parseUsecase(source: string): UsecaseDiagram {
         arrow: 'forward',
         rest: s.slice(4).trim(),
       }
-    if (/^(?:--+[ox]|[ox]--+)(?=\s|$)/.test(s))
-      return fail('Circle and cross arrow markers are not supported yet')
+    const marker = /^(?:(--+)([ox])|([ox])--+)(?=\s|$)/.exec(s)
+    if (marker) {
+      const end = marker[2] !== undefined
+      const kind = (marker[2] ?? marker[3]) === 'o' ? 'circle' : 'cross'
+      return {
+        type: 'association',
+        arrow:
+          `${kind}${end ? 'End' : 'Start'}` as UsecaseRelationship['arrow'],
+        rest: s.slice(marker[0].length).trim(),
+      }
+    }
     const text = String.raw`(?:"[^"\r\n]*"|'[^'\r\n]*'|.+?)`
     const labelOf = (raw: string): string =>
       stringBody(raw.trim()) ?? raw.trim()
@@ -253,31 +307,54 @@ export function parseUsecase(source: string): UsecaseDiagram {
     if ((m = /^--+/.exec(s))) {
       const after = s.slice(m[0].length)
       const l = new RegExp(
-        `^\\s*(${text})\\s*(--+>|--+)(?=\\s|$|["'\\w])`,
+        `^\\s*(${text})\\s*(--+>|--+[ox](?=\\s|$)|--+)(?=\\s|$|["'\\w])`,
       ).exec(after)
-      if (l && !/^\s*$/.test(l[1]!))
+      if (l && !/^\s*$/.test(l[1]!)) {
+        const tail = l[2]!.slice(-1)
         return {
           type: 'association',
-          arrow: l[2]!.endsWith('>') ? 'forward' : 'none',
+          arrow:
+            tail === '>'
+              ? 'forward'
+              : tail === 'o'
+                ? 'circleEnd'
+                : tail === 'x'
+                  ? 'crossEnd'
+                  : 'none',
           label: labelOf(l[1]!),
           rest: after.slice(l[0].length).trim(),
         }
+      }
       return { type: 'association', arrow: 'none', rest: after.trim() }
     }
     return fail(`Unexpected '${s}'`)
   }
 
-  const relate = (from: Entity, tail: string): void => {
-    if (/^\w+@/.test(tail)) fail('Edge ids (`id@-->`) are not supported yet')
-    const a = arrow(tail)
+  const relate = (from: Entity, text: string): void => {
+    const idm = /^(\w+)@(?=-|\.|<)/.exec(text)
+    const a = arrow(idm ? text.slice(idm[0].length) : text)
     const to = entity(a.rest, true)
     if (to.rest !== '') fail(`Unexpected '${to.rest}'`)
+    // Mermaid: `:::` on a relationship endpoint only applies to a declared node.
+    for (const e of [from, to.ent])
+      if (e.classes && !elements.has(e.id))
+        fail(`'${e.id}' uses ::: without being declared`)
     const source = declare('weak', from)
     const target = declare('weak', to.ent)
     const { rest: _rest, ...link } = a
-    relationships.push({ source: source.id, target: target.id, ...link })
+    relationships.push({
+      source: source.id,
+      target: target.id,
+      ...link,
+      ...(idm && { id: idm[1]! }),
+    })
     relationLines.push(n)
   }
+
+  const styleList = (s: string): string[] =>
+    Object.entries(parseStyleProps(s)).map(([k, v]) => `${k}:${v}`)
+  const classDefs: UsecaseClassDef[] = []
+  const edgeMeta: Array<{ id: string; line: number; body: string }> = []
 
   for (const [i, raw] of lines.entries()) {
     n = i + 1
@@ -297,8 +374,53 @@ export function parseUsecase(source: string): UsecaseDiagram {
       accBlock = !line.includes('}')
       continue
     }
+    const em = /^(\w+)@\{([^}]*)\}$/.exec(line)
+    if (em) {
+      edgeMeta.push({ id: em[1]!, line: n, body: em[2]! })
+      continue
+    }
     for (const [re, what] of UNSUPPORTED)
       if (re.test(line)) fail(`${what} are not supported yet`)
+
+    // Split by hand: a regex over `\s+` runs is polynomial on hostile input.
+    const kw = /^(classDef|class|style)\s/.exec(line)
+    if (kw) {
+      const rest = line.slice(kw[0].length).trim()
+      const cut = rest.search(/\s/)
+      const head = cut < 0 ? rest : rest.slice(0, cut)
+      const tail = cut < 0 ? '' : rest.slice(cut).trim()
+      if (kw[1] === 'classDef' && /^[\w-]+$/.test(head) && tail !== '') {
+        classDefs.push({ id: head, styles: styleList(tail) })
+        continue
+      }
+      const words = rest.split(/\s+/)
+      const ids =
+        kw[1] === 'class'
+          ? words
+              .slice(0, -1)
+              .join(' ')
+              .split(',')
+              .map((x) => x.trim())
+          : [head]
+      const name = words.at(-1)!
+      if (
+        kw[1] !== 'classDef' &&
+        ids.length > 0 &&
+        ids.every((x) => /^\w+$/.test(x)) &&
+        (kw[1] === 'style'
+          ? tail !== ''
+          : words.length > 1 && /^[\w-]+$/.test(name))
+      ) {
+        for (const id of ids) {
+          const el = elements.get(id)
+          if (!el) fail(`'${id}' is not declared`)
+          else if (kw[1] === 'class') {
+            if (!el.classes.includes(name)) el.classes.push(name)
+          } else el.styles.push(...styleList(tail))
+        }
+        continue
+      }
+    }
 
     const dir = /^direction\s+(TD|TB|BT|LR|RL)$/.exec(line)
     if (dir) {
@@ -373,6 +495,17 @@ export function parseUsecase(source: string): UsecaseDiagram {
         'Generalization requires actor-to-actor or use-case-to-use-case endpoints',
       )
   }
+  for (const m of edgeMeta) {
+    n = m.line
+    const r = relationships.find((x) => x.id === m.id)
+    if (!r) fail('`@{ … }` metadata on a node is not supported yet')
+    else
+      for (const kv of m.body.split(',')) {
+        const [k, v = ''] = kv.split(':').map((x) => x.trim())
+        if (k === 'animate') r.animate = v === 'true'
+        else if (k === 'animation') r.animation = v
+      }
+  }
   for (const note of notes) {
     n = note.line
     if (!elements.has(note.target))
@@ -382,13 +515,19 @@ export function parseUsecase(source: string): UsecaseDiagram {
   const actors: UsecaseActor[] = []
   const useCases: UsecaseCase[] = []
   for (const el of elements.values()) {
-    const parent = el.parentId === undefined ? {} : { parentId: el.parentId }
+    const extra = {
+      ...(el.parentId === undefined ? {} : { parentId: el.parentId }),
+      ...(el.stereotype === undefined ? {} : { stereotype: el.stereotype }),
+      ...(el.classes.length > 0 && { classes: el.classes }),
+      ...(el.styles.length > 0 && { styles: el.styles }),
+    }
     if (el.kind === 'actor')
-      actors.push({ id: el.id, label: el.label, ...parent })
+      actors.push({ id: el.id, label: el.label, ...extra })
     else
-      useCases.push({ id: el.id, label: el.label, shape: el.shape, ...parent })
+      useCases.push({ id: el.id, label: el.label, shape: el.shape, ...extra })
   }
   return {
+    classDefs,
     direction,
     actors,
     useCases,

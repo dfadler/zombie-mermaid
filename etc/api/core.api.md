@@ -404,6 +404,8 @@ export interface GitGraphInitConfig {
     showCommitLabel?: boolean;
     // (undocumented)
     titleTopMargin?: number;
+    // (undocumented)
+    useMaxWidth?: boolean;
 }
 
 // @public
@@ -422,6 +424,7 @@ export interface InitConfig {
     erLayout?: ErInitLayout;
     gitGraph?: GitGraphInitConfig;
     ignored: string[];
+    ishikawaPadding?: number;
     journey?: JourneyInitConfig;
     kanban?: KanbanInitConfig;
     look?: string;
@@ -442,6 +445,8 @@ export interface InitConfig {
     theme?: string;
     themeVariables?: ThemeVariables;
     timeline?: TimelineInitConfig;
+    treemap?: TreemapInitConfig;
+    wardleyTheme?: Partial<Record<WardleyThemeKey, string>>;
     xyChart?: XyChartInitConfig;
 }
 
@@ -1101,6 +1106,18 @@ export interface TimelineInitConfig {
 export function toDirection(raw: string | undefined): Direction;
 
 // @public
+export interface TreemapInitConfig {
+    // (undocumented)
+    diagramPadding?: number;
+    nodeHeight?: number;
+    nodeWidth?: number;
+    padding?: number;
+    // (undocumented)
+    showValues?: boolean;
+    valueFormat?: string;
+}
+
+// @public
 export function tryApplyClassAssignment(line: string, target: StyleDirectives): boolean;
 
 // @public
@@ -1111,6 +1128,12 @@ export function tryApplyCssClass(line: string, target: StyleDirectives): boolean
 
 // @public
 export function tryApplyStyleStatement(line: string, target: StyleDirectives): boolean;
+
+// @public
+export const WARDLEY_THEME_KEYS: readonly ["backgroundColor", "axisColor", "axisTextColor", "componentFill", "componentStroke", "componentLabelColor", "linkStroke", "evolutionStroke", "annotationStroke", "annotationTextColor", "annotationFill"];
+
+// @public (undocumented)
+export type WardleyThemeKey = (typeof WARDLEY_THEME_KEYS)[number];
 
 // @public
 export function withDirectionOverride<T extends {

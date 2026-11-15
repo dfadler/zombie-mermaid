@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { MermaidParseError } from '@zombie-mermaid/core'
 import { parseIshikawa } from '../index.ts'
 import type { IshikawaNode } from '../index.ts'
 
@@ -105,5 +106,47 @@ describe('parseIshikawa', () => {
     } catch (e) {
       expect((e as { line?: number }).line).toBe(2)
     }
+  })
+
+  // Measured on mermaid 12.3.0 (scripts/lib/real-mermaid.ts).
+  it.each([
+    'ishikawa   \n  Effect',
+    'ishikawa\t\n  Effect',
+    'ishikawa-beta',
+    'ishikawa',
+    'ishikawa\n\n  Effect',
+    'ishikawa\n  \n  Effect',
+    'ishikawa\n%% c\n\n  Effect',
+    'ishikawa\n\n%% c\n\n  Effect',
+  ])('rejects %j as mermaid does', (src) => {
+    expect(() => parseIshikawa(src)).toThrow(MermaidParseError)
+  })
+
+  it.each([
+    'ishikawa\n',
+    'ishikawa\n\n',
+    'ishikawa Effect',
+    'ishikawa  Effect',
+    'ishikawa %% c\n  Effect',
+    'ishikawa\n\n%% c\n  Effect',
+    'ishikawa\n%% c\n  Effect',
+    'ishikawa\n  \n%% c\n  Effect',
+    'ishikawa\n%% c\n\n%% d\n  Effect',
+    'ishikawa\r\n  Effect',
+    'ishikawa\n  Effect\n\n\n  ',
+  ])('accepts %j as mermaid does', (src) => {
+    expect(() => parseIshikawa(src)).not.toThrow()
+  })
+
+  it('reads ishikawa.diagramPadding from an init directive', () => {
+    const init = (v: string) =>
+      parseIshikawa(
+        `%%{init: {"ishikawa": {"diagramPadding": ${v}}}}%%\nishikawa\n  E`,
+      ).diagramPadding
+    expect(init('50')).toBe(50)
+    expect(init('"30"')).toBe(30)
+    expect(init('-10')).toBe(-10)
+    expect(init('"x"')).toBeUndefined()
+    expect(parseIshikawa('ishikawa\n  E').diagramPadding).toBeUndefined()
   })
 })

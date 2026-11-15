@@ -1200,8 +1200,12 @@ Another
   its date and a `vert` marker is a `┆` (`:`) line through every row.
 - **The axis** repeats the SVG's ticks and `axisFormat`, dropping a label that
   would run into the one before it. A legend below names the glyphs in use.
-- Not drawn: `excludes` shading and the today line (output must not depend on
-  the clock). `accTitle` and `accDescr` are not printed.
+- **`excludes`** days show `·` (ASCII mode: `,`) on the cells no bar covers, as
+  the SVG shades them; a run is shaded only when a non-excluded day follows it.
+- **`todayMarker`** draws a `│` (`|`) column when the current date is inside the
+  chart's range, as the SVG does; for any other period the output does not
+  depend on the clock. `todayMarker off` removes it. The legend names both.
+- `accTitle` and `accDescr` are not printed.
 
 ## Timelines
 
@@ -1866,8 +1870,9 @@ is a cause of the line above it, to any depth. Categories alternate above and
 below the spine, the first pair nearest the head; a cause one level down hangs
 from its parent bone as a slanted bone, the next as a stub again. `<br>` breaks a
 label, a long cause wraps at 15 characters and a long effect in the head, `%%`
-comment lines and blank lines are skipped. Not drawn: the `handDrawn` look and the
-`ishikawa.diagramPadding` / `useMaxWidth` keys.
+comment lines and blank lines are skipped, except that a blank line directly before the effect
+is an error, as in Mermaid. `ishikawa.diagramPadding` is read.
+Not drawn: the `handDrawn` look.
 
 ### ASCII Ishikawa diagrams
 
@@ -2015,7 +2020,8 @@ Visibility
   flow; `evolve` is a dotted arrow towards the target.
 - Annotations are `(n)` marks, listed under the map when the diagram has an `annotations [x, y]`
   line; accelerators and deaccelerators are `>>` and `<<` before their name.
-- `size`, `label [dx, dy]` offsets and the pipeline's dotted join are SVG only.
+- `size` sets the grid's height (72 columns wide, 22 rows for the default 900 x 600 chart) and a
+  `label [dx, dy]` offset moves the label by that many pixels, in grid cells; the pipeline's dotted join is SVG only.
 - `accTitle` and `accDescr` are not printed.
 
 ## Use case diagrams

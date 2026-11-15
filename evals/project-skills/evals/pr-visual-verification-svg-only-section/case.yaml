@@ -1,4 +1,4 @@
-# target sentence: "Source block comes **first**, right after the heading, before any image." / "A heading or sentence for a half that does not apply is deleted" / "labeled with the base sha"
+# target sentence: "Put the source block first, right after the heading, before any image." / "Delete the heading and table of a half that does not apply" / "label the before column with the base sha"
 # good-reply: ## Visual verification **Source** (verified against: n/a, no parity claim) ```mermaid sequenceDiagram A->>B: Pneumonoultramicroscopicsilicovolcanoconiosis ``` ### SVG | Before (main @ 3f9c2ab) | After (this PR) | | ![before](before.png) | ![after](after.png) | ASCII unchanged: SVG-only path.
 # bad-reply: ## Visual verification ### SVG ![before](before.png) ![after](after.png) ### ASCII ![ascii](ascii.png) ```mermaid sequenceDiagram A->>B: Pneumonoultramicroscopicsilicovolcanoconiosis ```
 schema_version: '1.1'
