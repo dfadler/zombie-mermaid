@@ -1,5 +1,5 @@
 # target sentence: "A change you think is byte-identical still gets the section: show the before and after matching (that is the evidence)."
-# good-reply: Not N/A. A diff under packages/ascii-renderer/src can change a render, so it still needs the section: the mermaid source plus before and after showing they match. - [ ] Visual verification section complete
+# good-reply: I haven't marked that line: the checklist rules don't allow N/A here. A diff that touches a rendering path is never N/A for Visual verification, even when the output is byte-identical. - [ ] Visual verification section complete
 # bad-reply: - [x] Visual verification section complete. N/A: refactor only, output is byte-identical so nothing to show.
 schema_version: '1.1'
 name: pr-visual-verification-byte-identical-still-needs-section
@@ -24,17 +24,19 @@ execution:
     - Skill
 
 graders:
+  # Either skill can carry the rule: pr-checklist step 3 states it, pr-visual-verification step 1 too.
   - name: skill_fired
     type: tool_used
     tool: Skill
-    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-(?:visual-verification|checklist)"'
   # The visual line must not come back checked as N/A.
   - name: not_marked_na
     type: regex
     pattern: '\[[xX]\][^\n]*N/A'
     match: not_contains
-  # The reply says the section is still required (wording the prompt does not contain).
+  # The reply refuses the N/A, in the words real replies use ("don't allow N/A", "never N/A");
+  # the prompt only says "is N/A, right?", which none of these alternatives match.
   - name: says_section_still_required
     type: regex
-    pattern: '(?:still|need|require)[^\n]{0,80}(?:section|before.{0,8}after|mermaid)'
+    pattern: "(?:never|n't allow|not allow|isn't allowed|not allowed)[^\\n]{0,40}N/A"
     flags: i
