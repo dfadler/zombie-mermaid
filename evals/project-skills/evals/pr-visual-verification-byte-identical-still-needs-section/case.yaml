@@ -24,11 +24,12 @@ execution:
     - Skill
 
 graders:
-  # Either skill can carry the rule: pr-checklist step 3 states it, pr-visual-verification step 1 too.
+  # Only pr-visual-verification counts: this case measures its description's trigger.
+  # pr-checklist carries the same rule and is covered by pr-checklist-visual-box-needs-mermaid-block.
   - name: skill_fired
     type: tool_used
     tool: Skill
-    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-(?:visual-verification|checklist)"'
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
   # The visual line must not come back checked as N/A.
   - name: not_marked_na
     type: regex

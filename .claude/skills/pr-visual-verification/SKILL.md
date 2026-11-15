@@ -5,7 +5,7 @@ description: |
   could alter a rendered result (src/, packages/*/src, demo/ and the CLI are examples,
   not a full list). Returns the section (Mermaid source block, SVG and ASCII
   before/after) or an N/A line. Use before opening or updating such a PR, or when asked
-  for "visual verification" or "before/after screenshots". Not for the ASCII capture
+  for "visual verification", "before/after screenshots", or N/A on a byte-identical change. Not for the ASCII capture
   alone (verify-ascii-terminal) or the checklist boxes (pr-checklist).
 metadata:
   internal: true
