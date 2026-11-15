@@ -198,4 +198,10 @@ describe('themeVariables.wardley', () => {
     )
     expect(renderMermaidSVG(body)).not.toContain('#f01')
   })
+
+  it('applies one colour on its own', () => {
+    const svg = renderMermaidSVG(tv('{"linkStroke":"#abc123"}'))
+    expect(svg).toContain('#abc123')
+    expect(svg).not.toContain('.wardley-background { fill: #')
+  })
 })

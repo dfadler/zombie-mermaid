@@ -177,4 +177,14 @@ note "n" [0.1, 0.1]`,
     ).toBeLessThan(rows(base))
     expect(render(base + ' label [60, 0]')).not.toBe(render(base))
   })
+
+  it('keeps the grid between 8 and 60 rows, whatever the size', () => {
+    const rows = (size: string): number =>
+      render(`wardley-beta\nsize [${size}]\ncomponent A [0.5, 0.5]`).split('\n')
+        .length
+    expect(rows('900, 100')).toBe(rows('900, 50'))
+    expect(rows('100, 5000')).toBe(rows('100, 9000'))
+    // A canvas smaller than its padding counts as a one-pixel square chart.
+    expect(rows('50, 50')).toBeGreaterThan(rows('900, 100'))
+  })
 })

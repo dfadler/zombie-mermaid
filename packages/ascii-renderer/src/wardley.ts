@@ -120,8 +120,8 @@ export function renderWardleyAscii(
     60,
   )
   /** Cells for a pixel offset in the SVG's chart. */
-  const cells = (px: number | undefined, pxPerCell: number): number =>
-    px === undefined ? 0 : Math.round(px / pxPerCell)
+  const cells = (px: number, pxPerCell: number): number =>
+    Math.round(px / pxPerCell)
   const g = config.useAscii ? ASC : UNI
   const color: Record<Role, string> = {
     label: theme.fg,
@@ -299,15 +299,14 @@ export function renderWardleyAscii(
     const tag = node.strategy ? ` (${node.strategy})` : ''
     const s = node.label + tag
     const w = displayWidth(s)
+    // The grammar gives both offsets or neither (and none to an anchor).
     const custom: Array<[number, number]> =
-      node.labelOffsetX === undefined && node.labelOffsetY === undefined
+      node.labelOffsetX === undefined || node.labelOffsetY === undefined
         ? []
         : [
             [
               r + cells(node.labelOffsetY, chartH / H),
-              c +
-                cells(node.labelOffsetX, chartW / W) -
-                (node.kind === 'anchor' ? Math.floor(w / 2) : 0),
+              c + cells(node.labelOffsetX, chartW / W),
             ],
           ]
     if (node.kind === 'anchor') {
