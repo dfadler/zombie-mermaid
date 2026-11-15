@@ -217,6 +217,11 @@ describe('honorThemeVariables: behaviour', () => {
     expect(svg).toMatch(/--pie-color-1: #[0-9a-f]{6};/)
   })
 
+  it('pie: an invalid pieN paints #333 like mermaid 12.3.0 (#3162)', () => {
+    const svg = renderMermaidSVG(pie({ pie1: 'not-a-colour' }), ON)
+    expect(svg).toContain('--pie-color-0: #333;')
+  })
+
   it('ASCII keeps only hex colours', () => {
     const ascii = renderMermaidASCII(pie({ pie1: 'red', pie2: '#00aa00' }), {
       ...ON,
