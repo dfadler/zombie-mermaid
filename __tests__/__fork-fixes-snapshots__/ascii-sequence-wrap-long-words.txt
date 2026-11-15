@@ -1,20 +1,19 @@
-┌──────────────────────┐                  ┌───┐   
-│ Supercalifragilisti- │                  │ B │   
-│   cexpialidocious    │                  │   │   
-└───────────┬──────────┘                  └─┬─┘   
-            │                               │     
-            │  Supercalifragilisticexpia-   │     
-            │   lidocious_and_more_words    │     
-            │             here              │     
-            │───────────────────────────────▶     
-            │                               │     
-┌──────────────────────┐                    │     
-│ Pneumonoultramicros- │                    │     
-│ copicsilicovolcanoc- │                    │     
-│   oniosis is long    │                    │     
-└──────────────────────┘                    │     
-            │                               │     
-┌───────────┴──────────┐                  ┌─┴─┐   
-│ Supercalifragilisti- │                  │ B │   
-│   cexpialidocious    │                  │   │   
-└──────────────────────┘                  └───┘   
+┌──────────────────────┐                      ┌───┐   
+│ Supercalifragilisti- │                      │ B │   
+│   cexpialidocious    │                      │   │   
+└───────────┬──────────┘                      └─┬─┘   
+            │                                   │     
+            │  Supercalifragilisticexpialido-   │     
+            │     cious_and_more_words here     │     
+            │───────────────────────────────────▶     
+            │                                   │     
+┌──────────────────────┐                        │     
+│ Pneumonoultramicros- │                        │     
+│ copicsilicovolcanoc- │                        │     
+│   oniosis is long    │                        │     
+└──────────────────────┘                        │     
+            │                                   │     
+┌───────────┴──────────┐                      ┌─┴─┐   
+│ Supercalifragilisti- │                      │ B │   
+│   cexpialidocious    │                      │   │   
+└──────────────────────┘                      └───┘   

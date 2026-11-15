@@ -461,7 +461,20 @@ function wrapDiagramText(
   const w = l.width ?? 150
   const noteW = w * k
   const edgeW = (t: string) => labelWidth(t, fontSize)
-  const msgW = (w + (l.actorMargin ?? 50)) * k
+  // Mermaid wraps a message twice: first at `width - 20`, which sizes the
+  // lifeline gap to the widest line + 20 + actorMargin (never under `width`),
+  // then again at that gap + 20 (measured 8 px short of the centre distance
+  // by the arrowhead offsets, #3197). Adjacent lifelines assumed.
+  const margin = l.actorMargin ?? 50
+  const msgWrap = (t: string) => {
+    const w1 = Math.max(
+      ...wrapWords(t, (w - 20) * k, edgeW)
+        .split('\n')
+        .map(edgeW),
+    )
+    const gap = Math.max(w1 / k + 20, w) + margin - 8
+    return wrapWords(t, (gap + 20) * k, edgeW)
+  }
   const actorW = (t: string) =>
     labelWidth(t, actorFontSize, FONT_WEIGHTS.nodeLabel)
   return {
@@ -481,7 +494,7 @@ function wrapDiagramText(
     })),
     messages: diagram.messages.map((m) => ({
       ...m,
-      label: (m.wrap ?? l.wrap) ? wrapWords(m.label, msgW, edgeW) : m.label,
+      label: (m.wrap ?? l.wrap) ? msgWrap(m.label) : m.label,
     })),
   }
 }
