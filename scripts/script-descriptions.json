@@ -30,7 +30,7 @@
   "check:llms-full": "given changed files as args, fail if one is an input of `public/llms-full.txt` and it is stale (run by `verify`; fix with `docs:llms`, #2712)",
   "check:plugin-lock": "fail if the `zombie-mermaid` pin in `plugins/claude/package.json` disagrees with its `npm-shrinkwrap.json`, or `npm ci --dry-run --ignore-scripts` fails there (#2503)",
   "stage:plugin-evals": "copy `.claude` without `worktrees/` into a temp dir and print its path, so `claude plugin eval` skips stale worktree symlinks (#3170)",
-  "sync:plugin-skill":"regenerate `plugins/claude/skills/zombie-mermaid/SKILL.md` from `skills/zombie-mermaid/SKILL.md` for the Claude Code plugin (#2206)",
+  "sync:plugin-skill": "regenerate `plugins/claude/skills/zombie-mermaid/SKILL.md` from `skills/zombie-mermaid/SKILL.md` for the Claude Code plugin (#2206)",
   "check:pack-dist": "release guard (#1991): fails if any public package's `npm pack --dry-run` tarball lacks its main/module/types/bin/exports files (run `pnpm run build` first; publish.yml's release job runs it before `changeset publish`)",
   "check:package-types": "report-only publint + arethetypeswrong over packed tarballs (optional dir argument, else packs via `smoke:packed`; run `pnpm run build` first; CI's \"Packed tarball smoke test\" job runs it with continue-on-error)",
   "check:plugin-skill": "fail if `plugins/claude/skills/zombie-mermaid/SKILL.md` is stale against `skills/zombie-mermaid/SKILL.md` (#2206; see `scripts/sync-plugin-skill.ts`)",
