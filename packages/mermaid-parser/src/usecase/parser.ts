@@ -596,6 +596,9 @@ export function parseUsecase(source: string): UsecaseDiagram {
     }
     const note = /^note\s+for\s+(\w+)\s+(\S.*)$/.exec(line)
     if (note) {
+      // `@{` is a token of its own: mermaid rejects it in an unquoted note.
+      if (stringBody(note[2]!.trim()) === undefined && note[2]!.includes('@{'))
+        fail("Unexpected '@{' in a note")
       notes.push({
         line: n,
         target: note[1]!,

@@ -3418,6 +3418,33 @@
     "source": "usecase-beta\nA e1@--> B\ne1@{ type: hollow }",
     "error": true
   },
+  "note unquoted metadata": {
+    "source": "usecase-beta\nactor A\nnote for A Write @{ here }",
+    "error": true
+  },
+  "note quoted metadata": {
+    "source": "usecase-beta\nactor A\nnote for A \"Write @{ here\"",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [],
+      "classDefs": [],
+      "notes": [
+        {
+          "target": "A",
+          "label": "Write @{ here"
+        }
+      ]
+    }
+  },
   "json table": {
     "source": "usecase-beta\njson J @ {\"a\": 1, \"b\": \"x\", \"c\": [1,2,3], \"d\": {\"e\": true, \"f\": null}}",
     "usecase": {
