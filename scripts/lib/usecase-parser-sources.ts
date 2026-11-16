@@ -198,6 +198,7 @@ export const USECASE_PARSER_SOURCES: Record<string, string> = {
     'usecase-beta\nA e1@--> B\ne1@{ animation: medium }',
   'meta edge bad key': 'usecase-beta\nA e1@--> B\ne1@{ type: hollow }',
   'note unquoted metadata': 'usecase-beta\nactor A\nnote for A Write @{ here }',
+  'note unclosed metadata': 'usecase-beta\nactor A\nnote for A Write @{ here',
   'note quoted metadata': 'usecase-beta\nactor A\nnote for A "Write @{ here"',
   'json table':
     'usecase-beta\njson J @ {"a": 1, "b": "x", "c": [1,2,3], "d": {"e": true, "f": null}}',

@@ -3422,6 +3422,10 @@
     "source": "usecase-beta\nactor A\nnote for A Write @{ here }",
     "error": true
   },
+  "note unclosed metadata": {
+    "source": "usecase-beta\nactor A\nnote for A Write @{ here",
+    "error": true
+  },
   "note quoted metadata": {
     "source": "usecase-beta\nactor A\nnote for A \"Write @{ here\"",
     "usecase": {
