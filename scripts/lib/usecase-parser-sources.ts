@@ -92,10 +92,8 @@ export const USECASE_PARSER_SOURCES: Record<string, string> = {
   'direction twice': 'usecase-beta\ndirection TB\ndirection RL\nA',
   'direction lowercase': 'usecase-beta\ndirection lr\nA',
   stereotype: 'usecase-beta\nactor A <<system>>',
-  metadata: 'usecase-beta\nactor A@{ type: hollow }',
   'class suffix': 'usecase-beta\nA:::foo',
   classdef: 'usecase-beta\nclassDef foo fill:#f00\nA',
-  json: 'usecase-beta\njson J @ {"a": 1}',
   cross: 'usecase-beta\nA --x B',
   markdown: 'usecase-beta\nA("`**bold**`")',
   'note label quoted spaces': 'usecase-beta\nA\nnote for A "two words"',
@@ -140,4 +138,97 @@ export const USECASE_PARSER_SOURCES: Record<string, string> = {
   'class undeclared': 'usecase-beta\nclass Z foo',
   'class suffix relation': 'usecase-beta\nA:::foo --> B',
   'markdown label': 'usecase-beta\nA("`**bold** it`") --> B',
+  'meta hollow': 'usecase-beta\nactor A@{ type: hollow }\nA --> U',
+  'meta awesome': 'usecase-beta\nactor A@{ type: awesome }\nA --> U',
+  'meta normal': 'usecase-beta\nactor A@{ type: normal }\nA --> U',
+  'meta icon': 'usecase-beta\nactor A@{ icon: user }\nA --> U',
+  'meta icon quoted': 'usecase-beta\nactor A@{ icon: "logos:aws" }\nA --> U',
+  'meta icon awesome':
+    'usecase-beta\nactor A@{ icon: user, type: awesome }\nA --> U',
+  'meta business actor': 'usecase-beta\nactor A@{ business: true }\nA --> U',
+  'meta business hollow':
+    'usecase-beta\nactor A@{ type: hollow, business: true }\nA --> U',
+  'meta business awesome':
+    'usecase-beta\nactor A@{ type: awesome, business: true }\nA --> U',
+  'meta business icon':
+    'usecase-beta\nactor A@{ icon: user, business: true }\nA --> U',
+  'meta business false': 'usecase-beta\nactor A@{ business: false }\nA --> U',
+  'meta business use case': 'usecase-beta\nactor A\nA --> U@{ business: true }',
+  'meta business rect':
+    'usecase-beta\nactor A\nA --> U[Lbl]@{ business: true }',
+  'meta assignment':
+    'usecase-beta\nactor A\nA --> U\nA@{ type: hollow }\nU@{ business: true }',
+  'meta assignment quoted':
+    'usecase-beta\nactor "Big Boss"\n"Big Boss"@{ type: awesome }',
+  'meta assignment undeclared': 'usecase-beta\nZ@{ type: hollow }',
+  'meta assignment undeclared plain': 'usecase-beta\nZ@{ business: true }',
+  'meta assignment trailing': 'usecase-beta\nactor A\nA@{ type: hollow } --> U',
+  'meta assignment replaces':
+    'usecase-beta\nactor A@{ type: hollow }\nA@{ type: awesome }',
+  'meta assignment before actor':
+    'usecase-beta\nA --> U\nA@{ type: hollow }\nactor A',
+  'meta type on use case': 'usecase-beta\nA@{ type: hollow }\nA --> U',
+  'meta boundary package':
+    'usecase-beta\nsystemBoundary S@{ type: package }\nU\nend',
+  'meta boundary assigned':
+    'usecase-beta\nsystemBoundary S\nU\nend\nS@{ type: package }',
+  'meta boundary rect': 'usecase-beta\nsystemBoundary S@{ type: rect }\nU\nend',
+  'meta boundary bad type':
+    'usecase-beta\nsystemBoundary S@{ type: hollow }\nU\nend',
+  'meta multiline':
+    'usecase-beta\nactor A@{\n type: hollow\n business: true\n}\nA --> U',
+  'meta trailing comma': 'usecase-beta\nactor A@{ type: hollow, }\nA --> U',
+  'meta quoted keys': 'usecase-beta\nactor A@{ "type": "hollow" }\nA --> U',
+  'meta empty': 'usecase-beta\nactor A@{ }\nA --> U',
+  'meta unknown key': 'usecase-beta\nactor A@{ foo: bar }\nA --> U',
+  'meta conflict':
+    'usecase-beta\nactor A@{ type: hollow }\nactor A@{ type: awesome }',
+  'meta repeated':
+    'usecase-beta\nactor A@{ type: hollow }\nactor A@{ type: hollow }\nA --> U',
+  'meta with stereotype and class':
+    'usecase-beta\nactor A@{ type: hollow } <<boss>> :::c\nclassDef c fill:#fdd\nA --> U',
+  'meta in boundary':
+    'usecase-beta\nsystemBoundary S\nactor A@{ type: hollow }\nU@{ business: true }\nend\nA --> U',
+  'meta bad value': 'usecase-beta\nactor A@{ business: "true" }',
+  'meta no colon': 'usecase-beta\nactor A@{ hollow }',
+  'meta unclosed': 'usecase-beta\nactor A@{ type: hollow',
+  'meta edge assignment': 'usecase-beta\nA e1@--> B\ne1@{ animate: true }',
+  'meta edge slow': 'usecase-beta\nA e1@--> B\ne1@{ animation: slow }',
+  'meta edge bad animation':
+    'usecase-beta\nA e1@--> B\ne1@{ animation: medium }',
+  'meta edge bad key': 'usecase-beta\nA e1@--> B\ne1@{ type: hollow }',
+  'note unquoted metadata': 'usecase-beta\nactor A\nnote for A Write @{ here }',
+  'note unclosed metadata': 'usecase-beta\nactor A\nnote for A Write @{ here',
+  'note quoted metadata': 'usecase-beta\nactor A\nnote for A "Write @{ here"',
+  'json table':
+    'usecase-beta\njson J @ {"a": 1, "b": "x", "c": [1,2,3], "d": {"e": true, "f": null}}',
+  'json tight': 'usecase-beta\njson J@{"a": 1}\nA --> J',
+  'json nested arrays':
+    'usecase-beta\njson J @ {"a": [{"x":1},{"y":2}], "e": [], "o": {}, "s":"a long string value here"}',
+  'json integer keys': 'usecase-beta\njson J @ {"b":1,"2":2,"a":3,"1":4}',
+  'json multiline': 'usecase-beta\njson J @ {\n "a": 1,\n "b": 2\n}',
+  'json class': 'usecase-beta\njson J @ {"a": 1} :::c\nclassDef c fill:#fdd',
+  'json style':
+    'usecase-beta\njson J @ {"b":1,"a":2}\nstyle J fill:#fdd\nclass J k',
+  'json association':
+    'usecase-beta\nactor A\njson J @ {"a": 1}\nA --> J\nA <-- J\nA -- J',
+  'json label edge': 'usecase-beta\nactor A\njson J @ {"a": 1}\nJ -- lbl --> A',
+  'json used first': 'usecase-beta\nA --> J\njson J @ {"a": 1}',
+  'json to json': 'usecase-beta\njson J @ {"a": 1}\njson K @ {"b": 2}\nJ --> K',
+  'json circle': 'usecase-beta\nactor A\njson J @ {"a": 1}\nA --o J',
+  'json cross': 'usecase-beta\nactor A\njson J @ {"a": 1}\nA --x J',
+  'json include': 'usecase-beta\nactor A\njson J @ {"a": 1}\nA ..> : include J',
+  'json generalization': 'usecase-beta\nactor A\njson J @ {"a": 1}\nA --|> J',
+  'json note': 'usecase-beta\njson J @ {"a": 1}\nnote for J "hi"',
+  'json twice': 'usecase-beta\njson J @ {"a": 1}\njson J @ {"b": 2}',
+  'json in boundary': 'usecase-beta\nsystemBoundary S\njson J @ {"a": 1}\nend',
+  'json array root': 'usecase-beta\njson J @ [1,2]',
+  'json quoted name': 'usecase-beta\njson "J K" @ {"a": 1}',
+  'json invalid': 'usecase-beta\njson J @ {"a": }',
+  'json metadata': 'usecase-beta\njson J @ {"a": 1}\nJ@{ business: true }',
+  'json scalars':
+    'usecase-beta\njson J @ {"s": "", "n": -1.5e2, "t": true, "z": 0, "u": "\\u00e9\\n"}',
+  'json empty': 'usecase-beta\njson J @ {}',
+  'json as actor': 'usecase-beta\njson J @ {"a": 1}\nactor J',
+  'json as use case': 'usecase-beta\njson J @ {"a": 1}\nJ',
 }

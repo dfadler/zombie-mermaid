@@ -9,6 +9,12 @@ export interface UsecaseActor {
   /** `:::class` / `class` names, and `style` declarations. */
   classes?: string[]
   styles?: string[]
+  /** `@{ type: hollow|awesome }` or `@{ icon: name }` (`icon`); absent for the plain stick figure. */
+  type?: 'hollow' | 'awesome' | 'icon'
+  /** The `@{ icon: name }` name. */
+  icon?: string
+  /** `@{ business: true }`: a slash through the figure. */
+  business?: true
 }
 
 /** Any other named element: a use case. `Name(label)` / `Name` is an ellipse, `Name[label]` a rectangle. */
@@ -20,6 +26,8 @@ export interface UsecaseCase {
   stereotype?: string
   classes?: string[]
   styles?: string[]
+  /** `@{ business: true }` (ellipses only): a slash through the ellipse. */
+  business?: true
 }
 
 /** `systemBoundary Name … end`. */
@@ -28,6 +36,17 @@ export interface UsecaseBoundary {
   label: string
   /** Ids of the actors and use cases declared inside, in source order. */
   members: string[]
+  /** `@{ type: package }`: drawn with a tab holding the title; absent for the plain frame (`rect`). */
+  type?: 'package'
+}
+
+/** `json Name @ { ... }`: a table of the JSON object's keys and values. */
+export interface UsecaseJson {
+  id: string
+  /** One row per scalar, `a.b[0]` style paths for keys, as mermaid flattens them. */
+  rows: Array<{ key: string; value: string }>
+  classes?: string[]
+  styles?: string[]
 }
 
 export type UsecaseRelationshipType =
@@ -81,4 +100,5 @@ export interface UsecaseDiagram {
   relationships: UsecaseRelationship[]
   notes: UsecaseNote[]
   classDefs: UsecaseClassDef[]
+  jsonNodes: UsecaseJson[]
 }

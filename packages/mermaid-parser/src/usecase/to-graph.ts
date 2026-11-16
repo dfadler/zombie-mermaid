@@ -6,10 +6,24 @@ import type {
   MermaidSubgraph,
 } from '@zombie-mermaid/core'
 import { parseStyleProps } from '@zombie-mermaid/core'
-import type { UsecaseDiagram } from './types.ts'
+import type { UsecaseDiagram, UsecaseJson } from './types.ts'
 
 const markerAt = (arrow: string, kind: 'circle' | 'cross') =>
   arrow.endsWith('Start') ? { startMarker: kind } : { endMarker: kind }
+
+/** Separates a json row's key from its value in the node label. */
+export const USECASE_JSON_SEP = '\u2063'
+
+// A cell is one line, and never holds the separator (it would split the row).
+const cell = (s: string): string =>
+  s.replace(/[\r\n\t]+/g, ' ').replaceAll(USECASE_JSON_SEP, '')
+
+/** A json node's label: its name, then one `key<SEP>value` line per row (line breaks in a cell become spaces). */
+export const usecaseJsonLabel = (j: UsecaseJson): string =>
+  [
+    j.id,
+    ...j.rows.map((r) => `${cell(r.key)}${USECASE_JSON_SEP}${cell(r.value)}`),
+  ].join('\n')
 
 /** The node id of the note drawn for `note for <target>`, the nth in the source. */
 export const usecaseNoteId = (n: number): string => `note-${n}`
@@ -37,7 +51,12 @@ export function usecaseToGraph(diagram: UsecaseDiagram): MermaidGraph {
   }
   for (const a of diagram.actors) {
     styled(a)
-    nodes.set(a.id, { id: a.id, label: labelOf(a), shape: 'usecase-actor' })
+    nodes.set(a.id, {
+      id: a.id,
+      label: labelOf(a),
+      shape: a.type === undefined ? 'usecase-actor' : `usecase-actor-${a.type}`,
+      ...(a.business && { business: true }),
+    })
   }
   for (const u of diagram.useCases) {
     styled(u)
@@ -45,6 +64,7 @@ export function usecaseToGraph(diagram: UsecaseDiagram): MermaidGraph {
       id: u.id,
       label: labelOf(u),
       shape: u.shape === 'rect' ? 'usecase-rect' : 'usecase-ellipse',
+      ...(u.business && { business: true }),
     })
   }
   diagram.notes.forEach((note, i) =>
@@ -54,6 +74,15 @@ export function usecaseToGraph(diagram: UsecaseDiagram): MermaidGraph {
       shape: 'usecase-note',
     }),
   )
+
+  for (const j of diagram.jsonNodes) {
+    styled(j)
+    nodes.set(j.id, {
+      id: j.id,
+      label: usecaseJsonLabel(j),
+      shape: 'usecase-json',
+    })
+  }
 
   const edges: MermaidEdge[] = diagram.relationships.map((r) => {
     const dotted = r.type === 'include' || r.type === 'extend'
@@ -97,6 +126,7 @@ export function usecaseToGraph(diagram: UsecaseDiagram): MermaidGraph {
     label: b.label,
     nodeIds: [...b.members],
     children: [],
+    ...(b.type === 'package' && { package: true }),
   }))
 
   return {

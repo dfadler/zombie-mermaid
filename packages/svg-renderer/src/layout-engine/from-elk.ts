@@ -462,6 +462,7 @@ function extractNodesAndGroups(
         ...groupStyle(child.id, graph),
         ...(mermaidSg?.region ? { region: true } : {}),
         ...(mermaidSg?.icon ? { icon: mermaidSg.icon } : {}),
+        ...(mermaidSg?.package ? { package: true } : {}),
       })
     } else {
       // This is a leaf node
@@ -479,6 +480,7 @@ function extractNodesAndGroups(
           label: mNode.label,
           shape: mNode.icon === undefined ? mNode.shape : 'rectangle',
           icon: mNode.icon,
+          ...(mNode.business ? { business: true } : {}),
           x,
           y,
           width,

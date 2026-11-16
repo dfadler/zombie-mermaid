@@ -24,12 +24,15 @@ const READ = (source: string): string => `(async () => {
     const db = (await window.mermaid.mermaidAPI.getDiagramFromText(${JSON.stringify(source)})).db
     const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, o[k]]))
     const arrows = ['forward', 'backward', 'none', 'circleEnd', 'crossEnd', 'circleStart', 'crossStart']
+    const actorExtra = (a) => ({ ...(a.type !== 'normal' && { type: a.type }), ...(a.icon !== undefined && { icon: a.icon }), ...(a.business && { business: true }) })
+    const rows = Object.fromEntries(db.getData().nodes.filter((x) => x.shape === 'usecaseJsonTable').map((x) => [x.id, x.jsonRows.map((r) => ({ key: r.key, value: r.value }))]))
     const extra = (o) => ({ ...(o.stereotype !== undefined && { stereotype: o.stereotype }), ...(o.classes.length > 0 && { classes: o.classes }), ...(o.styles.length > 0 && { styles: o.styles }) })
     return {
       direction: db.getDirection() === 'TD' ? 'TB' : db.getDirection(),
-      actors: [...db.getActors().values()].map((a) => ({ ...pick(a, ['id', 'label', 'parentId']), ...extra(a) })),
-      useCases: [...db.getUseCases().values()].map((u) => ({ ...pick(u, ['id', 'label', 'shape', 'parentId']), ...extra(u) })),
-      boundaries: [...db.getSystemBoundaries().values()].map((b) => pick(b, ['id', 'label', 'members'])),
+      actors: [...db.getActors().values()].map((a) => ({ ...pick(a, ['id', 'label', 'parentId']), ...actorExtra(a), ...extra(a) })),
+      useCases: [...db.getUseCases().values()].map((u) => ({ ...pick(u, ['id', 'label', 'shape', 'parentId']), ...(u.business && { business: true }), ...extra(u) })),
+      boundaries: [...db.getSystemBoundaries().values()].map((b) => ({ ...pick(b, ['id', 'label', 'members']), ...(b.type === 'package' && { type: 'package' }) })),
+      jsonNodes: [...db.getJsonNodes().values()].map((j) => ({ id: j.id, rows: rows[j.id], ...extra(j) })),
       relationships: db.getRelationships().map((r) => ({
         source: r.source, target: r.target, type: r.type,
         arrow: r.type === 'association' ? arrows[r.arrowType] ?? 'other' + r.arrowType : 'forward',

@@ -44,4 +44,24 @@ describe('use case ASCII', () => {
   it('draws rectangular use cases as boxes', () => {
     expect(render('usecase-beta\nA[Box]')).toContain('┌')
   })
+
+  it('draws actor variants', () => {
+    const t = (a: string) => render(`usecase-beta\nactor A@{ ${a} }`)
+    expect(t('type: awesome')).toContain('▟█▙')
+    expect(t('icon: user')).toContain('│?│')
+    expect(t('type: hollow')).toContain('/|\\')
+    expect(t('business: true')).toContain('O/')
+  })
+
+  it('draws a json node as a table of key: value rows', () => {
+    const out = render('usecase-beta\njson J @ {"a": 1, "bcd": "x"}')
+    expect(out).toMatch(/a {3}: 1/)
+    expect(out).toContain('bcd : x')
+  })
+
+  it('aligns json keys by display columns', () => {
+    const out = render('usecase-beta\njson J @ {"名": 1, "abc": 2}')
+    expect(out).toMatch(/名 {2}: 1/)
+    expect(out).toContain('abc : 2')
+  })
 })

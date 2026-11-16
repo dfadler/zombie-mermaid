@@ -338,6 +338,7 @@ export function layoutSimple(
           ...groupStyle(id, graph),
           ...(sg.region ? { region: true } : {}),
           ...(sg.icon ? { icon: sg.icon } : {}),
+          ...(sg.package ? { package: true } : {}),
         })
       }
     }
@@ -389,6 +390,7 @@ export function layoutSimple(
       inlineStyle: resolveNodeStyle(id, graph),
       className: graph.classAssignments.get(id),
       interaction: graph.interactions.get(id),
+      ...(node.business ? { business: true } : {}),
     }
   })
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))

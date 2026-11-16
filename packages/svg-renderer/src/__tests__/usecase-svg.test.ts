@@ -132,4 +132,62 @@ describe('use case SVG', () => {
     )
     expect(named).toContain('Chief executive')
   })
+
+  it('draws actor variants and the business slash', () => {
+    const svg = (s: string) => renderMermaidSVG(`usecase-beta\n${s}`)
+    expect(svg('actor A@{ type: hollow }')).toContain('M -22 -10 H 22')
+    expect(svg('actor A@{ type: awesome }')).toContain('M 0 -34 C 7.18')
+    expect(svg('actor A@{ icon: user }')).toContain('rx="4"')
+    const plain = svg('actor A')
+    expect(svg('actor A@{ business: true }').length).toBeGreaterThan(
+      plain.length,
+    )
+    expect(svg('actor A@{ type: hollow, business: true }')).toContain('M ')
+    const ellipse = svg('A@{ business: true }'.replace('A@', 'U\nU@'))
+    expect(ellipse.match(/<path /g)?.length).toBe(1)
+  })
+
+  it('draws a package boundary as a tab over a body', () => {
+    const svg = renderMermaidSVG(
+      'usecase-beta\nsystemBoundary S@{ type: package }\nU\nend',
+    )
+    expect(
+      svg.match(/<rect x="[\d.]+" y="[\d.]+" width="80" height="34"/),
+    ).not.toBeNull()
+    expect(svg).toContain('data-shape="usecase-ellipse"')
+  })
+
+  it('sizes and draws a json table as mermaid does', () => {
+    const src =
+      'usecase-beta\njson J @ {"a": 1, "c": [1,2,3], "d": {"e": true}}\nactor A\nA --> J'
+    expect(
+      usecaseNodeSize('usecase-json', 'J\na\u20631\nc\u20631\n\u20632'),
+    ).toEqual({ width: 138, height: 130 })
+    const svg = renderMermaidSVG(src)
+    expect(svg).toContain('data-label="J"')
+    expect(svg).toContain('>true<')
+    expect(svg).not.toContain('\u2063')
+  })
+
+  it('wraps a long json cell at the 120px label width', () => {
+    const long = 'k\u2063' + 'word '.repeat(12)
+    expect(
+      usecaseNodeSize('usecase-json', `J\n${long}`).height,
+    ).toBeGreaterThan(usecaseNodeSize('usecase-json', 'J\nk\u2063v').height)
+  })
+
+  it('keeps business on the simple layout and a json font-family', () => {
+    const src =
+      'usecase-beta\nactor A@{ business: true }\njson J @ {"a": 1}\nclassDef f font-family:Courier\nclass J f\nA --> J'
+    expect(renderMermaidSVG(src, { layout: 'simple' } as never)).toContain(
+      'M 1.4353',
+    )
+    expect(renderMermaidSVG(src)).toContain('font-family: Courier')
+  })
+
+  it('keeps a package boundary on the simple layout', () => {
+    const src = 'usecase-beta\nsystemBoundary S@{ type: package }\nU\nend'
+    const svg = renderMermaidSVG(src, { layout: 'simple' } as never)
+    expect(svg).toMatch(/width="80" height="34"/)
+  })
 })

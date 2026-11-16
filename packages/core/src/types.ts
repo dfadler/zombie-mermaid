@@ -81,6 +81,8 @@ export interface MermaidNode {
    * `shape`; the ASCII renderer ignores it (#2518).
    */
   icon?: string
+  /** Use case diagram `@{ business: true }`: a slash through the actor or ellipse. */
+  business?: boolean
 }
 
 export type NodeShape =
@@ -144,9 +146,13 @@ export type NodeShape =
   | 'note' // dog-eared box
   // Use case diagram (usecase-beta)
   | 'usecase-actor' // Stick figure, label underneath
+  | 'usecase-actor-hollow' // `@{ type: hollow }`: an outlined figure
+  | 'usecase-actor-awesome' // `@{ type: awesome }`: a filled silhouette
+  | 'usecase-actor-icon' // `@{ icon: name }`: an icon in a frame
   | 'usecase-ellipse' // Use case: an ellipse
   | 'usecase-rect' // Use case: a rectangle (`Name[label]`)
   | 'usecase-note' // `note for X`
+  | 'usecase-json' // `json Name @ { ... }`: a key/value table (label: title, then one `key\u2063value` line per row)
 
 export interface MermaidEdge {
   source: string
@@ -239,6 +245,8 @@ export interface MermaidSubgraph {
   icon?: string
   /** An `architecture-beta` group: the SVG renderer draws Mermaid's dashed box instead of a header band. */
   architecture?: boolean
+  /** A use case `systemBoundary S@{ type: package }`: drawn with a tab holding the title. */
+  package?: boolean
 }
 
 // ============================================================================
@@ -265,6 +273,8 @@ export interface PositionedNode {
   height: number
   /** Architecture service icon tile; see `MermaidNode.icon`. `shape` is then `rectangle`. */
   icon?: string
+  /** See `MermaidNode.business`. */
+  business?: boolean
   /** Inline styles resolved from classDef + explicit `style` statements — override theme defaults */
   inlineStyle?: Record<string, string>
   /** Custom class name assigned via `class A className` or `:::className` shorthand — emitted onto the rendered element's `class` attribute so external CSS can target it */
@@ -328,6 +338,8 @@ export interface PositionedGroup {
   icon?: string
   /** See `MermaidSubgraph.architecture`. */
   architecture?: boolean
+  /** See `MermaidSubgraph.package`. */
+  package?: boolean
   /** Edge of an architecture group's corner icon in px: `architecture.padding * 0.75` (30 by default; none is drawn at 0). */
   iconSize?: number
 }
