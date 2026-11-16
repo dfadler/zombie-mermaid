@@ -184,4 +184,10 @@ describe('use case SVG', () => {
     )
     expect(renderMermaidSVG(src)).toContain('font-family: Courier')
   })
+
+  it('keeps a package boundary on the simple layout', () => {
+    const src = 'usecase-beta\nsystemBoundary S@{ type: package }\nU\nend'
+    const svg = renderMermaidSVG(src, { layout: 'simple' } as never)
+    expect(svg).toMatch(/width="80" height="34"/)
+  })
 })

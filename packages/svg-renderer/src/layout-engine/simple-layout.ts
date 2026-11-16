@@ -338,6 +338,7 @@ export function layoutSimple(
           ...groupStyle(id, graph),
           ...(sg.region ? { region: true } : {}),
           ...(sg.icon ? { icon: sg.icon } : {}),
+          ...(sg.package ? { package: true } : {}),
         })
       }
     }

@@ -361,6 +361,13 @@ describe('usecaseToGraph', () => {
     expect(p('actor A\nnote for A "Write @{ here"').notes[0]!.label).toBe(
       'Write @{ here',
     )
+    // An apostrophe in a label is not a quote; an actor list may hold several bodies.
+    expect(p("actor A(Clerk's desk)@{\n type: hollow\n}").actors[0]!.type).toBe(
+      'hollow',
+    )
+    expect(
+      p('actor A@{ type: normal }, B@{\n type: hollow\n}').actors[1]!.type,
+    ).toBe('hollow')
     // A cell never holds the row separator.
     expect(
       p('json J @ {"a\u2063b": "c\u2063d"}').jsonNodes[0]!.rows,

@@ -79,15 +79,20 @@ interface Prop {
   line: number
 }
 
-/** Index of the first `@{` outside a quoted label, or -1. */
-function metaStart(s: string): number {
+/**
+ * Index of the first `@{` at or after `from` that is outside a quoted label, or
+ * -1. A quote opens a string only after a non-word character, so the apostrophe
+ * of an unquoted label such as `Clerk's desk` is not one.
+ */
+function metaStart(s: string, from = 0): number {
   let quoted = ''
   for (let i = 0; i < s.length; i++) {
     const c = s[i]!
     if (quoted) {
       if (c === quoted) quoted = ''
-    } else if (c === '"' || c === "'") quoted = c
-    else if (c === '@' && s[i + 1] === '{') return i
+    } else if ((c === '"' || c === "'") && !/\w/.test(s[i - 1] ?? ' '))
+      quoted = c
+    else if (c === '@' && s[i + 1] === '{' && i >= from) return i
   }
   return -1
 }
@@ -478,8 +483,14 @@ export function parseUsecase(source: string): UsecaseDiagram {
     const open = (t: string): boolean => {
       const j = /^json[\t ]+\w+[\t ]*@[\t ]*(?=\{)/.exec(t)
       if (j) return jsonObjectEnd(t, j[0].length) < 0
-      const at = metaStart(t)
-      return at >= 0 && metaEnd(t, at + 2) < 0
+      // Every `@{` body on the line must close (an actor list can hold several).
+      for (let from = 0; ;) {
+        const at = metaStart(t, from)
+        if (at < 0) return false
+        const end = metaEnd(t, at + 2)
+        if (end < 0) return true
+        from = end + 1
+      }
     }
     while (open(line)) {
       if (i + 1 >= lines.length) return fail("Unclosed '{'")
