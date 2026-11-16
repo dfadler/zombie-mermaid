@@ -17,4 +17,6 @@ export interface Ishikawa {
   root?: IshikawaNode
   /** `ishikawa.diagramPadding` from `%%{init}%%` or front matter; the layout's default is 20. */
   diagramPadding?: number
+  /** `look: handDrawn` from `%%{init}%%` or front matter, with `handDrawnSeed` (0 when unset). */
+  handDrawn?: { seed: number }
 }

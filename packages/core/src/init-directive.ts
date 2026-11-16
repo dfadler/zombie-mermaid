@@ -492,6 +492,8 @@ export interface InitConfig {
   theme?: string
   /** `look` (`classic`, `neo`, ...), kept as written; only gitGraph reads it (the neo drop shadow). */
   look?: string
+  /** `handDrawnSeed` (an integer): the rough.js seed of `look: handDrawn`; only ishikawa reads it. */
+  handDrawnSeed?: number
   /** `pie.textPosition`: slice label distance as a fraction of the radius. */
   pieTextPosition?: number
   /** `pie.donutHole`: inner radius as a fraction of the radius. */
@@ -732,6 +734,12 @@ export function parseInitDirective(line: string): InitConfig | undefined {
 
     if (lower === 'look' && typeof value === 'string') {
       config.look = value
+      continue
+    }
+
+    if (lower === 'handdrawnseed') {
+      const seed = Number(value)
+      if (Number.isInteger(seed)) config.handDrawnSeed = seed
       continue
     }
 
@@ -1188,6 +1196,9 @@ export function extractInitConfig(lines: string[]): InitConfig {
     if (!config) continue
     if (config.theme !== undefined) merged.theme = config.theme
     if (config.look !== undefined) merged.look = config.look
+    if (config.handDrawnSeed !== undefined) {
+      merged.handDrawnSeed = config.handDrawnSeed
+    }
     if (config.pieTextPosition !== undefined) {
       merged.pieTextPosition = config.pieTextPosition
     }

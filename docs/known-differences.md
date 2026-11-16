@@ -1917,9 +1917,18 @@ the reference here because it is behind npm `latest`).
   root `width` / `max-width`, which this renderer sizes by its viewBox, as for the other
   types. A top-level or `ishikawa.fontSize` changes nothing in 12.3.0 either (measured);
   `themeVariables.fontSize` does, and is not read (16px).
-- **Not drawn.** The `handDrawn` look (rough.js strokes, `handDrawnSeed`, filled rough
-  arrowheads): it needs rough.js's seeded random generator, which no renderer here
-  ports; `look` is ignored for ishikawa, as for radar.
+- **`look: handDrawn`, partly drawn (SVG only).** The spine, bones, arrowheads (solid
+  rough triangles in place of markers), label-box outlines and head outline use a
+  dependency-free port of the rough.js 4.6.6 generator (`packages/svg-renderer/src/rough.ts`).
+  The jitter is byte-for-byte rough.js's for the same `handDrawnSeed`, checked against
+  mermaid 12.3.0 path by path (lines and arrowheads agree exactly; the head and box
+  outlines carry the text-measurement offset every classic ishikawa already has). Not
+  drawn: the hachure fill of the head and the label boxes, which needs rough.js's
+  path sampling and hachure-fill code (the `roughjs` dependency or a larger port),
+  tracked on #3122. A seed of 0 (the default) is `Math.random()` in rough.js, so
+  mermaid's own output changes every render; here it is a fixed seed. The frame
+  is the classic one: mermaid's bounding box includes the jitter. ASCII ignores
+  `look`, as for radar.
 - **Labels.** Mermaid runs a label through DOMPurify and draws the resulting HTML as
   text: `<x>` vanishes and `&` shows as `&amp;`. The same sanitizer stand-in as for
   packet titles is used (`sanitize-title.ts`).
