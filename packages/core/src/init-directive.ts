@@ -16,7 +16,9 @@
 // should not be able to override the host application's rendering choices.
 // ============================================================================
 
-import { isValidCssColor } from './css-color.ts'
+import { deriveBorderColor } from './color-utils.ts'
+import { isMermaidThemeColor, isValidCssColor } from './css-color.ts'
+import { MermaidParseError } from './parse-error.ts'
 import type { C4InitLayout } from './c4-metrics.ts'
 import type { RenderOptions } from './types.ts'
 
@@ -379,7 +381,8 @@ const PIE_LEGEND_POSITIONS = new Set([
  * The `themeVariables` subset this renderer can map onto its own colour
  * tokens (see `RenderOptions.honorThemeVariables`). Every value has passed
  * `isValidCssColor` and a stricter safe-character check; invalid ones are
- * dropped, never thrown.
+ * dropped. A `primaryColor`, `lineColor` or `primaryTextColor` mermaid cannot
+ * parse throws instead, see {@link assertThemeVariableColors}.
  */
 export interface ThemeVariables {
   /** → `surface` (node fill). Mermaid reads it under `theme: base` only. */
@@ -540,9 +543,21 @@ export interface InitConfig {
    * merged config says `theme: base`, as in Mermaid.
    */
   themeVariables?: ThemeVariables
+  /**
+   * `primaryColor`, `lineColor` and `primaryTextColor` as written (strings
+   * only, later directives win), for {@link assertThemeVariableColors}.
+   */
+  rawThemeColors?: Partial<Record<RawThemeColor, string>>
   /** Recognized but not acted on — see `IGNORED_KEYS`. */
   ignored: string[]
 }
+
+type RawThemeColor = 'primaryColor' | 'lineColor' | 'primaryTextColor'
+const RAW_THEME_COLORS: readonly RawThemeColor[] = [
+  'primaryColor',
+  'lineColor',
+  'primaryTextColor',
+]
 
 /**
  * Directive keys that are parsed and deliberately not acted on, with the
@@ -719,6 +734,12 @@ export function parseInitDirective(line: string): InitConfig | undefined {
           // The colour keys are palette, not read.
           config.radarTheme = radarNumbers({ ...vv }, RADAR_STYLE_KEYS)
           continue
+        }
+        if (
+          typeof vv === 'string' &&
+          (RAW_THEME_COLORS as readonly string[]).includes(vk)
+        ) {
+          ;(config.rawThemeColors ??= {})[vk as RawThemeColor] = vv
         }
         if (vk === 'wardley' && typeof vv === 'object' && vv !== null) {
           const w: Partial<Record<WardleyThemeKey, string>> = {}
@@ -1227,6 +1248,12 @@ export function extractInitConfig(lines: string[]): InitConfig {
     }
     if (config.quadrant)
       merged.quadrant = { ...merged.quadrant, ...config.quadrant }
+    if (config.rawThemeColors) {
+      merged.rawThemeColors = {
+        ...merged.rawThemeColors,
+        ...config.rawThemeColors,
+      }
+    }
     if (config.themeVariables) {
       const { pieColors, quadrant, ...rest } = config.themeVariables
       const mergedTv = (merged.themeVariables ??= {})
@@ -1260,7 +1287,12 @@ export function applyThemeVariables(
   if (!tv) return options
   const out = { ...options }
   out.surface ??= tv.primaryColor
-  out.border ??= tv.primaryBorderColor
+  // Mermaid derives the border from primaryColor when none is given (#3165).
+  out.border ??=
+    tv.primaryBorderColor ??
+    (tv.primaryColor
+      ? (deriveBorderColor(tv.primaryColor) ?? undefined)
+      : undefined)
   out.fg ??= tv.primaryTextColor
   out.line ??= tv.lineColor
   return out
@@ -1272,4 +1304,32 @@ export function describeIgnored(config: InitConfig): string[] {
     (key) =>
       `${key}: ${IGNORED_KEYS[key.toLowerCase()] ?? IGNORED_KEYS[key.split('.')[0]!.toLowerCase()] ?? 'not supported'}`,
   )
+}
+
+/**
+ * Throw like mermaid@12.3.0 when a `themeVariables` colour it derives other
+ * colours from cannot be parsed: `Unsupported color format: "<value>"`
+ * (#3163). Measured on 12.3.0, flowchart: `primaryColor` throws under every
+ * theme, including an empty string and `var()`; `lineColor` and
+ * `primaryTextColor` only under `theme: base`, where an empty string, `var()`
+ * and a value mermaid's own sanitiser drops (`;`, `{`, `}`) render.
+ * `primaryBorderColor` and the pie and other per-diagram colours never throw
+ * here. Call it only when the caller honours theme variables.
+ */
+export function assertThemeVariableColors(text: string): void {
+  const { theme, rawThemeColors } = extractInitConfig(text.split(/\r\n?|\n/))
+  if (!rawThemeColors) return
+  for (const name of RAW_THEME_COLORS) {
+    const v = rawThemeColors[name]
+    if (v === undefined) continue
+    if (name !== 'primaryColor') {
+      if (theme !== 'base') continue
+      if (v === '' || /^var\(|[;{}]/.test(v)) continue
+    }
+    if (!isMermaidThemeColor(v)) {
+      throw new MermaidParseError(`Unsupported color format: "${v}"`, {
+        code: 'UNSUPPORTED_COLOR_FORMAT',
+      })
+    }
+  }
 }

@@ -23,17 +23,22 @@ const READ = (source: string): string => `(async () => {
   try {
     const db = (await window.mermaid.mermaidAPI.getDiagramFromText(${JSON.stringify(source)})).db
     const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, o[k]]))
-    const arrows = ['forward', 'backward', 'none']
+    const arrows = ['forward', 'backward', 'none', 'circleEnd', 'crossEnd', 'circleStart', 'crossStart']
+    const extra = (o) => ({ ...(o.stereotype !== undefined && { stereotype: o.stereotype }), ...(o.classes.length > 0 && { classes: o.classes }), ...(o.styles.length > 0 && { styles: o.styles }) })
     return {
       direction: db.getDirection() === 'TD' ? 'TB' : db.getDirection(),
-      actors: [...db.getActors().values()].map((a) => pick(a, ['id', 'label', 'parentId'])),
-      useCases: [...db.getUseCases().values()].map((u) => pick(u, ['id', 'label', 'shape', 'parentId'])),
+      actors: [...db.getActors().values()].map((a) => ({ ...pick(a, ['id', 'label', 'parentId']), ...extra(a) })),
+      useCases: [...db.getUseCases().values()].map((u) => ({ ...pick(u, ['id', 'label', 'shape', 'parentId']), ...extra(u) })),
       boundaries: [...db.getSystemBoundaries().values()].map((b) => pick(b, ['id', 'label', 'members'])),
       relationships: db.getRelationships().map((r) => ({
         source: r.source, target: r.target, type: r.type,
         arrow: r.type === 'association' ? arrows[r.arrowType] ?? 'other' + r.arrowType : 'forward',
         ...(r.type === 'association' && r.label !== undefined ? { label: r.label } : {}),
+        ...(r.explicitId ? { id: r.id } : {}),
+        ...(r.animate ? { animate: true } : {}),
+        ...(r.animation !== undefined ? { animation: r.animation } : {}),
       })),
+      classDefs: [...db.getClassDefs().values()].map((c) => pick(c, ['id', 'styles'])),
       notes: [...db.getNotes().values()].map((x) => pick(x, ['target', 'label'])),
     }
   } catch (e) { return { error: true } }

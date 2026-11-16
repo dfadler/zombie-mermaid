@@ -202,10 +202,14 @@ renderMermaidSVG(source, { honorThemeVariables: false }) // opt out
 
 - **The caller wins.** A `bg`, `fg`, `line`, `surface` or `border` you pass is
   never replaced (for ASCII, a key in `theme`).
-- **Invalid values are ignored, never thrown**: the same colour check as
-  `style`/`classDef` colours, plus no `url()`/`var()`/`env()`/`calc()`,
-  since the value comes from diagram text. Mermaid itself throws on an
-  invalid `primaryColor` and paints a bad `pie1` `#333`.
+- **A colour mermaid cannot parse throws, as it does.** A `primaryColor` (any
+  theme), `lineColor` or `primaryTextColor` (`theme: base`) that is not a hex,
+  `rgb()`, `hsl()`, CSS name or `transparent` throws a `MermaidParseError`,
+  `Unsupported color format: "<value>"` (#3163); `honorThemeVariables: false`
+  never throws. Every other invalid value (`primaryBorderColor`, `pie1`, ...)
+  is ignored: the same colour check as `style`/`classDef` colours, plus no
+  `url()`/`var()`/`env()`/`calc()`, since the value comes from diagram text.
+  Mermaid paints a bad `pie1` `#333`.
 - **Not derived.** Mermaid computes secondary/tertiary colours, a gradient
   node border and the other pie slices from `primaryColor`; zombie-mermaid
   does not. Under `theme: "base"` a lone `primaryColor` fills the nodes and

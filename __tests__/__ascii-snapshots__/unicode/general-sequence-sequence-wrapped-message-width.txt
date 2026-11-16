@@ -1,0 +1,21 @@
+┌──────────────────┐                    ┌───┐         
+│ Supercalifragil- │                    │ B │         
+│ isticexpialidoc- │                    │   │         
+│       ious       │                    │   │         
+└─────────┬────────┘                    └─┬─┘         
+          │                               │           
+          │  Pneumonoultramicroscopics-   │           
+          │     ilicovolcanoconiosis      │           
+          │───────────────────────────────▶           
+          │                               │           
+          │                     ┌──────────────────┐  
+          │                     │ Pneumonoultrami- │  
+          │                     │ croscopicsilico- │  
+          │                     │ volcanoconiosis  │  
+          │                     └──────────────────┘  
+          │                               │           
+┌─────────┴────────┐                    ┌─┴─┐         
+│ Supercalifragil- │                    │ B │         
+│ isticexpialidoc- │                    │   │         
+│       ious       │                    │   │         
+└──────────────────┘                    └───┘         

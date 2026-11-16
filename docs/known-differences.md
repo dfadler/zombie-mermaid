@@ -164,7 +164,11 @@ ignoring them. Per-message and per-note `wrap:` / `nowrap:` prefixes are honoure
 width in a message, note or participant name splits mid-word with a `-`, as mermaid's `breakString`
 does, as does a block tab or divider label word wider than the frame (#2773, #2963). The split lands
 within a few characters of mermaid's, since mermaid measures proportional text in pixels and the ASCII
-renderer counts columns (8 px each).
+renderer counts columns (8 px each). A message wraps twice, as mermaid does: at `width - 20`, which
+sizes the lifeline gap, then at that gap, so the line count of a long word matches mermaid's at every
+width tried (#3197). Two limits remain: the gap is taken as the distance between adjacent lifelines
+(a message across several lifelines wraps wider in mermaid), and ordinary text can take one more line
+than mermaid, whose font is narrower than our SVG font and than 8 px a column.
 
 `link` / `links` (participant menus): measured on mermaid 12.3.0, the menu is a
 `display="none"` `actorPopupMenu` group with `<a xlink:href>` entries that only a click in a
@@ -632,7 +636,7 @@ paint, identical results):
 | `primaryTextColor`, `primaryBorderColor` (`base`)                                                 | text colour; start of a border gradient | ignored; with the option: `fg`; a solid `border` |
 | `lineColor`, any theme                                                                            | edge and arrowhead colour               | ignored; with the option: `line`                 |
 | `pie1`..`pie12`, any theme                                                                        | the Nth slice in source order, wrapping | ignored; with the option: same                   |
-| invalid `primaryColor` (`#12345`)                                                                 | throws `Unsupported color format`       | ignored, renders                                 |
+| unparsable `primaryColor`, `lineColor`, `primaryTextColor` (`#12345`; the last two under `base`)  | throws `Unsupported color format`       | same (`MermaidParseError`, #3163)                |
 | invalid `pie1` (`notacolor`)                                                                      | slice painted `#333`                    | ignored, theme colour kept                       |
 | `secondaryColor`, `tertiaryColor`, `background`, `fontFamily`, `nodeBorder`, `pie*TextColor`, ... | applied or used to derive other colours | not supported, listed in `InitConfig.ignored`    |
 
@@ -651,8 +655,8 @@ mermaid.js 12.1.0 and 12.2.0 render the diagram without raising, and the browser
 the bad declaration, so the default paint stays. zombie-mermaid also renders and drops
 the value (it never reaches the SVG). The agentic-mermaid project refuses such input by
 name instead. The difference is deliberate, not a gap: parity with mermaid.js here means
-tolerating the input. (An invalid `themeVariables` colour is a separate case, listed in
-the table above, where mermaid itself throws.)
+tolerating the input. (An unparsable `primaryColor`, `lineColor` or `primaryTextColor` is a separate case, listed in
+the table above: mermaid throws and so does zombie-mermaid.)
 
 ## ASCII: opt-in layout-faithful mode (`--layout mermaid`)
 

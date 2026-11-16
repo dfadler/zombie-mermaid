@@ -2707,11 +2707,15 @@ export function treemapValueFormatter(spec?: string): (v: number) => string;
 
 // @public
 export interface UsecaseActor {
+    classes?: string[];
     // (undocumented)
     id: string;
     // (undocumented)
     label: string;
     parentId?: string;
+    stereotype?: string;
+    // (undocumented)
+    styles?: string[];
 }
 
 // @public
@@ -2726,6 +2730,8 @@ export interface UsecaseBoundary {
 // @public
 export interface UsecaseCase {
     // (undocumented)
+    classes?: string[];
+    // (undocumented)
     id: string;
     // (undocumented)
     label: string;
@@ -2733,6 +2739,18 @@ export interface UsecaseCase {
     parentId?: string;
     // (undocumented)
     shape: 'ellipse' | 'rect';
+    // (undocumented)
+    stereotype?: string;
+    // (undocumented)
+    styles?: string[];
+}
+
+// @public
+export interface UsecaseClassDef {
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    styles: string[];
 }
 
 // @public (undocumented)
@@ -2741,6 +2759,8 @@ export interface UsecaseDiagram {
     actors: UsecaseActor[];
     // (undocumented)
     boundaries: UsecaseBoundary[];
+    // (undocumented)
+    classDefs: UsecaseClassDef[];
     // (undocumented)
     direction: UsecaseDirection;
     // (undocumented)
@@ -2767,7 +2787,12 @@ export const usecaseNoteId: (n: number) => string;
 
 // @public (undocumented)
 export interface UsecaseRelationship {
-    arrow: 'forward' | 'backward' | 'none';
+    // (undocumented)
+    animate?: boolean;
+    // (undocumented)
+    animation?: string;
+    arrow: 'forward' | 'backward' | 'none' | 'circleEnd' | 'crossEnd' | 'circleStart' | 'crossStart';
+    id?: string;
     // (undocumented)
     label?: string;
     // (undocumented)
