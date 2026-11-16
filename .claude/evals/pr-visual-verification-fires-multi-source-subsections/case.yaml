@@ -52,4 +52,4 @@ graders:
     flags: i
   - name: subsection_per_source
     type: regex
-    pattern: '(?:#{3,4}[ \t]+\S[^`]*?```mermaid[\s\S]+?```[\s\S]*?){3}'
+    pattern: '(?:#{3,4}[ \t]+\S[^\n]*?[\s\S]*?```mermaid[\s\S]+?```[\s\S]*?){3}'
