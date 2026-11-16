@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-11-09T23:11:57.759Z",
+  "generatedAt": "2026-11-16T14:09:16.871Z",
   "fork": {
     "owner": "dfadler",
     "name": "zombie-mermaid",
     "url": "https://github.com/dfadler/zombie-mermaid",
-    "lastPushedAt": "2026-11-09T22:52:41Z",
-    "openIssues": 174,
-    "openPRs": 9,
-    "mergedPRs": 1560,
+    "lastPushedAt": "2026-11-16T07:05:09Z",
+    "openIssues": 106,
+    "openPRs": 15,
+    "mergedPRs": 1703,
     "releaseCount": 30,
     "latestRelease": {
-      "tag": "zombie-mermaid@5.15.0",
-      "publishedAt": "2026-11-08T03:07:56Z"
+      "tag": "zombie-mermaid@5.17.0",
+      "publishedAt": "2026-11-13T23:02:16Z"
     }
   },
   "upstream": {
@@ -19,7 +19,7 @@
     "name": "beautiful-mermaid",
     "url": "https://github.com/lukilabs/beautiful-mermaid",
     "lastPushedAt": "2026-05-06T10:53:19Z",
-    "openIssues": 52,
+    "openIssues": 53,
     "openPRs": 46,
     "mergedPRs": 13,
     "releaseCount": 6,
@@ -29,7 +29,7 @@
     }
   },
   "rescued": {
-    "totalFixes": 70,
+    "totalFixes": 81,
     "upstreamIssuesReferenced": 30,
     "upstreamIssuesStillOpen": 24,
     "upstreamIssuesClosedIndependently": 6,
@@ -248,7 +248,7 @@
   },
   "responseTime": {
     "sampleSize": 20,
-    "medianHours": 0.4,
+    "medianHours": 9.4,
     "note": "Median time from issue open to first comment, over the most recently commented issues. zombie-mermaid is a low-traffic, solo-maintained fork — treat this as directional, not an SLA."
   }
 }
