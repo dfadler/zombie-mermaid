@@ -128,17 +128,14 @@ describe('honorThemeVariables: behaviour', () => {
       )
 
     it('flowchart and state point the node stroke at a gradient to the hue-shifted primaryColor', () => {
-      for (const src of [
-        flow(BASE_ALL, 'base'),
-        state(BASE_ALL, 'base'),
-      ]) {
+      for (const src of [flow(BASE_ALL, 'base'), state(BASE_ALL, 'base')]) {
         const svg = renderMermaidSVG(src, ON)
         const g = grad(svg)
-        // mermaid@12.3.0: primaryColor #ff0000 → hsl(-120, 60%, 40%)
+        // Mermaid 12.3.0: primaryColor #ff0000 gives hsl(-120, 60%, 40%)
         expect(g?.[2]).toBe('#2929a3')
         expect(svg).toContain(`--_node-stroke:   url(#${g?.[1]});`)
         expect(svg).toMatch(/--_node-border:\s+var\(--border,/)
-        // contrast and forced-colors overrides still replace the gradient
+        // The contrast and forced-colors overrides still replace the gradient
         expect(svg).toContain('--_node-stroke: CanvasText;')
       }
     })

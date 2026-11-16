@@ -224,6 +224,5 @@ describe('deriveBorderGradientEnd (mermaid 12.3.0 base gradient end stop, #3164)
   it('a negative shifted hue wraps (hsl(-79.41) is hsl(280.59))', () => {
     expect(deriveBorderGradientEnd('#fff4dd')).toMatch(/^#d[de]bbee$/)
   })
-  it('null for names', () =>
-    expect(deriveBorderGradientEnd('red')).toBeNull())
+  it('null for names', () => expect(deriveBorderGradientEnd('red')).toBeNull())
 })

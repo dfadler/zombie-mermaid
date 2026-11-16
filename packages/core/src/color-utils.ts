@@ -244,7 +244,7 @@ function toHsl(value: string): { h: number; s: number; l: number } | null {
   return { h: h * 60, s: s * 100, l: l * 100 }
 }
 
-/** khroma `adjust(value, { h, s, l })` as `#rrggbb`, saturation and lightness clamped to 0-100; null when `value` is not a hex, `rgb()` or `hsl()` colour. */
+/** Khroma `adjust(value, { h, s, l })` as `#rrggbb`, saturation and lightness clamped to 0-100; null when `value` is not a hex, `rgb()` or `hsl()` colour. */
 function adjustHsl(
   value: string,
   by: { h: number; s: number; l: number },
