@@ -4469,8 +4469,8 @@ labels, custom sizes), measured with a throwaway script, not yet a checked-in or
 - **Label measurement.** The viewBox grows to fit the labels, whose width is a sum of Trebuchet
   MS advances (as for timelines) with the 14px line box mermaid's `getBBox` reports there (13
   above the baseline, 3 below). On a machine without Trebuchet mermaid's own width differs a few px.
-- **Font.** Labels are drawn in the render's font (mermaid's own stack by default), about 10% wider than
-  Trebuchet. A label that overhangs the bars (outlined labels left of the first column, or right of
+- **Font.** Labels are drawn in the render's font (mermaid's own stack by default; an explicit `font` such as Inter
+  is about 10% wider than Trebuchet). A label that overhangs the bars (outlined labels left of the first column, or right of
   the last) widens the viewBox by a 12% allowance on its Trebuchet width so it is not cut off; mermaid's
   own viewBox is a few px narrower there. Diagrams whose labels sit inside the 600px frame are unaffected.
 - **Values that cannot be drawn.** Mermaid draws `NaN` geometry for a text value (`A,B,abc`), for a
@@ -4505,7 +4505,7 @@ build above was compared.
   on a machine that has the font. A label can still land one font size off (`Kotlin` 12 here, 13
   there), and bold section labels are measured as regular, so a truncation can differ by a letter.
   Non-ASCII text falls back to the library's Inter estimate.
-- **Font.** Text is drawn in the render's font (mermaid's own stack by default), not mermaid's stack, and there
+- **Font.** Text is drawn in the render's font (mermaid's own stack by default), and there
   is no `clip-path` on labels: fitting already keeps them inside their cell.
 - **`classDef`.** Only `fill`, `stroke`, `stroke-width` (cells) and `color` (text) are applied, and a
   colour with `url()` or markup is ignored. Mermaid copies every property to the cell with
