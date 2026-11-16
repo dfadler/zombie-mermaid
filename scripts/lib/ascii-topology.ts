@@ -18,6 +18,8 @@ import {
   registerAsciiLayout,
 } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidASCII } from '../../src/index.ts'
+import { bendOf } from '../../src/ascii-layout-provider.ts'
+import { pathToDrawing } from '../../packages/ascii-renderer/src/port-offsets.ts'
 import { renderGraphAscii } from '../../packages/ascii-renderer/src/flowchart.ts'
 import type { AsciiGraph } from '../../packages/ascii-renderer/src/types.ts'
 import {
@@ -59,6 +61,10 @@ export interface Counts {
   arrowsWant: number
   /** Arrowhead glyphs found in the drawn text. */
   arrows: number
+  /** Edges with an ELK bend and a drawn one (`AsciiEdgeHint.bend`). */
+  bends: number
+  /** Of those, how many bend on the same side of the gap's middle. */
+  bendOk: number
 }
 
 export const emptyCounts = (): Counts => ({
@@ -66,6 +72,8 @@ export const emptyCounts = (): Counts => ({
   endCells: 0,
   arrowsWant: 0,
   arrows: 0,
+  bends: 0,
+  bendOk: 0,
   layerPairs: 0,
   layerOk: 0,
   orderPairs: 0,
@@ -191,6 +199,8 @@ export interface GridRender {
     endCell?: string
     /** Arrowheads this edge draws (start and end). */
     arrows: number
+    /** Where its drawn longest cross-axis run lies, as `AsciiEdgeHint.bend`. */
+    bend?: number
   }[]
   /** Arrowhead glyphs in the drawn text. */
 }
@@ -239,6 +249,7 @@ export function readGrid(
             ? `bundle:${e.bundle.sharedNode.name}`
             : undefined,
         arrows: Number(e.hasArrowStart) + Number(e.hasArrowEnd),
+        bend: bendOf(pathToDrawing(g, e), horiz),
       })
     }
   }
@@ -347,6 +358,18 @@ export function compareEnds(
   for (const { ranks, cells } of groups.values()) {
     c.endCellsWant += ranks.size
     c.endCells += Math.min(ranks.size, cells.size)
+  }
+  used.clear()
+  for (const h of hints.edges) {
+    const i = grid.findIndex(
+      (g, k) => !used.has(k) && g.from === h.from && g.to === h.to,
+    )
+    if (i < 0) continue
+    used.add(i)
+    const drawn = grid[i]!.bend
+    if (h.bend === undefined || drawn === undefined) continue
+    c.bends++
+    if (h.bend < 0.5 === drawn < 0.5) c.bendOk++
   }
   c.arrowsWant = grid.reduce((n, g) => n + g.arrows, 0)
   c.arrows = arrowGlyphs
@@ -492,6 +515,7 @@ export const describeSample = (
     ? ` end cells ${c.endCells}/${c.endCellsWant}`
     : '') +
   (c.arrows !== c.arrowsWant ? ` arrowheads ${c.arrows}/${c.arrowsWant}` : '') +
+  (c.bendOk < c.bends ? ` bends ${c.bendOk}/${c.bends}` : '') +
   `  ${title}`
 
 /** `source` redrawn in the flow direction after `--dir` (none: unchanged); a state diagram gets a `direction` line. */

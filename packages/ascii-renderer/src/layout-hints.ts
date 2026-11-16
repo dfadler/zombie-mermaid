@@ -45,6 +45,15 @@ export interface AsciiEdgeHint {
   to: string
   start: AsciiEdgeEndHint
   end: AsciiEdgeEndHint
+  /**
+   * Where the route's longest cross-axis run lies along the flow axis, as a
+   * fraction of the way from the start face (0) to the end face (1): a Z that
+   * bends beside its source has a small value, beside its target a large one.
+   * Absent for a route with no such run (a straight stroke) and for a start and
+   * end at the same flow position. A consumer puts the label on the long run on
+   * the far side of it.
+   */
+  bend?: number
 }
 
 export interface AsciiLayoutHints {

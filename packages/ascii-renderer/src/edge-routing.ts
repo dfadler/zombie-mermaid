@@ -562,6 +562,30 @@ export function spreadCandidates(
 const FLOW_FAN_LABEL_ROWS = 2
 
 /**
+ * The plain edges back from a group's target to its source that join the group's
+ * strokes on the facing faces: a duplicate pair (two or more) with a single
+ * unlabeled reciprocal, all in one column. Empty otherwise.
+ */
+function reciprocalStrokes(
+  graph: AsciiGraph,
+  group: readonly AsciiEdge[],
+): AsciiEdge[] {
+  const { from, to } = group[0]!
+  const back = graph.edges.filter((o) => o.from === to && o.to === from)
+  const a = requireGridCoord(from)
+  const b = requireGridCoord(to)
+  return group.length >= 2 &&
+    back.length === 1 &&
+    back[0]!.text === '' &&
+    group.every((e) => e.text === '') &&
+    !back[0]!.clusterSource &&
+    !back[0]!.clusterTarget &&
+    a.x === b.x
+    ? back
+    : []
+}
+
+/**
  * Whether `group` (edges between one ordered pair of nodes) can run side by
  * side on the two nodes' facing faces (#1394) instead of taking side lanes:
  * unlabeled edges between nodes stacked in one grid column (or side by side in
@@ -591,7 +615,10 @@ function spreadsOnFaces(
   const size = vertical ? graph.columnWidth : graph.rowHeight
   const at = vertical ? a.x : a.y
   const extent = [0, 1, 2].reduce((n, i) => n + size.get(at + i)!, 0)
-  if (extent < 2 * group.length + 1) return false
+  // A plain reciprocal edge between the pair takes a stroke of its own among
+  // them (`spreadParallelEdges`), as Mermaid draws a pair with duplicates.
+  const recip = reciprocalStrokes(graph, group)
+  if (extent < 2 * (group.length + recip.length) + 1) return false
   // #1455: labels on side-by-side vertical strokes stagger onto their own
   // rows (a label wider than the 2-cell stroke spacing would overprint its
   // neighbour), so the gap needs a plain-stroke row-pair clear at each end
@@ -610,7 +637,7 @@ function spreadsOnFaces(
   // side of that node (a chain onward), never toward the partner or level.
   const axis = vertical ? 'y' : 'x'
   for (const e of graph.edges) {
-    if (group.includes(e) || e.from === e.to) continue
+    if (group.includes(e) || recip.includes(e) || e.from === e.to) continue
     // Face lanes take the outer end of the faces, beside the strokes (#2121).
     if (e.faceLanePlan) continue
     for (const [node, here, there] of [
@@ -2852,7 +2879,12 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     // last leg runs into the face, not along it (as the lane siblings do).
     // A cardinal direction is (1, 1) plus its step.
     const gate =
-      edge.parallelLane || edge.clusterSource
+      edge.parallelLane ||
+      edge.clusterSource ||
+      (lrFlow &&
+        edge.to.shape !== 'diamond' &&
+        (hinted[1] === Left || hinted[1] === Right) &&
+        hintedEnds(graph, edge.to, graph.edgeHints!.get(edge)!.end.face) > 3)
         ? { x: to.x + hinted[1].x - 1, y: to.y + hinted[1].y - 1 }
         : undefined
     const via = gate
@@ -2926,9 +2958,19 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
         )
       : undefined
   if (twin) hintedPath = [...twin.path].reverse()
-  // A horizontal flow has no jog column per edge yet (#2888): a labelled
-  // reciprocal pair on one route would print its labels over each other, so
-  // the second keeps the grid's faces.
+  // A labelled reciprocal pair on one route in a horizontal flow: the second
+  // keeps the grid's faces only where either end is on a decision face that
+  // holds more ends than its three cells (a plain node grows a cell per end,
+  // `hintedFaceCells`), so its arrowhead would land on another end's stroke.
+  const crowded = (): boolean => {
+    const h = graph.edgeHints!.get(edge)!
+    return (
+      (edge.from.shape === 'diamond' &&
+        hintedEnds(graph, edge.from, h.start.face) > 3) ||
+      (edge.to.shape === 'diamond' &&
+        hintedEnds(graph, edge.to, h.end.face) > 3)
+    )
+  }
   const sameRoute = (o: AsciiEdge): boolean =>
     o !== edge &&
     o.from === edge.to &&
@@ -2940,7 +2982,8 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       const r = hintedPath![hintedPath!.length - 1 - i]!
       return c.x === r.x && c.y === r.y
     })
-  if (lrFlow && hintedPath && graph.edges.some(sameRoute)) hintedPath = null
+  if (lrFlow && hintedPath && graph.edges.some(sameRoute) && crowded())
+    hintedPath = null
   // The hinted route was rejected: an overflowing group's sibling keeps its lane
   // (#329) rather than the shared centre path of the ordinary search.
   if (
@@ -3341,6 +3384,33 @@ export function determineLabelLine(
     )
     if (long.length > 0) {
       suitableSegments = [long.reduce((a, b) => (b.width > a.width ? b : a))]
+    }
+  }
+
+  // A Z in a horizontal flow: ELK's bend says which end its vertical sits
+  // beside (`AsciiEdgeHint.bend`), and the label goes on the long run on the
+  // other side, as mermaid puts it, not beside a stroke on the vertical.
+  const bend = graph.edgeHints?.get(edge)?.bend
+  if (
+    bend !== undefined &&
+    // A diamond's slant leaves no room beside its tip for a label.
+    edge.from.shape !== 'diamond' &&
+    edge.to.shape !== 'diamond' &&
+    !edge.clusterSource &&
+    !edge.clusterTarget &&
+    graph.config.graphDirection === 'LR' &&
+    segments.length === 3 &&
+    segments[1]!.isVertical &&
+    !segments[0]!.isVertical &&
+    !segments[2]!.isVertical
+  ) {
+    const [far, near] =
+      bend < 0.5 ? [segments[2]!, segments[0]!] : [segments[0]!, segments[2]!]
+    // Where the grid bends on the other side of the gap than ELK does, the run
+    // ELK would label is the short one: keep the search below.
+    if (far.width >= near.width) {
+      applyLabelLine(graph, edge, far.line, lenLabel)
+      return
     }
   }
 

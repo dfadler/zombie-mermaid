@@ -914,7 +914,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
 
   const diamond = spreadDiamondFaces(graph, runs)
   const split = splitLabeledArrivals(runs)
-  const spread = spreadParallelEdges(runs, rolesAt, portOf)
+  const spread = spreadParallelEdges(runs, rolesAt, portOf, slotEdges)
   const landings = separateFanIns(
     graph,
     runs,
@@ -1094,6 +1094,8 @@ export interface Jog {
   far: number
   /** Bend row of the grid path, before any shift. */
   base: number
+  /** Where ELK bends it, 0 at the gap's first side to 1 at its far side (`AsciiEdgeHint.bend`). */
+  want?: number
 }
 
 const spanOf = (j: Jog): [number, number] => [
@@ -1110,10 +1112,15 @@ const sharesTrunk = (a: Jog, b: Jog): boolean =>
  * strokes on one row that overlap, or touch, merge into a shared run; a stroke
  * whose leg runs through another's bend row crosses it (`┼`).
  */
-function jogCost(jogs: Jog[], rows: number[], lo: number): number {
+function jogCost(jogs: Jog[], rows: number[], lo: number, hi: number): number {
   let cost = 0
   for (let i = 0; i < jogs.length; i++) {
-    cost += (rows[i]! - lo) * 0.01
+    const want = jogs[i]!.want
+    // Beside the end ELK bends it by when it says, else the first side.
+    cost +=
+      want === undefined
+        ? (rows[i]! - lo) * 0.01
+        : Math.abs(rows[i]! - (lo + want * (hi - lo))) * 0.05
     const [a0, a1] = spanOf(jogs[i]!)
     for (let j = i + 1; j < jogs.length; j++) {
       const [b0, b1] = spanOf(jogs[j]!)
@@ -1154,7 +1161,7 @@ const JOG_ROWS_CACHE_MAX = 500
 
 /** The rows `lo..hi` that cost least for these jogs: exhaustive for the few a gap holds, else coordinate descent. */
 export function bestJogRows(jogs: Jog[], lo: number, hi: number): number[] {
-  const key = `${lo},${hi}|${jogs.map((j) => `${j.near},${j.far}`).join(';')}`
+  const key = `${lo},${hi}|${jogs.map((j) => `${j.near},${j.far},${j.want}`).join(';')}`
   const hit = jogRowsCache.get(key)
   if (hit) return [...hit]
   const rows = searchJogRows(jogs, lo, hi)
@@ -1176,7 +1183,7 @@ function searchJogRows(jogs: Jog[], lo: number, hi: number): number[] {
         rows[i] = lo + (rest % count)
         rest = Math.floor(rest / count)
       }
-      const c = jogCost(jogs, rows, lo)
+      const c = jogCost(jogs, rows, lo, hi)
       if (c < bestCost) {
         bestCost = c
         best = [...rows]
@@ -1189,7 +1196,7 @@ function searchJogRows(jogs: Jog[], lo: number, hi: number): number[] {
       for (let r = lo; r <= hi; r++) {
         const trial = [...best]
         trial[i] = r
-        const c = jogCost(jogs, trial, lo)
+        const c = jogCost(jogs, trial, lo, hi)
         if (c < bestCost) {
           bestCost = c
           best = trial
@@ -1235,6 +1242,16 @@ function planJogRows(
     const d = drawnPath(graph, edge, shift).slice(at)
     // Near leg: the one on the side of the gap its grid row lies after.
     const forward = p[0]![main] < p[3]![main]
+    // A flow-face fan-out edge keeps its label on the drop (`determineLabelLine`).
+    const bend =
+      lr &&
+      edge.from.shape !== 'diamond' &&
+      edge.to.shape !== 'diamond' &&
+      !edge.clusterSource &&
+      !edge.clusterTarget &&
+      !leavesRightFace(graph, edge, 'LR')
+        ? graph.edgeHints?.get(edge)?.bend
+        : undefined
     const [n, f] = forward ? [d[0]!, d[3]!] : [d[3]!, d[0]!]
     const jog: Jog = {
       edge,
@@ -1243,6 +1260,7 @@ function planJogRows(
       near: n[cross],
       far: f[cross],
       base: lineToDrawing(graph, p)[1]![main],
+      ...(bend === undefined ? {} : { want: forward ? bend : 1 - bend }),
     }
     const g = p[1]![main]
     gaps.set(g, [...(gaps.get(g) ?? []), jog])
@@ -1359,26 +1377,6 @@ const endsOf = (e: AsciiEdge): [PortRun | undefined, 'S' | 'E'][] => [
 const SIDE_FACE = { top: 'T', bottom: 'B', left: 'L', right: 'R' } as const
 
 /**
- * Both edges of a labelled reciprocal pair that bend (not straight strokes) run
- * along one bend row, so their labels land on the same run and print over each
- * other; a vertical flow gives each edge a jog row of its own (`planJogRows`,
- * #2888), a horizontal one does not yet, so there such a pair keeps the grid's
- * placement.
- */
-function labelledBentPair(graph: AsciiGraph, edge: AsciiEdge): boolean {
-  const other = graph.edges.find(
-    (o) => o !== edge && o.from === edge.to && o.to === edge.from,
-  )
-  return (
-    other !== undefined &&
-    edge.text !== '' &&
-    other.text !== '' &&
-    !runsOf(edge)?.straight &&
-    !runsOf(other)?.straight
-  )
-}
-
-/**
  * The faces whose every end is a plain edge with an ELK hint for that very
  * face, as ends ranked by ELK's order along it (#2645). Within a reciprocal
  * pair ELK gives both ends one position: the forward end goes first. A face
@@ -1425,8 +1423,6 @@ function hintedFaces(graph: AsciiGraph): Map<string, FaceEnd[]> {
       return { ...f, rank: flip ? -rank : rank }
     })
     if (list.length < 2 || ranked.some((r) => r === undefined)) continue
-    if (horizontal && list.some((f) => labelledBentPair(graph, f.edge)))
-      continue
     out.set(k, ranked as FaceEnd[])
   }
   return out
@@ -2223,11 +2219,14 @@ function spreadParallelEdges(
   runs: ReadonlyMap<AsciiEdge, { r: EdgeRuns; s?: string; e?: string }>,
   rolesAt: ReadonlyMap<string, Set<'S' | 'E'>>,
   portOf: (key: string) => string,
+  slotEdges: ReadonlyMap<string, number>,
 ): Map<AsciiEdge, number> {
+  // One group per pair of ports, either way round: a plain reciprocal edge
+  // takes a stroke among a duplicate pair's (`reciprocalStrokes`).
   const groups = new Map<string, AsciiEdge[]>()
   for (const [edge, { r, s, e }] of runs) {
     if (!r.straight || !s || !e) continue
-    const key = `${s}>${e}`
+    const key = [portOf(s), portOf(e)].sort().join('>')
     const group = groups.get(key) ?? []
     group.push(edge)
     groups.set(key, group)
@@ -2235,10 +2234,29 @@ function spreadParallelEdges(
   const out = new Map<AsciiEdge, number>()
   for (const group of groups.values()) {
     const first = runs.get(group[0]!)!
-    const shared = [first.s!, first.e!].some(
-      (k) => rolesAt.get(portOf(k))!.size > 1,
+    // Another edge on either port. A mixed group (a duplicate pair with its
+    // reciprocal) holds both roles at its ports itself.
+    const shared = [first.s!, first.e!].some((k) => {
+      const port = portOf(k)
+      if (!mixed(group)) return rolesAt.get(port)!.size > 1
+      return (
+        [...slotEdges].reduce(
+          (n, [key, c]) => n + (portOf(key) === port ? c : 0),
+          0,
+        ) > group.length
+      )
+    })
+    // A plain reciprocal pair alone keeps its own routing: the strokes of a
+    // mixed group are spread only with a duplicate in one direction.
+    const duplicated = group.some(
+      (e) => group.filter((o) => o.from === e.from).length > 1,
     )
-    if (group.length < 2 || shared) continue
+    if (
+      group.length < 2 ||
+      shared ||
+      (mixed(group) && (!duplicated || first.r.start?.axis !== 'v'))
+    )
+      continue
     const offsetOf = (i: number): number =>
       STROKE_SPACING * i - STROKE_SPACING * ((group.length - 1) / 2)
     // `spreadsOnFaces` (edge-routing.ts) already checked the faces are wide
@@ -2247,6 +2265,10 @@ function spreadParallelEdges(
   }
   return out
 }
+
+/** Whether a group runs both ways between its nodes. */
+const mixed = (group: readonly AsciiEdge[]): boolean =>
+  group.some((e) => e.from !== group[0]!.from)
 
 /**
  * Give labeled edges that reach one port from opposite sides a stroke each.
