@@ -338,6 +338,7 @@ export function compareEnds(
   grid: GridRender['edges'],
   hints: AsciiLayoutHints,
   arrowGlyphs: number,
+  bendMisses: string[] = [],
 ): Counts {
   const c = emptyCounts()
   const used = new Set<number>()
@@ -370,6 +371,10 @@ export function compareEnds(
     if (h.bend === undefined || drawn === undefined) continue
     c.bends++
     if (h.bend < 0.5 === drawn < 0.5) c.bendOk++
+    else
+      bendMisses.push(
+        `${h.from}->${h.to} #${i}: ELK bend ${h.bend.toFixed(2)}, grid ${drawn.toFixed(2)}`,
+      )
   }
   c.arrowsWant = grid.reduce((n, g) => n + g.arrows, 0)
   c.arrows = arrowGlyphs
@@ -488,10 +493,15 @@ export function measureSample(source: string, title = ''): Counts {
   const faces = compareFaces(edges, hints, misses)
   const enabled = process.argv.includes('--misses')
   for (const l of missLines(title, misses, enabled)) console.log(l)
-  return addCounts(
-    addCounts(addCounts(c, faces), compareLoops(edges)),
-    compareEnds(edges, hints, arrowGlyphs),
-  )
+  const bendMisses: string[] = []
+  const ends = compareEnds(edges, hints, arrowGlyphs, bendMisses)
+  for (const l of missLines(
+    title,
+    bendMisses,
+    process.argv.includes('--bend-misses'),
+  ))
+    console.log(l)
+  return addCounts(addCounts(addCounts(c, faces), compareLoops(edges)), ends)
 }
 
 /** A sample is exact when every layer and in-layer-order pair agrees and every self-loop has its own hook. */
