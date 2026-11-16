@@ -3,7 +3,7 @@
  * ELK layout, over the gallery flowchart/state/ER samples plus the fork-fixes
  * entries (#2645). The numbers gate each ASCII placement PR (Q3).
  *
- * Usage: tsx scripts/ascii-topology.ts [--verbose] [--misses (list face misses)] [--no-hints] [--dir TD|LR|RL|BT]
+ * Usage: tsx scripts/ascii-topology.ts [--verbose] [--misses (list face misses)] [--bend-misses (list bend-side misses)] [--no-hints] [--dir TD|LR|RL|BT]
  */
 import { allForkFixes } from '../demo/fork-fixes-data.ts'
 import { samples } from '../samples/samples-data.ts'

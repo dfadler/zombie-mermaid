@@ -1096,6 +1096,8 @@ export interface Jog {
   base: number
   /** Where ELK bends it, 0 at the gap's first side to 1 at its far side (`AsciiEdgeHint.bend`). */
   want?: number
+  /** `want` as a drawn row, on the scale from the gap's first face to its far one (set by the planner). */
+  aim?: number
 }
 
 const spanOf = (j: Jog): [number, number] => [
@@ -1112,15 +1114,15 @@ const sharesTrunk = (a: Jog, b: Jog): boolean =>
  * strokes on one row that overlap, or touch, merge into a shared run; a stroke
  * whose leg runs through another's bend row crosses it (`┼`).
  */
-function jogCost(jogs: Jog[], rows: number[], lo: number, hi: number): number {
+function jogCost(jogs: Jog[], rows: number[], lo: number): number {
   let cost = 0
   for (let i = 0; i < jogs.length; i++) {
-    const want = jogs[i]!.want
+    const aim = jogs[i]!.aim
     // Beside the end ELK bends it by when it says, else the first side.
     cost +=
-      want === undefined
+      aim === undefined
         ? (rows[i]! - lo) * 0.01
-        : Math.abs(rows[i]! - (lo + want * (hi - lo))) * 0.05
+        : Math.abs(rows[i]! - aim) * 0.05
     const [a0, a1] = spanOf(jogs[i]!)
     for (let j = i + 1; j < jogs.length; j++) {
       const [b0, b1] = spanOf(jogs[j]!)
@@ -1161,7 +1163,7 @@ const JOG_ROWS_CACHE_MAX = 500
 
 /** The rows `lo..hi` that cost least for these jogs: exhaustive for the few a gap holds, else coordinate descent. */
 export function bestJogRows(jogs: Jog[], lo: number, hi: number): number[] {
-  const key = `${lo},${hi}|${jogs.map((j) => `${j.near},${j.far},${j.want}`).join(';')}`
+  const key = `${lo},${hi}|${jogs.map((j) => `${j.near},${j.far},${j.aim}`).join(';')}`
   const hit = jogRowsCache.get(key)
   if (hit) return [...hit]
   const rows = searchJogRows(jogs, lo, hi)
@@ -1183,7 +1185,7 @@ function searchJogRows(jogs: Jog[], lo: number, hi: number): number[] {
         rows[i] = lo + (rest % count)
         rest = Math.floor(rest / count)
       }
-      const c = jogCost(jogs, rows, lo, hi)
+      const c = jogCost(jogs, rows, lo)
       if (c < bestCost) {
         bestCost = c
         best = [...rows]
@@ -1196,7 +1198,7 @@ function searchJogRows(jogs: Jog[], lo: number, hi: number): number[] {
       for (let r = lo; r <= hi; r++) {
         const trial = [...best]
         trial[i] = r
-        const c = jogCost(jogs, trial, lo, hi)
+        const c = jogCost(jogs, trial, lo)
         if (c < bestCost) {
           bestCost = c
           best = trial
@@ -1267,7 +1269,12 @@ function planJogRows(
   }
   for (const [g, jogs] of gaps) {
     // A gap with more jogs than this keeps its shared rows: the search is cubic in them.
-    if (jogs.length < 2 || jogs.length > MAX_GAP_JOGS) continue
+    // One jog still moves when ELK says where it bends (below).
+    if (
+      jogs.length > MAX_GAP_JOGS ||
+      (jogs.length < 2 && jogs[0]!.want === undefined)
+    )
+      continue
     const size = (lr ? graph.columnWidth : graph.rowHeight).get(g) ?? 0
     const first =
       lineToDrawing(graph, [{ x: g, y: g }])[0]![main] - Math.floor(size / 2)
@@ -1280,6 +1287,9 @@ function planJogRows(
     )
     const lo = wall + 1
     const hi = first + size - 2
+    // ELK's fraction is of the way between the two node faces, one cell beyond the gap each side.
+    for (const j of jogs)
+      if (j.want !== undefined) j.aim = first - 1 + j.want * (size + 1)
     const shared = jogs.some((a, i) =>
       jogs.some((b, j) => {
         const [a0, a1] = spanOf(a)
@@ -1289,7 +1299,19 @@ function planJogRows(
         )
       }),
     )
-    if (!shared) continue
+    if (!shared) {
+      // Nothing merges: move each jog that has an ELK bend to its row, no widening.
+      if (hi < lo || jogs.every((j) => j.want === undefined)) continue
+      const rows = bestJogRows(jogs, lo, hi)
+      jogs.forEach((jog, i) => {
+        if (jog.want === undefined) return
+        const shift = result.get(jog.edge) ?? { start: 0, end: 0 }
+        const points = shift.points ?? jog.edge.path.map(() => ({ x: 0, y: 0 }))
+        for (const k of [1, 2]) points[jog.at + k]![main] = rows[i]! - jog.base
+        result.set(jog.edge, { ...shift, points })
+      })
+      continue
+    }
     // Rows for every jog to have its own, with a clear row between and room
     // for a label and the arrowhead: what the gap is widened to (also when it
     // has no usable row yet).
