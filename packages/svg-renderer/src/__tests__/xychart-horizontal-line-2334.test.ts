@@ -16,7 +16,7 @@ describe('horizontal XY line paths (#2334)', () => {
   it('draws a non-monotone series as straight segments in category order', () => {
     expect(
       linePath(body('xychart-beta horizontal', '10, 90, 20, 80, 30')),
-    ).toBe('M147.9,97 L610.1,190.5 L205.7,284 L552.3,377.5 L263.5,471')
+    ).toBe('M146.8,97 L611.2,190.5 L204.9,284 L553.1,377.5 L262.9,471')
   })
 
   it('keeps category (y) strictly increasing along the path', () => {
@@ -32,7 +32,7 @@ describe('horizontal XY line paths (#2334)', () => {
   it('draws a monotone series as straight segments too', () => {
     expect(
       linePath(body('xychart-beta horizontal', '10, 30, 50, 70, 90')),
-    ).toBe('M147.9,97 L263.5,190.5 L379,284 L494.5,377.5 L610.1,471')
+    ).toBe('M146.8,97 L262.9,190.5 L379,284 L495.1,377.5 L611.2,471')
   })
 
   it('draws a single point as a lone M and two points as M L', () => {
@@ -50,7 +50,7 @@ describe('horizontal XY line paths (#2334)', () => {
 
   it('draws vertical charts as straight segments too, as mermaid does (no curve option exists)', () => {
     expect(linePath(body('xychart-beta', '10, 90, 20, 80, 30'))).toBe(
-      'M132.3,391.8 L267.6,70.2 L403,351.6 L538.4,110.4 L673.7,311.4',
+      'M131.1,391.8 L267.1,70.2 L403,351.6 L538.9,110.4 L674.9,311.4',
     )
   })
 })

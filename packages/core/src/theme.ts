@@ -11,6 +11,7 @@
 // colors, and the SVG adapts. No light/dark mode detection needed.
 // ============================================================================
 
+import { isTrebuchetFont } from './text-metrics.ts'
 import { escapeXml, escapeAttr } from './multiline-utils.ts'
 import { parseHexColor } from './color-utils.ts'
 import { f } from './render-utils.ts'
@@ -488,6 +489,15 @@ export function buildStyleBlock(
   // var() reference is passed through as-is so `var(--x, 'Fallback')` keeps
   // its own internal quotes intact.
   const safeFont = isVarReference ? font.trim() : font.replace(/[<>{};'"]/g, '')
+  // A comma list is a stack: quote each family, leave generic keywords bare.
+  // Same predicate that selects Trebuchet metrics, so drawing and sizing agree.
+  const isFontStack =
+    !isVarReference && isTrebuchetFont(font) && font.includes(',')
+  const stack = safeFont
+    .split(',')
+    .map((f) => f.trim())
+    .map((f) => (GENERIC_FONT_FAMILIES.has(f.toLowerCase()) ? f : `'${f}'`))
+    .join(', ')
   const embedBody =
     body !== undefined && !isVarReference && safeFont === body.family
   const skipImport =
@@ -524,7 +534,7 @@ export function buildStyleBlock(
     // logic `font` above does.
     ...(embedBody ? [`  ${body.faceCss}`] : []),
     ...(mono ? [`  ${mono.faceCss}`] : []),
-    `  text { font-family: ${isVarReference ? safeFont : `'${safeFont}'`}, system-ui, sans-serif; }`,
+    `  text { font-family: ${isVarReference ? safeFont : isFontStack ? stack : `'${safeFont}'`}, system-ui, sans-serif; }`,
     ...(mono
       ? [
           `  .mono { font-family: '${mono.family}', 'SF Mono', 'Fira Code', ui-monospace, monospace; }`,

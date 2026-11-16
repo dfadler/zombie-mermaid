@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 216 254" width="216" height="254" role="img" style="--bg:#FFFFFF;--fg:#aa00aa;--line:#0000ff;--surface:#ff0000;--border:#00aa00;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -12,7 +11,7 @@
     --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
     --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
     --_node-border:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
-    --_node-stroke:   url(#zmf3a9t2-border-gradient);
+    --_node-stroke:   url(#zmr3bwgp-border-gradient);
     --_group-fill:    var(--bg);
     --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
     --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
@@ -26,16 +25,16 @@
   }
 </style>
 <defs>
-  <marker id="zmf3a9t2-arrowhead" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmr3bwgp-arrowhead" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto">
     <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
   </marker>
-  <marker id="zmf3a9t2-arrowhead-start" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmr3bwgp-arrowhead-start" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
   </marker>
-<linearGradient id="zmf3a9t2-border-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--_node-border)" /><stop offset="100%" stop-color="#2929a3" /></linearGradient>
+<linearGradient id="zmr3bwgp-border-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--_node-border)" /><stop offset="100%" stop-color="#2929a3" /></linearGradient>
 </defs>
-<path class="edge" data-from="_start" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 54 L 108 88.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmf3a9t2-arrowhead)" />
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 134 L 108 168.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmf3a9t2-arrowhead)" />
+<path class="edge" data-from="_start" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 54 L 108 88.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmr3bwgp-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 134 L 108 168.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmr3bwgp-arrowhead)" />
 <g class="node" data-id="_start" data-label="" data-shape="state-start">
   <circle cx="108" cy="47" r="7" fill="var(--_text)" stroke="none" />
 </g>

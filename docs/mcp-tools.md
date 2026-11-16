@@ -23,7 +23,7 @@ Render Mermaid source to a self-contained SVG string. Flowcharts, state, sequenc
 | `bg`          | string           | Background color, hex `#rgb` or `#rrggbb` only. Applied on top of `theme`. |
 | `fg`          | string           | Foreground/text color, same hex format. Applied on top of `theme`.         |
 | `transparent` | boolean          | Transparent background instead of the theme's. Default `false`.            |
-| `font`        | string           | Font family for diagram text. Default `Inter`.                             |
+| `font`        | string           | Font family for diagram text. Default mermaid's stack.                     |
 | `outputPath`  | string           | Write the SVG to disk instead of returning it. See below.                  |
 
 `bg`/`fg` override only the one color they name, so a `theme` plus `bg: "#000"` keeps the theme's foreground. With neither `theme` nor overrides the defaults are `#FFFFFF` / `#27272A`. Anything other than `#rgb`/`#rrggbb` (named colors, `rgb()`, alpha forms) fails validation.

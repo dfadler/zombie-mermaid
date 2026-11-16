@@ -71,7 +71,9 @@ const baseShape = {
   font: z
     .string()
     .optional()
-    .describe('Font family for diagram text. Default: "Inter".'),
+    .describe(
+      "Font family for diagram text. Default: mermaid's own stack (trebuchet ms, verdana, arial, sans-serif).",
+    ),
 }
 
 /** `#rgb` or `#rrggbb` — the forms the renderer's color math accepts. */

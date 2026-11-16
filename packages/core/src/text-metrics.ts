@@ -1,6 +1,7 @@
 // ============================================================================
 // Text Metrics — Variable-width character measurement for SVG layout
 // ============================================================================
+import { TREBUCHET_BOLD, TREBUCHET_REGULAR } from './trebuchet-advances.ts'
 //
 // Provides font-agnostic text width estimation using character class buckets.
 // More accurate than uniform character width for proportional fonts.
@@ -434,11 +435,45 @@ export function setMonospaceMetrics(monospace: boolean): void {
   monospaceMetrics = monospace
 }
 
+/**
+ * Mermaid 12.3.0's label font stack. Its headless Chromium measures labels in this stack, so it
+ * is this library's default font and the one `measureTextWidth` has a measured table for.
+ */
+export const MERMAID_FONT_STACK = '"trebuchet ms", verdana, arial, sans-serif'
+
+let trebuchetMetrics = false
+
+/** Whether `font` is mermaid's own label stack (or names Trebuchet MS first). */
+export function isTrebuchetFont(font: string): boolean {
+  return /^\s*["']?trebuchet ms\b/i.test(font)
+}
+
+/** Select Trebuchet MS metrics for subsequent measurements. Called once per render. */
+export function setTrebuchetMetrics(trebuchet: boolean): void {
+  trebuchetMetrics = trebuchet
+}
+
 export function measureTextWidth(
   text: string,
   fontSize: number,
   fontWeight: number,
 ): number {
+  if (trebuchetMetrics && !monospaceMetrics) {
+    // Measured advances, no padding: mermaid sizes a label box to its text exactly.
+    const table = fontWeight >= 600 ? TREBUCHET_BOLD : TREBUCHET_REGULAR
+    // Non-ASCII keeps the Inter estimate, including its weight ratio.
+    const inter = fontWeight >= 600 ? 0.6 : fontWeight >= 500 ? 0.57 : 0.54
+    let px = 0
+    for (const char of text) {
+      const advance = table[char.codePointAt(0)! - 32]
+      px +=
+        advance !== undefined && char >= ' ' && char <= '~'
+          ? (advance * fontSize) / 16
+          : getCharWidth(char) * fontSize * inter
+    }
+    return px
+  }
+
   // Add minimum padding to prevent truncation at text boundaries
   // Increased from 0.1 to 0.15 for better label separation and collision prevention
   const minPadding = fontSize * 0.15

@@ -486,6 +486,9 @@ export function isMermaidThemeColor(value: string): boolean;
 export function isMonospaceFont(font: string): boolean;
 
 // @public
+export function isTrebuchetFont(font: string): boolean;
+
+// @public
 export function isValidCssColor(value: string): boolean;
 
 // @public
@@ -553,6 +556,9 @@ export function measureMultilineText(text: string, fontSize: number, fontWeight:
 
 // @public (undocumented)
 export function measureTextWidth(text: string, fontSize: number, fontWeight: number): number;
+
+// @public
+export const MERMAID_FONT_STACK = "\"trebuchet ms\", verdana, arial, sans-serif";
 
 // @public (undocumented)
 export interface MermaidEdge {
@@ -1037,6 +1043,9 @@ export type SequenceRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'f
 
 // @public
 export function setMonospaceMetrics(monospace: boolean): void;
+
+// @public
+export function setTrebuchetMetrics(trebuchet: boolean): void;
 
 // @public
 export function splitClassShorthand(identifier: string): {

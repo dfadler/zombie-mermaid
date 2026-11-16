@@ -4479,8 +4479,8 @@ labels, custom sizes), measured with a throwaway script, not yet a checked-in or
 - **Label measurement.** The viewBox grows to fit the labels, whose width is a sum of Trebuchet
   MS advances (as for timelines) with the 14px line box mermaid's `getBBox` reports there (13
   above the baseline, 3 below). On a machine without Trebuchet mermaid's own width differs a few px.
-- **Font.** Labels are drawn in the render's font (Inter by default), about 10% wider than
-  Trebuchet. A label that overhangs the bars (outlined labels left of the first column, or right of
+- **Font.** Labels are drawn in the render's font (mermaid's own stack by default; an explicit `font` such as Inter
+  is about 10% wider than Trebuchet). A label that overhangs the bars (outlined labels left of the first column, or right of
   the last) widens the viewBox by a 12% allowance on its Trebuchet width so it is not cut off; mermaid's
   own viewBox is a few px narrower there. Diagrams whose labels sit inside the 600px frame are unaffected.
 - **Values that cannot be drawn.** Mermaid draws `NaN` geometry for a text value (`A,B,abc`), for a
@@ -4515,7 +4515,7 @@ build above was compared.
   on a machine that has the font. A label can still land one font size off (`Kotlin` 12 here, 13
   there), and bold section labels are measured as regular, so a truncation can differ by a letter.
   Non-ASCII text falls back to the library's Inter estimate.
-- **Font.** Text is drawn in the render's font (Inter by default), not mermaid's stack, and there
+- **Font.** Text is drawn in the render's font (mermaid's own stack by default), and there
   is no `clip-path` on labels: fitting already keeps them inside their cell.
 - **`classDef`.** Only `fill`, `stroke`, `stroke-width` (cells) and `color` (text) are applied, and a
   colour with `url()` or markup is ignored. Mermaid copies every property to the cell with
@@ -4542,7 +4542,7 @@ drawing size agree on every gallery sample.
   without Trebuchet. Characters outside printable ASCII are estimated (a full em for CJK).
 - **Title width.** The title (33.47px bold) is measured the same way; it only moves the
   drawing's edges when it is wider than the content.
-- **Font.** Text is drawn in the render's font (Inter by default) inside Mermaid's
+- **Font.** Text is drawn in the render's font (mermaid's own stack by default) inside Mermaid's
   Trebuchet-sized boxes; it can look a little wider.
 - **Palette.** Box fills are the theme accent and its series shades mixed 30% into the
   background; mermaid uses its `cScale` hues.
@@ -4576,7 +4576,7 @@ wrapped line counts, priority bars and the drawing size agree on every gallery s
   ASCII are estimated.
 - **Palette.** Column fills are the theme accent and its series shades mixed into the
   background; mermaid uses its `cScale` hues. Priority bar colours are mermaid's.
-- **Font.** Text is drawn in the render's font (Inter by default) inside Mermaid's
+- **Font.** Text is drawn in the render's font (mermaid's own stack by default) inside Mermaid's
   Trebuchet-sized boxes.
 - **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; the text is the same.
 - **Repeated spaces** inside a wrapped label are collapsed (Mermaid keeps them).
@@ -4678,7 +4678,7 @@ labels and dashes, box positions and the drawing size agree on every gallery sam
 - **Line routes.** Lines are straight runs with right-angle bends where ELK routes
   them; Mermaid curves its corners ([#2967](https://github.com/dfadler/zombie-mermaid/issues/2967)). The arrow and the circle-plus sit at the same
   ends.
-- **Font and kerning.** Text is drawn in the render's font (Inter by default) inside
+- **Font and kerning.** Text is drawn in the render's font (mermaid's own stack by default) inside
   boxes sized for Trebuchet MS, as Mermaid sizes them. The kerning table was
   measured in Chromium on macOS; a machine without Trebuchet MS sizes boxes from
   another face in Mermaid, which this library cannot follow. Characters outside
@@ -4738,7 +4738,7 @@ labels and dashes, box positions and the drawing size agree on every gallery sam
 - **Line routes.** Lines are straight runs with right-angle bends where ELK routes
   them; Mermaid curves its corners ([#2967](https://github.com/dfadler/zombie-mermaid/issues/2967)). The arrow and the circle-plus sit at the same
   ends.
-- **Font and kerning.** Text is drawn in the render's font (Inter by default) inside
+- **Font and kerning.** Text is drawn in the render's font (mermaid's own stack by default) inside
   boxes sized for Trebuchet MS, as Mermaid sizes them. The kerning table was
   measured in Chromium on macOS; a machine without Trebuchet MS sizes boxes from
   another face in Mermaid, which this library cannot follow. Characters outside
@@ -4767,7 +4767,7 @@ graphs in all three orientations, with and without `parallelCommits` and
   the browser with whatever `trebuchet ms`, `verdana`, `arial` resolves to, so a label's
   box or the drawing size can differ by a pixel or two on a machine without Trebuchet.
   Characters outside printable ASCII are estimated.
-- **Font.** Text is drawn in the render's font (Inter by default) inside Trebuchet-sized boxes, so a long tag or label can overhang its box and the viewBox by a few pixels.
+- **Font.** Text is drawn in the render's font (mermaid's own stack by default) inside Trebuchet-sized boxes, so a long tag or label can overhang its box and the viewBox by a few pixels.
 - **Palette.** Branch colours are the theme accent and its series shades, eight to a
   cycle; mermaid uses its `git0`..`git7` hues. A cherry-pick's bullet is the text colour
   (Mermaid leaves it unstyled, so it is black). The highlight outline uses the text colour.
@@ -5249,7 +5249,7 @@ Render Mermaid source to a self-contained SVG string. Flowcharts, state, sequenc
 | `bg`          | string           | Background color, hex `#rgb` or `#rrggbb` only. Applied on top of `theme`. |
 | `fg`          | string           | Foreground/text color, same hex format. Applied on top of `theme`.         |
 | `transparent` | boolean          | Transparent background instead of the theme's. Default `false`.            |
-| `font`        | string           | Font family for diagram text. Default `Inter`.                             |
+| `font`        | string           | Font family for diagram text. Default mermaid's stack.                     |
 | `outputPath`  | string           | Write the SVG to disk instead of returning it. See below.                  |
 
 `bg`/`fg` override only the one color they name, so a `theme` plus `bg: "#000"` keeps the theme's foreground. With neither `theme` nor overrides the defaults are `#FFFFFF` / `#27272A`. Anything other than `#rgb`/`#rrggbb` (named colors, `rgb()`, alpha forms) fails validation.

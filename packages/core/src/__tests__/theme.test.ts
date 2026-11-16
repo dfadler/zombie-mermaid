@@ -198,3 +198,10 @@ describe('buildStyleBlock – embedded body font (#1867)', () => {
     expect(buildStyleBlock('Inter', false)).toContain('fonts.googleapis.com')
   })
 })
+
+describe('buildStyleBlock – Trebuchet stacks (#3217)', () => {
+  it('emits a Trebuchet-first stack as a list, not one quoted family', () => {
+    const css = buildStyleBlock('Trebuchet MS, sans-serif', false)
+    expect(css).toContain("text { font-family: 'Trebuchet MS', sans-serif,")
+  })
+})

@@ -196,6 +196,9 @@ import {
   themeStyleDeclarations,
   isMonospaceFont,
   setMonospaceMetrics,
+  isTrebuchetFont,
+  setTrebuchetMetrics,
+  MERMAID_FONT_STACK,
   detectDiagramType,
   splitStatements,
   extractAccessibility,
@@ -463,9 +466,13 @@ function renderMermaidSVGRaw(
   // Mermaid throws on a colour it cannot derive from (#3163).
   if (options.honorThemeVariables !== false) assertThemeVariableColors(decoded)
 
-  const font = options.font ?? 'Inter'
+  // Mermaid's own stack unless a font (or the embedded Inter subset) is asked for.
+  const font =
+    options.font ??
+    (options.embedFont === 'subset' ? 'Inter' : MERMAID_FONT_STACK)
   // Box sizing depends on the metrics model, so pick it before any layout runs.
   setMonospaceMetrics(isMonospaceFont(font))
+  setTrebuchetMetrics(isTrebuchetFont(font))
   const transparent = options.transparent ?? false
   let fontSizes = resolveFontSizes(options.fontSizes)
   const diagramType: DiagramType = detectDiagramType(decoded)
