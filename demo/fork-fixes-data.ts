@@ -1128,6 +1128,20 @@ export const allForkFixes: ForkFix[] = [
       'Before: yellow nodes with the default border. After: the border is a darker olive, as in mermaid 12.3.0.',
   },
   {
+    id: 'theme-base-border-gradient',
+    title:
+      'theme: base drew a solid node border where mermaid draws a gradient',
+    symptom:
+      'With `theme: base`, mermaid@12.3.0 draws the node and subgraph border as a left-to-right gradient from the border colour to `primaryColor` with its hue shifted. The border here was a solid colour.',
+    source:
+      '%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#ffe0e0", "primaryBorderColor": "#00aa00"}}}%%\nflowchart LR\n  A[Alpha] --> B[Beta]',
+    fixCommit: 'a8c3c7322',
+    pr: 3209,
+    render: 'svg',
+    lookFor:
+      'Before: a solid green border. After: the border fades from green on the left to pale lavender on the right, as in mermaid 12.3.0.',
+  },
+  {
     id: 'ascii-parallel-lanes-hint-order',
     title: 'ASCII: two parallel pairs out of a decision crossed (BT/TD)',
     symptom:
