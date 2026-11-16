@@ -193,8 +193,9 @@ export function parseUsecase(source: string): UsecaseDiagram {
   ): { ent: Entity; rest: string } => {
     const r = bareEntity(s, allowBracket)
     if (r.rest.startsWith('@{')) {
+      // A body left open was joined with the lines after it, so `}` is there.
       const end = metaEnd(r.rest, 2)
-      const props = end < 0 ? null : metaProps(r.rest.slice(2, end), n)
+      const props = metaProps(r.rest.slice(2, end), n)
       if (!props) return fail("Invalid '@{ … }' metadata")
       r.ent.meta = props
       r.rest = r.rest.slice(end + 1).trim()
@@ -485,8 +486,7 @@ export function parseUsecase(source: string): UsecaseDiagram {
     const asg = boundary ? null : /^(\w+|"[^"\r\n]*"|'[^'\r\n]*')@\{/.exec(line)
     if (asg) {
       const end = metaEnd(line, asg[0].length)
-      const props =
-        end < 0 ? null : metaProps(line.slice(asg[0].length, end), n)
+      const props = metaProps(line.slice(asg[0].length, end), n)
       if (!props) fail("Invalid '@{ … }' metadata")
       if (line.slice(end + 1).trim() !== '')
         fail(`Unexpected '${line.slice(end + 1).trim()}'`)

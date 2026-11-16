@@ -134,8 +134,7 @@ export function jsonRows(
     while (at.i < text.length && /\s/.test(text[at.i]!)) at.i++
     if (at.i < text.length) throw new JsonError(`unexpected input at ${at.i}`)
   } catch (e) {
-    if (e instanceof JsonError) return `Invalid JSON: ${e.message}`
-    throw e
+    return `Invalid JSON: ${(e as Error).message}`
   }
   if (scalar(root) || Array.isArray(root))
     return 'JSON value must have an object root'

@@ -168,4 +168,11 @@ describe('use case SVG', () => {
     expect(svg).toContain('>true<')
     expect(svg).not.toContain('\u2063')
   })
+
+  it('wraps a long json cell at the 120px label width', () => {
+    const long = 'k\u2063' + 'word '.repeat(12)
+    expect(
+      usecaseNodeSize('usecase-json', `J\n${long}`).height,
+    ).toBeGreaterThan(usecaseNodeSize('usecase-json', 'J\nk\u2063v').height)
+  })
 })

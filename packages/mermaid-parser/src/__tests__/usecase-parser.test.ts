@@ -1,3 +1,4 @@
+import { jsonObjectEnd, jsonRows } from '../usecase/json.ts'
 import { describe, expect, it } from 'vitest'
 import { MermaidParseError } from '@zombie-mermaid/core'
 import { parseUsecase, usecaseToGraph } from '../index.ts'
@@ -322,5 +323,42 @@ describe('usecaseToGraph', () => {
     const rows = p('json J @ {"b":1,"2":2,"a":3,"b":4}').jsonNodes[0]!.rows
     expect(rows.map((r) => r.key)).toEqual(['2', 'a', 'b'])
     expect(rows[2]!.value).toBe('4')
+  })
+
+  it.each([
+    ['unterminated string', '{"a": "x', /Invalid JSON/],
+    ['missing key', '{1: 2}', /Invalid JSON/],
+    ['missing colon', '{"a" 1}', /Invalid JSON/],
+    ['no value', '{"a": }', /Invalid JSON/],
+    ['trailing input', '{"a": 1} x', /Invalid JSON/],
+    ['array root', '[1]', /object root/],
+    ['scalar root', '5', /object root/],
+  ])('jsonRows rejects %s', (_n, text, re) => {
+    expect(jsonRows(text)).toMatch(re)
+  })
+
+  it('reads json booleans and finds the end of an object', () => {
+    expect(jsonRows('{"a": false, "b": true}')).toEqual([
+      { key: 'a', value: 'false' },
+      { key: 'b', value: 'true' },
+    ])
+    expect(jsonObjectEnd('{"a": "}"', 0)).toBe(-1)
+  })
+
+  it('rejects clashes and malformed metadata', () => {
+    for (const src of [
+      '',
+      'json J @ {"a":1}\nsystemBoundary J\nend',
+      'actor A\nA@{ hollow }',
+      'actor A@{ hollow }',
+      'A --> U@{ business: true }\nA --> U@{ business: false }',
+    ])
+      expect(() =>
+        parseUsecase(src.startsWith('json') || src === '' ? src : H + src),
+      ).toThrow()
+    expect(p('A:::c\nA:::c').useCases[0]!.classes).toEqual(['c'])
+    expect(p('A\nsystemBoundary S\nA\nend').boundaries[0]!.members).toEqual([
+      'A',
+    ])
   })
 })
