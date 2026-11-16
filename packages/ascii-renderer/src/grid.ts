@@ -2717,6 +2717,12 @@ function gridEdgeHints(
  */
 const SLOT_GAP = 40
 
+/** Part of a slot unit ELK's cross-axis gap must reach to keep a snapped tie apart. */
+const TIE_GAP = 0.3
+
+/** The most edge ends a node may have and still move to keep a tie apart. */
+const TIE_MAX_ENDS = 3
+
 /**
  * Grid slot of every node from ELK's layer and cross-axis centre. The flow
  * coordinate is `layer * 4`. The cross coordinate scales ELK's centre so a
@@ -2740,7 +2746,22 @@ function trackSlots(
   const origin = Math.min(...rows.map((r) => r.h.cross))
   const cell = (r: { h: AsciiNodeHint }): number =>
     2 * Math.round(((r.h.cross - origin) / unit) * 2)
+  // A back edge between nodes that snap to one cell, though ELK puts them
+  // `TIE_GAP` of a unit apart, would draw its jog and riser the same length:
+  // the lower end takes the next slot down, so ELK's longer riser survives.
   const lr = graph.config.graphDirection === 'LR'
+  const lowered = new Set<string>()
+  for (const e of hints.edges) {
+    const a = hints.nodes.get(e.from)
+    const b = hints.nodes.get(e.to)
+    if (!lr || !a || !b || a.layer <= b.layer) continue
+    if (cell({ h: a }) !== cell({ h: b })) continue
+    if (Math.abs(a.cross - b.cross) < TIE_GAP * unit) continue
+    const moved = a.cross > b.cross ? e.from : e.to
+    // A node with many ends keeps its slot: moving it re-rows every one of them.
+    const ends = hints.edges.filter((o) => o.from === moved || o.to === moved)
+    if (ends.length <= TIE_MAX_ENDS) lowered.add(moved)
+  }
   const slots = new Map<AsciiNode, GridCoord>()
   const byLayer = new Map<number, typeof rows>()
   for (const r of rows)
@@ -2749,7 +2770,7 @@ function trackSlots(
     let next = 0
     const flow = layer * 4
     for (const r of members.sort((a, b) => a.h.order - b.h.order)) {
-      const at = Math.max(cell(r), next)
+      const at = Math.max(cell(r) + (lowered.has(r.node.name) ? 2 : 0), next)
       next = at + 4
       slots.set(r.node, lr ? { x: flow, y: at } : { x: at, y: flow })
     }
