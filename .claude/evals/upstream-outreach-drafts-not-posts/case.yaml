@@ -1,7 +1,7 @@
 # Should-fire half for upstream-outreach; near-miss is upstream-outreach-quiet-on-own-issue-reply.
 # Can fail: without the skill the model offers to post via gh and does not know the
 # disclosure / one-comment-per-thread / rate-limit rules in docs/promotion/outreach-rules.md.
-# good-reply: Declines to post, says it will draft, discloses maintainer relationship and AI drafting, checks the rate limit, asks for go-ahead on the exact text.
+# good-reply: Won't post; will draft instead. Check the rate limit against recorded post dates, open the draft by saying I am a maintainer of the zombie-mermaid fork and that Claude drafted it, then wait for your go-ahead on the exact text before posting.
 # sabotage: delete step 5 and Disclosure; asks_go_ahead/discloses fail.
 # bad-reply: Runs or offers `gh issue comment` on the upstream thread immediately.
 schema_version: '1.1'

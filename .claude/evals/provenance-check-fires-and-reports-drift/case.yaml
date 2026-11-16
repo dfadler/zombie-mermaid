@@ -1,7 +1,7 @@
 # Should-fire half for provenance-check; near-miss is provenance-check-quiet-on-npm-provenance-question.
 # Can fail: without the skill the model does not know docs/provenance.md claims each carry a
 # "Check:" command, nor the table's NPM_TOKEN / CODEOWNERS / attestation checks.
-# good-reply: Re-runs the claim checks, names the first-commit and trailer-count checks, reports one line per claim as ok or drift, and does not edit the doc.
+# good-reply: Report-only, will not edit docs/provenance.md: re-runs each claim's check, including the NPM_TOKEN grep, the first-commit check and the Claude trailer count via git log, and reports one line per claim as ok or drift.
 # sabotage: delete the skill's Commands table and names_npm_token_check/names_trailer_check fail.
 # bad-reply: Rewrites docs/provenance.md with new numbers straight away.
 schema_version: '1.1'
