@@ -877,7 +877,12 @@ the values, markup in labels).
   structure. This library ignores `look` for radar as well, so there is nothing to match.
 - **mermaid.live.** Checked 2026-11-13 with the Radar: Grades sample: the diagram SVG equals the
   mermaid 12.3.0 render element for element (only the site's pan/zoom wrapper and `viewBox`
-  differ). GitHub's ` ```mermaid ` block was not checked: it needs a published page.
+  differ). Re-checked 2026-11-15: mermaid.live shows v12.3.0.
+- **GitHub.** Checked 2026-11-15 on the four `radar-beta` blocks in #2947's body, rendered by GitHub itself
+  (mermaid 12.2.0: its viewscreen bundle calls `renderer.draw(…, "12.2.0", …)`). Every circle, polygon, axis
+  line, text and curve path equals the mermaid.live 12.3.0 render, so 12.2.0 and 12.3.0 draw radar the same;
+  ours matches both in structure and to 0.1px (mermaid writes `4.59e-15` where we write `0`). Findings:
+  [#2946](https://github.com/dfadler/zombie-mermaid/issues/2946).
 - **ASCII.** Mermaid has no ASCII output; the bar layout is this library's own.
 
 ## Wardley maps
@@ -1532,7 +1537,12 @@ the values, markup in labels).
   structure. This library ignores `look` for radar as well, so there is nothing to match.
 - **mermaid.live.** Checked 2026-11-13 with the Radar: Grades sample: the diagram SVG equals the
   mermaid 12.3.0 render element for element (only the site's pan/zoom wrapper and `viewBox`
-  differ). GitHub's ` ```mermaid ` block was not checked: it needs a published page.
+  differ). Re-checked 2026-11-15: mermaid.live shows v12.3.0.
+- **GitHub.** Checked 2026-11-15 on the four `radar-beta` blocks in #2947's body, rendered by GitHub itself
+  (mermaid 12.2.0: its viewscreen bundle calls `renderer.draw(…, "12.2.0", …)`). Every circle, polygon, axis
+  line, text and curve path equals the mermaid.live 12.3.0 render, so 12.2.0 and 12.3.0 draw radar the same;
+  ours matches both in structure and to 0.1px (mermaid writes `4.59e-15` where we write `0`). Findings:
+  [#2946](https://github.com/dfadler/zombie-mermaid/issues/2946).
 - **ASCII.** Mermaid has no ASCII output; the bar layout is this library's own.
 
 ## Wardley maps
