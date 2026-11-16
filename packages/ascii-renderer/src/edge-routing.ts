@@ -3399,14 +3399,13 @@ export function determineLabelLine(
     !edge.clusterSource &&
     !edge.clusterTarget &&
     graph.config.graphDirection === 'LR' &&
-    segments.length >= 3 &&
+    segments.length === 3 &&
+    segments[1]!.isVertical &&
     !segments[0]!.isVertical &&
-    !segments.at(-1)!.isVertical
+    !segments[2]!.isVertical
   ) {
     const [far, near] =
-      bend < 0.5
-        ? [segments.at(-1)!, segments[0]!]
-        : [segments[0]!, segments.at(-1)!]
+      bend < 0.5 ? [segments[2]!, segments[0]!] : [segments[0]!, segments[2]!]
     // Where the grid bends on the other side of the gap than ELK does, the run
     // ELK would label is the short one: keep the search below.
     if (far.width >= near.width) {
