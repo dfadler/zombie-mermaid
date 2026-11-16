@@ -193,25 +193,85 @@ export interface Block {
 }
 
 // @public
+export type BlockArrow = '' | 'arrow_point' | 'arrow_cross' | 'arrow_circle';
+
+// @public
 export interface BlockDiagram {
+    classDefs: Record<string, string[]>;
+    edges: BlockEdge[];
+    padding: number;
     root: BlockNode;
+}
+
+// @public
+export interface BlockEdge {
+    // (undocumented)
+    arrowTypeEnd: BlockArrow;
+    arrowTypeStart: BlockArrow | 'arrow_open';
+    // (undocumented)
+    end: string;
+    id: string;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    pattern: 'solid' | 'dotted';
+    // (undocumented)
+    start: string;
+    // (undocumented)
+    thickness: 'normal' | 'thick';
+}
+
+// @public
+export interface BlockGeometry {
+    clip: {
+        width: number;
+        height: number;
+        points?: {
+            x: number;
+            y: number;
+        }[];
+        r?: number;
+        rx?: number;
+        ry?: number;
+    };
+    d?: string;
+    extent: {
+        minX: number;
+        minY: number;
+        maxX: number;
+        maxY: number;
+    };
+    inner?: number;
+    // (undocumented)
+    kind: 'circle' | 'doublecircle' | 'polygon' | 'cylinder';
+    labelDx: number;
+    // (undocumented)
+    labelDy: number;
+    points?: {
+        x: number;
+        y: number;
+    }[];
+    r?: number;
 }
 
 // @public
 export interface BlockNode {
     children: BlockNode[];
+    classes: string[];
     columns?: number;
+    directions: string[];
     id: string;
     label: string;
     // (undocumented)
     shape: BlockShape;
+    styles: string[];
     // (undocumented)
     type: 'node' | 'space' | 'composite';
     widthInColumns: number;
 }
 
 // @public
-export type BlockShape = 'square' | 'round';
+export type BlockShape = 'square' | 'round' | 'circle' | 'doublecircle' | 'diamond' | 'hexagon' | 'stadium' | 'subroutine' | 'cylinder' | 'rect_left_inv_arrow' | 'lean_right' | 'lean_left' | 'trapezoid' | 'inv_trapezoid' | 'block_arrow';
 
 // @public (undocumented)
 export interface C4Boundary {
@@ -1100,6 +1160,8 @@ export interface PositionedBlock {
 
 // @public
 export interface PositionedBlockDiagram {
+    // (undocumented)
+    edges: PositionedBlockEdge[];
     nodes: PositionedBlockNode[];
     viewBox: {
         x: number;
@@ -1110,7 +1172,36 @@ export interface PositionedBlockDiagram {
 }
 
 // @public
+export interface PositionedBlockEdge {
+    // (undocumented)
+    arrowTypeEnd: BlockArrow;
+    // (undocumented)
+    arrowTypeStart: BlockEdge['arrowTypeStart'];
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label: string;
+    // (undocumented)
+    labelWidth: number;
+    labelX: number;
+    // (undocumented)
+    labelY: number;
+    path: string;
+    // (undocumented)
+    pattern: 'solid' | 'dotted';
+    points: {
+        x: number;
+        y: number;
+    }[];
+    // (undocumented)
+    thickness: 'normal' | 'thick';
+}
+
+// @public
 export interface PositionedBlockNode {
+    classes: string[];
+    css: [string, string][];
+    geometry?: BlockGeometry;
     // (undocumented)
     height: number;
     // (undocumented)

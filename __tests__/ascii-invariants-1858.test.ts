@@ -28,6 +28,9 @@ function skipFor(source: string): Rule[] {
   if (/^\s*packet/m.test(source)) return ['equal-width', 'arms', 'node-text']
   // A fishbone is ragged and slants its bones and leaders in from the left.
   if (/^\s*ishikawa/im.test(source)) return ['equal-width', 'arms', 'node-text']
+  // A block arrow's `▲ ▼ ▶ ◀` is a mark on the box's own frame, not the end of a link.
+  if (/^\s*block(?:-beta)?\b/m.test(source) && source.includes('<['))
+    return ['equal-width', 'arms', 'arrowhead']
   if (
     /^\s*(xychart|pie|quadrantChart|gantt|mindmap|timeline|kanban|journey|radar-beta|wardley-beta|gitGraph|sankey|block(?:-beta)?\b|treemap|eventmodeling)/m.test(
       source,

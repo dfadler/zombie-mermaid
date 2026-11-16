@@ -128,6 +128,12 @@ export interface KanbanInitConfig {
   ticketBaseUrl?: string
 }
 
+/** The `block.*` init keys that change mermaid's output. */
+export interface BlockInitConfig {
+  /** Space between cells and inside each block (mermaid's `block.padding`, default 8). */
+  padding?: number
+}
+
 /** The `packet.*` init keys that change mermaid's output. */
 export interface PacketInitConfig {
   rowHeight?: number
@@ -516,6 +522,8 @@ export interface InitConfig {
   gitGraph?: GitGraphInitConfig
   /** `kanban.sectionWidth` (a number in 1..1e5) and `kanban.ticketBaseUrl`; other keys and bad values are dropped. */
   kanban?: KanbanInitConfig
+  /** `block.padding` (a number in 0..1e4); other keys and bad values are dropped. */
+  block?: BlockInitConfig
   /** `packet.*` layout keys (numbers or numeric strings 0..1e5, `bitsPerRow` an integer >= 1), `showBits` (by truthiness) and `bitOrder` (anything but `descending` is ascending); other keys and bad values are dropped. */
   packet?: PacketInitConfig
   /** The `sankey` block (see {@link SankeyInitConfig}). */
@@ -1037,6 +1045,14 @@ export function parseInitDirective(line: string): InitConfig | undefined {
       continue
     }
 
+    if (lower === 'block' && typeof value === 'object' && value !== null) {
+      const b: BlockInitConfig = {}
+      const p = numeric((value as Record<string, unknown>).padding)
+      if (typeof p === 'number' && p >= 0 && p <= 1e4) b.padding = p
+      config.block = b
+      continue
+    }
+
     if (lower === 'packet' && typeof value === 'object' && value !== null) {
       const p: PacketInitConfig = {}
       const rec: Record<string, unknown> = { ...value }
@@ -1211,6 +1227,7 @@ export function extractInitConfig(lines: string[]): InitConfig {
     if (config.journey)
       merged.journey = { ...merged.journey, ...config.journey }
     if (config.kanban) merged.kanban = { ...merged.kanban, ...config.kanban }
+    if (config.block) merged.block = { ...merged.block, ...config.block }
     if (config.packet) merged.packet = { ...merged.packet, ...config.packet }
     if (config.treemap)
       merged.treemap = { ...merged.treemap, ...config.treemap }

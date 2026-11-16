@@ -2074,8 +2074,8 @@ a rounded box, a boundary as a titled frame and a generalization head as `▷`.
 ## Block diagrams
 
 `block` and `block-beta` follow [Mermaid's syntax](https://mermaid.ai/open-source/syntax/block.html)
-and its grid layout. `pnpm run block:oracle` compares every block's rectangle, its corner radius
-and the drawing size with `mermaid@12.3.0` on the gallery samples (all agree).
+and its grid layout. `pnpm run block:oracle` compares every block's rectangle, its corner radius,
+each link's path and label place, and the drawing size with `mermaid@12.3.0` on the gallery samples (all agree).
 
 ```mermaid
 block-beta
@@ -2097,11 +2097,51 @@ size of the widest block (a block spanning N columns counts as 1/N of its width)
 its children to fill it, and a repeated id changes the first block instead of adding one. A label
 in `[ ]` or `( )` must be quoted.
 
-Not supported yet, and rejected with an error naming the issue: links and arrows between blocks
-([#3105](https://github.com/dfadler/zombie-mermaid/issues/3105)), the other node shapes and block
-arrows ([#3106](https://github.com/dfadler/zombie-mermaid/issues/3106)), and `classDef`, `class`,
-`style`, markdown strings and `block.padding`
-([#3107](https://github.com/dfadler/zombie-mermaid/issues/3107)).
+Links join two blocks and declare them: `a --> b`, `a --- b`, `a ==> b` (thick), `a -.- b`
+(dotted), `a --x b`, `a --o b`, `a <--> b` and `a -- "text" --> b`. As in Mermaid, a link is drawn
+from the first block's centre through the midpoint to the second's, clipped to each block's edge,
+so a link between two neighbours in a row folds back over itself. A link label must be quoted.
+
+```mermaid
+block-beta
+  columns 3
+  a space b
+  c space d
+  a --> b
+  a -- "label" --> d
+  c ==> d
+  b -.- d
+```
+
+Styling: `classDef name fill:#f9f,stroke:#333,color:#fff` defines a class, `class a,b name` applies
+it and `style a fill:#969,stroke-width:4px` styles one block (declare the block above its `style`).
+`fill`, `stroke`, `stroke-width` and the other properties go on the block's rectangle, `color` on
+its label; a `style` item replaces the same property from a class. `block.padding` (front matter
+`config: block: padding: 20` or `%%{init: {"block": {"padding": 20}}}%%`, default 8) sets the space
+between cells and inside each block. A markdown label (`["`**x**`"]`) is a parse error in
+Mermaid 12.3.0, so it is one here.
+
+Node shapes follow Mermaid's delimiters: `a("x")` round, `a(("x"))` circle, `a((("x")))` double
+circle, `a{"x"}` diamond, `a{{"x"}}` hexagon, `a(["x"])` stadium, `a[["x"]]` subroutine,
+`a[("x")]` cylinder, `a>"x"]` asymmetric, `a[/"x"/]` and `a[\"x"\]` leaning boxes, `a[/"x"\]` and
+`a[\"x"/]` trapezoids. A pair of delimiters Mermaid has no shape for (`a("x"]`) is a square block,
+as there. A block arrow is `a<["x"]>(right, down)`; the directions are `right`, `left`, `up`,
+`down`, `x` (right and left) and `y` (up and down), and a block spanning columns stretches a
+`right`-only or `left`-only arrow across them. As in Mermaid a direction is matched by its exact
+text, so a space inside `(right down)` leaves `right ` meaning nothing and only `down` counts. The
+polygons, the cylinder and the double circle grow to fill a cell wider than their label, the
+circle, diamond, stadium and block arrow keep their own size in the middle of it, and a leaning
+box or a double circle reaches past its cell the way Mermaid's does. A link is clipped to the
+shape's own outline (a circle's rim, a polygon's edge, a cylinder's ellipse). Mermaid 12.3.0
+crashes on a link to or from a diamond (`this.calcIntersect is not a function`); here it draws.
+
+```mermaid
+block-beta
+  columns 4
+  a["square"] b("round") c(["stadium"]) d[["subroutine"]]
+  e[("cylinder")] f(("circle")) g{"diamond"} h{{"hexagon"}}
+  i>"asymmetric"]
+```
 
 Colours follow the theme, see [Known differences](known-differences.md#block-diagrams).
 
@@ -2121,7 +2161,18 @@ and a `block ... end` group is a larger box around its cells.
 ```
 
 - Round blocks use `╭╮╰╯` corners (`+` in ASCII mode); `space` leaves its cell empty.
-- Cells are one column apart and touch vertically; labels are centred in both directions.
+- Every other shape is the same box with the delimiters the flowchart renderer gives it: `◯` circle,
+  `◎` double circle, `◇` diamond, `⌜⌝⌞⌟` hexagon, `(` `)` stadium, a second bar inside each side
+  for a subroutine, a rim line under the top of a cylinder, `>` in the left side of an asymmetric
+  block, `/` and `\` corners for the leaning boxes and trapezoids. A block arrow is a plain box
+  with `▶` `◀` `▲` `▼` (`>` `<` `^` `v`) in the middle of each side it points to.
+- Colours and `block.padding` are ignored (the box grid has fixed spacing).
+- Cells are one column apart and touch vertically (a diagram with links leaves 4 columns and 2 rows
+  between cells, more for a long link label); labels are centred in both directions.
+- A link is a straight line in that room between blocks that share a row or a column, else one
+  elbow (or, when a block is in the way of both elbows, a route down the gap beside the first
+  block), and never overwrites a box; a link inside a group may cross the group's frame area. The end gets `▶` (`>`), `x` or `o`; `==` draws `═` / `║` and
+  `-.-` `┄` / `┆`. Where two links would run over each other the first one drawn wins.
 - Frames use the line colour, labels the foreground.
 
 ## Unsupported upstream diagram types
