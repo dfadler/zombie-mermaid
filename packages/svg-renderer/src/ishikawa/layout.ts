@@ -69,6 +69,8 @@ export interface PositionedIshikawa {
     textX: number
     textY: number
   }
+  /** `look: handDrawn`, with the rough.js seed; absent for the default look. */
+  handDrawn?: { seed: number }
   /** Bones, boxes and labels in Mermaid's paint order. */
   items: Array<
     | { kind: 'line'; line: IshikawaLine }
@@ -415,6 +417,7 @@ export function layoutIshikawa(d: Ishikawa): PositionedIshikawa | undefined {
     y2: l.y2 + oy,
   })
   return {
+    ...(d.handDrawn ? { handDrawn: d.handDrawn } : {}),
     width: bounds.x1 - bounds.x0 + pad * 2,
     height: bounds.y1 - bounds.y0 + pad * 2,
     spine: shift(spine),

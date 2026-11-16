@@ -94,6 +94,14 @@ export function parseIshikawa(text: string): Ishikawa {
       err('Unexpected blank line before the ishikawa effect', i)
     add(/^\s*/.exec(line)![0].length, line)
   }
-  const diagramPadding = extractInitConfig(lines).ishikawaPadding
-  return diagramPadding === undefined ? { root } : { root, diagramPadding }
+  const init = extractInitConfig(lines)
+  return {
+    root,
+    ...(init.ishikawaPadding === undefined
+      ? {}
+      : { diagramPadding: init.ishikawaPadding }),
+    ...(init.look === 'handDrawn'
+      ? { handDrawn: { seed: init.handDrawnSeed ?? 0 } }
+      : {}),
+  }
 }

@@ -450,6 +450,9 @@ export function pointsToPath(points: Point[], curve?: CurveStyle): string;
 
 // @public (undocumented)
 export interface PositionedIshikawa {
+    handDrawn?: {
+        seed: number;
+    };
     // (undocumented)
     head: {
         d: string;

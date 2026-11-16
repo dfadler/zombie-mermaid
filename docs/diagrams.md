@@ -1883,7 +1883,7 @@ from its parent bone as a slanted bone, the next as a stub again. `<br>` breaks 
 label, a long cause wraps at 15 characters and a long effect in the head, `%%`
 comment lines and blank lines are skipped, except that a blank line directly before the effect
 is an error, as in Mermaid. `ishikawa.diagramPadding` is read.
-Not drawn: the `handDrawn` look.
+`look: handDrawn` draws rough strokes with `handDrawnSeed` (SVG); the hachure fill of the head and label boxes is not drawn.
 
 ### ASCII Ishikawa diagrams
 

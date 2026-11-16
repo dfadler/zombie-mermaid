@@ -438,6 +438,7 @@ export interface InitConfig {
     classLayout?: ClassInitLayout;
     erLayout?: ErInitLayout;
     gitGraph?: GitGraphInitConfig;
+    handDrawnSeed?: number;
     ignored: string[];
     ishikawaPadding?: number;
     journey?: JourneyInitConfig;

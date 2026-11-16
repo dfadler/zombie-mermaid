@@ -149,4 +149,14 @@ describe('parseIshikawa', () => {
     expect(init('"x"')).toBeUndefined()
     expect(parseIshikawa('ishikawa\n  E').diagramPadding).toBeUndefined()
   })
+
+  it('reads look: handDrawn and handDrawnSeed', () => {
+    const hd = (cfg: string) =>
+      parseIshikawa(`%%{init: ${cfg}}%%\nishikawa\n  E`).handDrawn
+    expect(hd('{"look":"handDrawn","handDrawnSeed":5}')).toEqual({ seed: 5 })
+    expect(hd('{"look":"handDrawn"}')).toEqual({ seed: 0 })
+    expect(hd('{"look":"handDrawn","handDrawnSeed":"x"}')).toEqual({ seed: 0 })
+    expect(hd('{"look":"neo","handDrawnSeed":5}')).toBeUndefined()
+    expect(parseIshikawa('ishikawa\n  E').handDrawn).toBeUndefined()
+  })
 })
