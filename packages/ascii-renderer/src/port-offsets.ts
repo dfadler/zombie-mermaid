@@ -1087,6 +1087,8 @@ export interface Jog {
   far: number
   /** Bend row of the grid path, before any shift. */
   base: number
+  /** Where ELK bends it, 0 at the gap's first side to 1 at its far side (`AsciiEdgeHint.bend`). */
+  want?: number
 }
 
 const spanOf = (j: Jog): [number, number] => [
@@ -1103,10 +1105,15 @@ const sharesTrunk = (a: Jog, b: Jog): boolean =>
  * strokes on one row that overlap, or touch, merge into a shared run; a stroke
  * whose leg runs through another's bend row crosses it (`┼`).
  */
-function jogCost(jogs: Jog[], rows: number[], lo: number): number {
+function jogCost(jogs: Jog[], rows: number[], lo: number, hi: number): number {
   let cost = 0
   for (let i = 0; i < jogs.length; i++) {
-    cost += (rows[i]! - lo) * 0.01
+    const want = jogs[i]!.want
+    // Beside the end ELK bends it by when it says, else the first side.
+    cost +=
+      want === undefined
+        ? (rows[i]! - lo) * 0.01
+        : Math.abs(rows[i]! - (lo + want * (hi - lo))) * 0.05
     const [a0, a1] = spanOf(jogs[i]!)
     for (let j = i + 1; j < jogs.length; j++) {
       const [b0, b1] = spanOf(jogs[j]!)
@@ -1147,7 +1154,7 @@ const JOG_ROWS_CACHE_MAX = 500
 
 /** The rows `lo..hi` that cost least for these jogs: exhaustive for the few a gap holds, else coordinate descent. */
 export function bestJogRows(jogs: Jog[], lo: number, hi: number): number[] {
-  const key = `${lo},${hi}|${jogs.map((j) => `${j.near},${j.far}`).join(';')}`
+  const key = `${lo},${hi}|${jogs.map((j) => `${j.near},${j.far},${j.want}`).join(';')}`
   const hit = jogRowsCache.get(key)
   if (hit) return [...hit]
   const rows = searchJogRows(jogs, lo, hi)
@@ -1169,7 +1176,7 @@ function searchJogRows(jogs: Jog[], lo: number, hi: number): number[] {
         rows[i] = lo + (rest % count)
         rest = Math.floor(rest / count)
       }
-      const c = jogCost(jogs, rows, lo)
+      const c = jogCost(jogs, rows, lo, hi)
       if (c < bestCost) {
         bestCost = c
         best = [...rows]
@@ -1182,7 +1189,7 @@ function searchJogRows(jogs: Jog[], lo: number, hi: number): number[] {
       for (let r = lo; r <= hi; r++) {
         const trial = [...best]
         trial[i] = r
-        const c = jogCost(jogs, trial, lo)
+        const c = jogCost(jogs, trial, lo, hi)
         if (c < bestCost) {
           bestCost = c
           best = trial
@@ -1228,6 +1235,16 @@ function planJogRows(
     const d = drawnPath(graph, edge, shift).slice(at)
     // Near leg: the one on the side of the gap its grid row lies after.
     const forward = p[0]![main] < p[3]![main]
+    // A flow-face fan-out edge keeps its label on the drop (`determineLabelLine`).
+    const bend =
+      lr &&
+      edge.from.shape !== 'diamond' &&
+      edge.to.shape !== 'diamond' &&
+      !edge.clusterSource &&
+      !edge.clusterTarget &&
+      !leavesRightFace(graph, edge, 'LR')
+        ? graph.edgeHints?.get(edge)?.bend
+        : undefined
     const [n, f] = forward ? [d[0]!, d[3]!] : [d[3]!, d[0]!]
     const jog: Jog = {
       edge,
@@ -1236,6 +1253,7 @@ function planJogRows(
       near: n[cross],
       far: f[cross],
       base: lineToDrawing(graph, p)[1]![main],
+      ...(bend === undefined ? {} : { want: forward ? bend : 1 - bend }),
     }
     const g = p[1]![main]
     gaps.set(g, [...(gaps.get(g) ?? []), jog])

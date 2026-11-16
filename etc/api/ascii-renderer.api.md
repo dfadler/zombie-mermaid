@@ -20,6 +20,7 @@ export interface AsciiEdgeEndHint {
 
 // @public (undocumented)
 export interface AsciiEdgeHint {
+    bend?: number;
     // (undocumented)
     end: AsciiEdgeEndHint;
     // (undocumented)

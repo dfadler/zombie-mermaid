@@ -67,6 +67,35 @@ const faceOf = (
 }
 
 /**
+ * Where a route's longest cross-axis run lies along the flow axis, as a fraction
+ * of the way from its first point to its last (`AsciiEdgeHint.bend`), or
+ * `undefined` when it has none or starts and ends at one flow position.
+ */
+export function bendOf(
+  points: { x: number; y: number }[],
+  horizontal: boolean,
+): number | undefined {
+  const [m, c] = horizontal ? (['x', 'y'] as const) : (['y', 'x'] as const)
+  const from = points[0]![m]
+  const span = points[points.length - 1]![m] - from
+  if (Math.abs(span) < PORT_TOLERANCE) return undefined
+  let at: number | undefined
+  let longest = 0
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!
+    const b = points[i]!
+    const len = Math.abs(b[c] - a[c])
+    if (Math.abs(b[m] - a[m]) < PORT_TOLERANCE && len > longest) {
+      longest = len
+      at = a[m]
+    }
+  }
+  return at === undefined
+    ? undefined
+    : Math.min(1, Math.max(0, (at - from) / span))
+}
+
+/**
  * Hints from positioned boxes and edge paths. `flow` is the SVG-side flow
  * direction: layers count from the source side whichever way it points.
  */
@@ -160,12 +189,14 @@ export function buildHints(
   const edges: AsciiLayoutHints['edges'] = []
   raw.forEach((r, index) => {
     if (!r) return
+    const bend = bendOf(r.p.points, horizontal)
     edges.push({
       index,
       from: r.p.from,
       to: r.p.to,
       start: { face: r.s.face, order: orderOf(r.p.from, r.s) },
       end: { face: r.e.face, order: orderOf(r.p.to, r.e) },
+      ...(bend === undefined ? {} : { bend }),
     })
   })
   return { nodes, edges }

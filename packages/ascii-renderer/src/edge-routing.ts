@@ -3376,33 +3376,30 @@ export function determineLabelLine(
     }
   }
 
-  // A Z into or out of a hub whose side face grew a cell per end (#3205): its
-  // jogs bunch beside the hub, so the label goes on the run at the other node,
-  // as mermaid puts it on the long run, not beside a stroke on the vertical.
-  const hint = graph.edgeHints?.get(edge)
+  // A Z in a horizontal flow: ELK's bend says which end its vertical sits
+  // beside (`AsciiEdgeHint.bend`), and the label goes on the long run on the
+  // other side, as mermaid puts it, not beside a stroke on the vertical.
+  const bend = graph.edgeHints?.get(edge)?.bend
   if (
-    hint &&
+    bend !== undefined &&
+    // A diamond's slant leaves no room beside its tip for a label.
+    edge.from.shape !== 'diamond' &&
+    edge.to.shape !== 'diamond' &&
     !edge.clusterSource &&
     !edge.clusterTarget &&
     graph.config.graphDirection === 'LR' &&
-    segments.length === 3 &&
-    segments[1]!.isVertical &&
+    segments.length >= 3 &&
     !segments[0]!.isVertical &&
-    !segments[2]!.isVertical
+    !segments.at(-1)!.isVertical
   ) {
-    const hubTo =
-      edge.to.shape !== 'diamond' &&
-      hintedEnds(graph, edge.to, hint.end.face) > 3
-    const hubFrom =
-      edge.from.shape !== 'diamond' &&
-      hintedEnds(graph, edge.from, hint.start.face) > 3
-    if (hubTo || hubFrom) {
-      applyLabelLine(
-        graph,
-        edge,
-        (hubTo ? segments[0]! : segments[2]!).line,
-        lenLabel,
-      )
+    const [far, near] =
+      bend < 0.5
+        ? [segments.at(-1)!, segments[0]!]
+        : [segments[0]!, segments.at(-1)!]
+    // Where the grid bends on the other side of the gap than ELK does, the run
+    // ELK would label is the short one: keep the search below.
+    if (far.width >= near.width) {
+      applyLabelLine(graph, edge, far.line, lenLabel)
       return
     }
   }

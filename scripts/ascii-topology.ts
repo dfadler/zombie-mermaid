@@ -53,5 +53,6 @@ console.log(
     `self-loop hooks ${pct(total.loopHooks, total.loops)}\n` +
     `end cells ${pct(total.endCells, total.endCellsWant)}\n` +
     `arrowheads ${pct(total.arrows, total.arrowsWant)}\n` +
+    `bend sides ${pct(total.bendOk, total.bends)}\n` +
     `subgraph self-loop cases exact ${pct(loops.exact, loops.cases)}, hooks ${pct(loops.counts.loopHooks, loops.counts.loops)}, faces ${pct(loops.counts.faceOk, loops.counts.faceEnds)}`,
 )
