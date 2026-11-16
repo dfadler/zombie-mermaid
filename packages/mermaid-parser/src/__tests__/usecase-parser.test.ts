@@ -140,16 +140,33 @@ describe('parseUsecase', () => {
     ['empty actor', H + 'actor', /Expected a name/],
     ['trailing comma', H + 'actor A,', /Expected a name/],
     [
-      'unsupported metadata',
-      H + 'actor A@{ type: hollow }',
-      /not supported yet/,
+      'icon with a type',
+      H + 'actor A@{ icon: x, type: awesome }',
+      /cannot combine/,
     ],
+    ['unknown metadata key', H + 'actor A@{ foo: bar }', /invalid for actor/],
+    ['metadata on an undeclared name', H + 'Z@{ type: hollow }', /unresolved/],
+    ['unclosed metadata', H + 'actor A@{ type: hollow', /Unclosed/],
+    ['bad json', H + 'json J @ {"a": }', /Invalid JSON/],
+    ['json array root', H + 'json J @ {"a": [1,', /Invalid JSON|Unclosed/],
+    ['circle marker on json', H + 'A --o J\njson J @ {"a":1}', /permits only/],
+    ['json twice', H + 'json J @ {"a":1}\njson J @ {"a":2}', /more than once/],
+    [
+      'json too deep',
+      H + 'json J @ ' + '{"a":'.repeat(120) + '1' + '}'.repeat(120),
+      /deeply/,
+    ],
+    ['json bad escape', H + 'json J @ {"a": "\\q"}', /Invalid JSON/],
+    ['json trailing text', H + 'json J @ {"a":1} x', /Unexpected/],
     ['class on an undeclared endpoint', H + 'A:::c --> B', /without being/],
     ['classDef without styles', H + 'classDef c', /keyword/],
     ['class with no name', H + 'A\nclass A', /keyword/],
     ['class for an undeclared node', H + 'class Z c', /not declared/],
-    ['metadata on a node', H + 'A\nA@{ type: hollow }', /not supported yet/],
-    ['unsupported json', H + 'json J @ {"a":1}', /not supported yet/],
+    [
+      'metadata type on a use case',
+      H + 'A\nA@{ type: hollow }',
+      /invalid for usecase/,
+    ],
   ]
   it.each(bad)('rejects %s', (_n, src, re) => {
     expect(() => parseUsecase(src)).toThrow(re)
@@ -276,5 +293,34 @@ describe('usecaseToGraph', () => {
       ['solid', false, true, 'x', undefined],
       ['dotted', false, false, undefined, undefined],
     ])
+  })
+
+  it('reads node metadata, package boundaries and json tables', () => {
+    const d = p(
+      'actor A@{ type: hollow, business: true }\nactor B@{ icon: user }\nU\nU@{ business: true }\n' +
+        'systemBoundary S@{ type: package }\nV\nend\n' +
+        'json J @ {"x": [1, 2], "y": {"z": null}, "e": {}, "n": [{"k": 1}]} :::c\nA --> J',
+    )
+    expect(d.actors[0]).toMatchObject({ type: 'hollow', business: true })
+    expect(d.actors[1]).toMatchObject({ type: 'icon', icon: 'user' })
+    expect(d.useCases[0]!.business).toBe(true)
+    expect(d.boundaries[0]!.type).toBe('package')
+    expect(d.jsonNodes[0]).toEqual({
+      id: 'J',
+      classes: ['c'],
+      rows: [
+        { key: 'x', value: '1' },
+        { key: '', value: '2' },
+        { key: 'y.z', value: 'null' },
+        { key: 'e', value: '{}' },
+        { key: 'n[0].k', value: '1' },
+      ],
+    })
+  })
+
+  it('keeps json key order and takes the last of a repeated key', () => {
+    const rows = p('json J @ {"b":1,"2":2,"a":3,"b":4}').jsonNodes[0]!.rows
+    expect(rows.map((r) => r.key)).toEqual(['2', 'a', 'b'])
+    expect(rows[2]!.value).toBe('4')
   })
 })

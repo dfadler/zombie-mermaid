@@ -2797,8 +2797,13 @@ export interface TreemapStyle {
 export function treemapValueFormatter(spec?: string): (v: number) => string;
 
 // @public
+export const USECASE_JSON_SEP = "\u2063";
+
+// @public
 export interface UsecaseActor {
+    business?: true;
     classes?: string[];
+    icon?: string;
     // (undocumented)
     id: string;
     // (undocumented)
@@ -2807,6 +2812,7 @@ export interface UsecaseActor {
     stereotype?: string;
     // (undocumented)
     styles?: string[];
+    type?: 'hollow' | 'awesome' | 'icon';
 }
 
 // @public
@@ -2816,10 +2822,12 @@ export interface UsecaseBoundary {
     // (undocumented)
     label: string;
     members: string[];
+    type?: 'package';
 }
 
 // @public
 export interface UsecaseCase {
+    business?: true;
     // (undocumented)
     classes?: string[];
     // (undocumented)
@@ -2855,6 +2863,8 @@ export interface UsecaseDiagram {
     // (undocumented)
     direction: UsecaseDirection;
     // (undocumented)
+    jsonNodes: UsecaseJson[];
+    // (undocumented)
     notes: UsecaseNote[];
     // (undocumented)
     relationships: UsecaseRelationship[];
@@ -2864,6 +2874,23 @@ export interface UsecaseDiagram {
 
 // @public (undocumented)
 export type UsecaseDirection = 'TB' | 'TD' | 'BT' | 'LR' | 'RL';
+
+// @public
+export interface UsecaseJson {
+    // (undocumented)
+    classes?: string[];
+    // (undocumented)
+    id: string;
+    rows: Array<{
+        key: string;
+        value: string;
+    }>;
+    // (undocumented)
+    styles?: string[];
+}
+
+// @public
+export const usecaseJsonLabel: (j: UsecaseJson) => string;
 
 // @public
 export interface UsecaseNote {

@@ -2,6 +2,9 @@ import {
   USECASE,
   fontOf,
   isUsecaseShape,
+  isUsecaseActor,
+  textWidth as usecaseTextWidth,
+  jsonTable,
   lineHeight,
   usecaseLabelText,
 } from './usecase/shapes.ts'
@@ -405,6 +408,10 @@ const ARCH_GROUP_ICON = 30
 /** Half of mermaid@12.3.0's 24 px title box: its centre sits this far below its top. */
 const TITLE_ONLY_HALF_LINE = 12
 
+/** A package boundary's tab: 34px tall (a 24px title line and 5px each side), at least 80px wide. */
+const PACKAGE_TAB = 34
+const PACKAGE_TAB_MIN = 80
+
 function renderGroup(
   group: PositionedGroup,
   font: string,
@@ -478,7 +485,7 @@ function renderGroup(
   // draws it: the outer rect carries the band colour with rounded corners, and
   // a square-cornered body rect sits inside it (below).
   const bandless = group.bandless === true
-  if (!group.titleOnly)
+  if (!group.titleOnly && !group.package)
     parts.push(
       f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
         f`rx="${bandless ? 0 : COMPOSITE_RADIUS}" ry="${bandless ? 0 : COMPOSITE_RADIUS}" fill="${bandless ? fill : hdrFill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
@@ -487,17 +494,29 @@ function renderGroup(
   // Flowchart subgraph (#2636): mermaid@12.3.0 draws no header band, only a
   // centred title along the top edge.
   if (group.bandless) {
+    // A `@{ type: package }` boundary (use case): the title sits in a tab over the frame.
+    const tabW = group.package
+      ? Math.max(
+          PACKAGE_TAB_MIN,
+          usecaseTextWidth(group.label, fontSizes.groupHeader) + 20,
+        )
+      : 0
+    if (group.package)
+      parts.push(
+        f`  <rect x="${group.x}" y="${group.y}" width="${tabW}" height="${PACKAGE_TAB}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
+        f`  <rect x="${group.x}" y="${group.y + PACKAGE_TAB}" width="${group.width}" height="${Math.max(0, group.height - PACKAGE_TAB)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash} />`,
+      )
     parts.push(
       '  ' +
         renderMultilineText(
           group.label,
-          group.x + group.width / 2,
+          group.x + (group.package ? tabW : group.width) / 2,
           // #2784: mermaid@12.3.0 hangs an empty subgraph's 24 px title box from
           // the middle of its slot (the box's top on the centre line), not
           // centred at the top edge like a framed subgraph's.
           group.titleOnly
             ? group.y + group.height / 2 + TITLE_ONLY_HALF_LINE
-            : group.y + headerHeight / 2,
+            : group.y + (group.package ? PACKAGE_TAB / 2 : headerHeight / 2),
           fontSizes.groupHeader,
           f`text-anchor="middle" font-size="${fontSizes.groupHeader}" font-weight="${BANDLESS_TITLE_WEIGHT}" fill="${escapeAttr(gs?.color ?? 'var(--_text-sec)')}"`,
         ),
@@ -772,7 +791,7 @@ function renderNode(
   const groupAttrs = [
     f`class="${classAttr}"`,
     f`data-id="${escapeAttr(node.id)}"`,
-    f`data-label="${escapeAttr(node.label)}"`,
+    f`data-label="${escapeAttr(node.shape === 'usecase-json' ? node.label.split('\n')[0]! : node.label)}"`,
     f`data-shape="${node.shape}"`,
   ]
   /*
@@ -958,9 +977,39 @@ function renderNodeShapeBase(
     case 'fork-join':
       return renderForkJoin(x, y, width, height, stroke)
     case 'usecase-ellipse':
-      return f`<ellipse cx="${x + width / 2}" cy="${y + height / 2}" rx="${width / 2}" ry="${height / 2}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+      return (
+        f`<ellipse cx="${x + width / 2}" cy="${y + height / 2}" rx="${width / 2}" ry="${height / 2}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />` +
+        (node.business
+          ? renderEllipseSlash(x, y, width, height, stroke, sw)
+          : '')
+      )
     case 'usecase-actor':
-      return renderStickFigure(x, y, width, height, fill, stroke, sw)
+      return renderStickFigure(
+        x,
+        y,
+        width,
+        height,
+        fill,
+        stroke,
+        sw,
+        node.business === true,
+      )
+    case 'usecase-actor-hollow':
+    case 'usecase-actor-awesome':
+    case 'usecase-actor-icon':
+      return renderActorGlyph(
+        shape,
+        x,
+        y,
+        width,
+        height,
+        fill,
+        stroke,
+        sw,
+        node.business === true,
+      )
+    case 'usecase-json':
+      return renderJsonTable(node, fill, stroke)
     case 'usecase-note':
       return renderUsecaseNote(
         x,
@@ -1624,6 +1673,7 @@ function renderStickFigure(
   fill: string,
   stroke: string,
   sw: string,
+  business = false,
 ): string {
   const u = USECASE
   const cx = x + w / 2
@@ -1635,8 +1685,120 @@ function renderStickFigure(
   return (
     f`<rect class="usecase-actor-outline" x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="none" />\n` +
     f`<circle cx="${cx}" cy="${y + u.headY}" r="${u.headR}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />\n` +
-    f`<path d="${body}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" />`
+    f`<path d="${body}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" />` +
+    (business
+      ? f`\n<path d="${actorSlash(-24, 12)}" transform="translate(${cx} ${y + 46})" fill="none" stroke="${stroke}" stroke-width="${sw}" />`
+      : '')
   )
+}
+
+/** The business slash across a use case ellipse's right edge (mermaid's `usecaseBusiness`). */
+function renderEllipseSlash(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  stroke: string,
+  sw: string,
+): string {
+  const rx = w / 2
+  const ry = h / 2
+  const inset = 2
+  const startX = rx - 20 - inset // Half the label box, 20px inside the ellipse
+  const endX = rx - inset
+  const cx = x + rx
+  const cy = y + ry
+  const startY = ry * Math.sqrt(Math.max(0, 1 - (startX / rx) ** 2))
+  const endY = -ry * Math.sqrt(Math.max(0, 1 - (endX / rx) ** 2))
+  return f`\n<path d="M${cx + startX},${cy + startY} L${cx + endX},${cy + endY}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`
+}
+
+// Mermaid's actor glyphs, measured from the figure's origin: 46px below the
+// node's top edge, centred.
+const HOLLOW_BODY =
+  'M -22 -10 H 22 V 0 H 6 L 22 17 L 13 28 L 0 13 L -13 28 L -22 17 L -6 0 H -22 Z'
+const AWESOME_SILHOUETTE =
+  'M 0 -34 C 7.18 -34 13 -28.18 13 -21 C 13 -13.82 7.18 -8 0 -8 C -7.18 -8 -13 -13.82 -13 -21 C -13 -28.18 -7.18 -34 0 -34 Z ' +
+  'M -24 25 C -24 7 -14 -3 0 -3 C 14 -3 24 7 24 25 C 24 28 21 30 18 30 H -18 C -21 30 -24 28 -24 25 Z'
+
+/** The business slash through an actor's head: a chord 0.6 of the head's radius from its centre, at 60 degrees. */
+function actorSlash(cy: number, r: number): string {
+  const offset = r * 0.6
+  const half = r * Math.sqrt(1 - 0.36)
+  const dx = Math.cos(Math.PI / 3)
+  const dy = -Math.sin(Math.PI / 3)
+  const mx = offset * -dy
+  const my = cy + offset * dx
+  return `M ${mx - half * dx} ${my - half * dy} L ${mx + half * dx} ${my + half * dy}`
+}
+
+/** A hollow, silhouette or icon actor (`@{ type: … }` / `@{ icon: … }`), optionally with the business slash. */
+function renderActorGlyph(
+  shape: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+  business: boolean,
+): string {
+  const paint = f`stroke="${stroke}" stroke-width="${sw}"`
+  let glyph: string
+  if (shape === 'usecase-actor-hollow')
+    glyph =
+      f`<circle cx="0" cy="-23" r="9" fill="none" ${paint} />` +
+      f`<path d="${HOLLOW_BODY}" fill="none" ${paint} />` +
+      (business
+        ? f`<path d="${actorSlash(-23, 9)}" fill="none" ${paint} />`
+        : '')
+  else if (shape === 'usecase-actor-awesome')
+    glyph = f`<path d="${AWESOME_SILHOUETTE}" fill="${fill}" ${paint} />`
+  else
+    // No icon packs are loaded, so mermaid@12.3.0 draws its "?" tile for any name.
+    glyph =
+      f`<rect x="-26" y="-28" width="52" height="52" rx="4" ry="4" fill="${fill}" ${paint} />` +
+      f`<g transform="translate(-21 -23) scale(${42 / TILE})"><rect width="${TILE}" height="${TILE}" fill="${TILE_FILL}" />${UNKNOWN_GLYPH}</g>`
+  return (
+    f`<rect class="usecase-actor-outline" x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="none" />\n` +
+    f`<g transform="translate(${x + w / 2} ${y + 46})">${glyph}</g>`
+  )
+}
+
+/** A `json` node: a title row over key/value rows, drawn in the node's colours. */
+function renderJsonTable(
+  node: PositionedNode,
+  fill: string,
+  stroke: string,
+): string {
+  const t = jsonTable(node.label)
+  const size = fontOf(node.shape)
+  const color = escapeAttr(node.inlineStyle?.color ?? 'var(--_text)')
+  const attrs = f`text-anchor="middle" font-size="${size}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${color}"`
+  const left = node.x + 1
+  const parts = [
+    f`<rect x="${node.x}" y="${node.y}" width="${node.width}" height="${node.height}" fill="${fill}" stroke="${stroke}" stroke-width="1" />`,
+    f`<rect x="${left}" y="${node.y + 1}" width="${t.inner}" height="${t.titleHeight}" fill="${fill}" stroke="${stroke}" stroke-width="1" />`,
+  ]
+  const text = (lines: string[], cx: number, top: number, h: number) =>
+    lines.length > 0
+      ? parts.push(
+          renderMultilineText(lines.join('\n'), cx, top + h / 2, size, attrs),
+        )
+      : 0
+  text(t.title.lines, left + t.inner / 2, node.y + 1, t.titleHeight)
+  let top = node.y + 1 + t.titleHeight
+  for (const r of t.rows) {
+    parts.push(
+      f`<rect x="${left}" y="${top}" width="${t.keyWidth}" height="${r.height}" fill="${fill}" stroke="${stroke}" stroke-width="1" />`,
+      f`<rect x="${left + t.keyWidth}" y="${top}" width="${t.valueWidth}" height="${r.height}" fill="${fill}" stroke="${stroke}" stroke-width="1" />`,
+    )
+    text(r.key.lines, left + t.keyWidth / 2, top, r.height)
+    text(r.value.lines, left + t.keyWidth + t.valueWidth / 2, top, r.height)
+    top += r.height
+  }
+  return parts.join('\n')
 }
 
 /** A use case diagram's note: a plain yellow box. */
@@ -1897,9 +2059,11 @@ function renderNodeLabel(
   const labelLines = usecase
     ? usecaseLabelText(node.shape, node.label).split('\n').length
     : node.label.split('\n').length
+  // A json table draws its own text.
+  if (node.shape === 'usecase-json') return ''
   // An actor's name sits under its figure, 10px above the node's bottom edge.
   const cy = usecase
-    ? node.shape === 'usecase-actor'
+    ? isUsecaseActor(node.shape)
       ? node.y +
         node.height -
         USECASE.actorPad -

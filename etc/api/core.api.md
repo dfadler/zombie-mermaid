@@ -592,6 +592,7 @@ export interface MermaidGraph {
 
 // @public (undocumented)
 export interface MermaidNode {
+    business?: boolean;
     gridLayer?: number;
     gridOrder?: number;
     icon?: string;
@@ -642,6 +643,7 @@ export interface MermaidSubgraph {
     label: string;
     // (undocumented)
     nodeIds: string[];
+    package?: boolean;
     region?: boolean;
     stateComposite?: boolean;
 }
@@ -693,7 +695,7 @@ export interface NodeInteraction {
 }
 
 // @public (undocumented)
-export type NodeShape = 'rectangle' | 'rounded' | 'diamond' | 'stadium' | 'circle' | 'subroutine' | 'doublecircle' | 'hexagon' | 'cylinder' | 'asymmetric' | 'trapezoid' | 'trapezoid-alt' | 'parallelogram' | 'parallelogram-alt' | 'state-start' | 'state-end' | 'document' | 'stacked-document' | 'stacked-process' | 'card' | 'lined-process' | 'divided-process' | 'window-pane' | 'triangle' | 'flipped-triangle' | 'filled-circle' | 'junction' | 'crossed-circle' | 'fork-join' | 'notched-pentagon' | 'sloped-rectangle' | 'flag' | 'bow-tie-rectangle' | 'half-rounded-rectangle' | 'brace' | 'brace-right' | 'braces' | 'bolt' | 'cloud' | 'horizontal-cylinder' | 'tagged-rectangle' | 'small-circle' | 'fork-bar' | 'text' | 'anchor' | 'note' | 'usecase-actor' | 'usecase-ellipse' | 'usecase-rect' | 'usecase-note';
+export type NodeShape = 'rectangle' | 'rounded' | 'diamond' | 'stadium' | 'circle' | 'subroutine' | 'doublecircle' | 'hexagon' | 'cylinder' | 'asymmetric' | 'trapezoid' | 'trapezoid-alt' | 'parallelogram' | 'parallelogram-alt' | 'state-start' | 'state-end' | 'document' | 'stacked-document' | 'stacked-process' | 'card' | 'lined-process' | 'divided-process' | 'window-pane' | 'triangle' | 'flipped-triangle' | 'filled-circle' | 'junction' | 'crossed-circle' | 'fork-join' | 'notched-pentagon' | 'sloped-rectangle' | 'flag' | 'bow-tie-rectangle' | 'half-rounded-rectangle' | 'brace' | 'brace-right' | 'braces' | 'bolt' | 'cloud' | 'horizontal-cylinder' | 'tagged-rectangle' | 'small-circle' | 'fork-bar' | 'text' | 'anchor' | 'note' | 'usecase-actor' | 'usecase-actor-hollow' | 'usecase-actor-awesome' | 'usecase-actor-icon' | 'usecase-ellipse' | 'usecase-rect' | 'usecase-note' | 'usecase-json';
 
 // @public
 export function normalizeBrTags(label: string): string;
@@ -797,6 +799,7 @@ export interface PositionedGroup {
     inlineStyle?: Record<string, string>;
     // (undocumented)
     label: string;
+    package?: boolean;
     region?: boolean;
     titleOnly?: boolean;
     // (undocumented)
@@ -809,6 +812,7 @@ export interface PositionedGroup {
 
 // @public (undocumented)
 export interface PositionedNode {
+    business?: boolean;
     className?: string;
     // (undocumented)
     height: number;

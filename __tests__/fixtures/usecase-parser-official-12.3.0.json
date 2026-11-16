@@ -17,6 +17,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -45,6 +46,7 @@
       ],
       "useCases": [],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -81,6 +83,7 @@
       ],
       "useCases": [],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -104,6 +107,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -142,6 +146,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "Do_it",
@@ -172,6 +177,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "Big_Boss",
@@ -202,6 +208,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -232,6 +239,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -262,6 +270,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -290,6 +299,7 @@
       ],
       "useCases": [],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -328,6 +338,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -358,6 +369,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -388,6 +400,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -419,6 +432,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -450,6 +464,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -481,6 +496,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -522,6 +538,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -558,6 +575,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -588,6 +606,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -633,6 +652,7 @@
           "members": ["X", "U1", "U2"]
         }
       ],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "X",
@@ -665,6 +685,7 @@
           "members": ["U"]
         }
       ],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -690,6 +711,7 @@
           "members": ["U"]
         }
       ],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -725,6 +747,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -750,6 +773,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -768,6 +792,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": [
@@ -791,6 +816,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": [
@@ -818,6 +844,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": [
@@ -843,6 +870,7 @@
       "actors": [],
       "useCases": [],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -865,6 +893,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -893,6 +922,7 @@
       ],
       "useCases": [],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -923,6 +953,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -953,6 +984,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "1a",
@@ -987,6 +1019,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1012,6 +1045,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1030,6 +1064,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1053,6 +1088,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1083,6 +1119,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1108,6 +1145,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1151,6 +1189,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "Do_it___more_",
@@ -1185,6 +1224,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1229,6 +1269,7 @@
           "members": ["A", "B"]
         }
       ],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1254,6 +1295,7 @@
           "members": ["U"]
         }
       ],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1302,6 +1344,7 @@
           "members": ["B"]
         }
       ],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1336,6 +1379,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1367,6 +1411,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1402,6 +1447,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1430,6 +1476,7 @@
       ],
       "useCases": [],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "B",
@@ -1460,6 +1507,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1490,6 +1538,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1524,6 +1573,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "endpoint",
@@ -1553,6 +1603,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1571,6 +1622,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1593,6 +1645,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1615,23 +1668,7 @@
       ],
       "useCases": [],
       "boundaries": [],
-      "relationships": [],
-      "classDefs": [],
-      "notes": []
-    }
-  },
-  "metadata": {
-    "source": "usecase-beta\nactor A@{ type: hollow }",
-    "usecase": {
-      "direction": "LR",
-      "actors": [
-        {
-          "id": "A",
-          "label": "A"
-        }
-      ],
-      "useCases": [],
-      "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1651,6 +1688,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1669,6 +1707,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [
         {
@@ -1676,18 +1715,6 @@
           "styles": ["fill:#f00"]
         }
       ],
-      "notes": []
-    }
-  },
-  "json": {
-    "source": "usecase-beta\njson J @ {\"a\": 1}",
-    "usecase": {
-      "direction": "LR",
-      "actors": [],
-      "useCases": [],
-      "boundaries": [],
-      "relationships": [],
-      "classDefs": [],
       "notes": []
     }
   },
@@ -1709,6 +1736,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1734,6 +1762,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1752,6 +1781,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": [
@@ -1774,6 +1804,7 @@
       ],
       "useCases": [],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": [
@@ -1797,6 +1828,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": [
@@ -1828,6 +1860,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1846,6 +1879,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1869,6 +1903,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -1900,6 +1935,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1923,6 +1959,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "U",
@@ -1953,6 +1990,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "U",
@@ -1981,6 +2019,7 @@
       ],
       "useCases": [],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -1999,6 +2038,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -2026,6 +2066,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "1",
@@ -2060,6 +2101,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "_a",
@@ -2094,6 +2136,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -2124,6 +2167,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -2152,6 +2196,7 @@
       ],
       "useCases": [],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -2182,6 +2227,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -2220,6 +2266,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -2251,6 +2298,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -2281,6 +2329,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -2311,6 +2360,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -2344,6 +2394,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -2378,6 +2429,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -2411,6 +2463,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [
         {
@@ -2439,6 +2492,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -2476,6 +2530,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [],
       "classDefs": [],
       "notes": []
@@ -2507,6 +2562,7 @@
         }
       ],
       "boundaries": [],
+      "jsonNodes": [],
       "relationships": [
         {
           "source": "A",
@@ -2518,5 +2574,1362 @@
       "classDefs": [],
       "notes": []
     }
+  },
+  "meta hollow": {
+    "source": "usecase-beta\nactor A@{ type: hollow }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "hollow"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta awesome": {
+    "source": "usecase-beta\nactor A@{ type: awesome }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "awesome"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta normal": {
+    "source": "usecase-beta\nactor A@{ type: normal }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta icon": {
+    "source": "usecase-beta\nactor A@{ icon: user }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "icon",
+          "icon": "user"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta icon quoted": {
+    "source": "usecase-beta\nactor A@{ icon: \"logos:aws\" }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "icon",
+          "icon": "logos:aws"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta icon awesome": {
+    "source": "usecase-beta\nactor A@{ icon: user, type: awesome }\nA --> U",
+    "error": true
+  },
+  "meta business actor": {
+    "source": "usecase-beta\nactor A@{ business: true }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "business": true
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta business hollow": {
+    "source": "usecase-beta\nactor A@{ type: hollow, business: true }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "hollow",
+          "business": true
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta business awesome": {
+    "source": "usecase-beta\nactor A@{ type: awesome, business: true }\nA --> U",
+    "error": true
+  },
+  "meta business icon": {
+    "source": "usecase-beta\nactor A@{ icon: user, business: true }\nA --> U",
+    "error": true
+  },
+  "meta business false": {
+    "source": "usecase-beta\nactor A@{ business: false }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta business use case": {
+    "source": "usecase-beta\nactor A\nA --> U@{ business: true }",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse",
+          "business": true
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta business rect": {
+    "source": "usecase-beta\nactor A\nA --> U[Lbl]@{ business: true }",
+    "error": true
+  },
+  "meta assignment": {
+    "source": "usecase-beta\nactor A\nA --> U\nA@{ type: hollow }\nU@{ business: true }",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "hollow"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse",
+          "business": true
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta assignment quoted": {
+    "source": "usecase-beta\nactor \"Big Boss\"\n\"Big Boss\"@{ type: awesome }",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "Big_Boss",
+          "label": "Big Boss",
+          "type": "awesome"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta assignment undeclared": {
+    "source": "usecase-beta\nZ@{ type: hollow }",
+    "error": true
+  },
+  "meta assignment undeclared plain": {
+    "source": "usecase-beta\nZ@{ business: true }",
+    "error": true
+  },
+  "meta assignment trailing": {
+    "source": "usecase-beta\nactor A\nA@{ type: hollow } --> U",
+    "error": true
+  },
+  "meta assignment replaces": {
+    "source": "usecase-beta\nactor A@{ type: hollow }\nA@{ type: awesome }",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "awesome"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta assignment before actor": {
+    "source": "usecase-beta\nA --> U\nA@{ type: hollow }\nactor A",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "hollow"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta type on use case": {
+    "source": "usecase-beta\nA@{ type: hollow }\nA --> U",
+    "error": true
+  },
+  "meta boundary package": {
+    "source": "usecase-beta\nsystemBoundary S@{ type: package }\nU\nend",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse",
+          "parentId": "S"
+        }
+      ],
+      "boundaries": [
+        {
+          "id": "S",
+          "label": "S",
+          "members": ["U"],
+          "type": "package"
+        }
+      ],
+      "jsonNodes": [],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta boundary assigned": {
+    "source": "usecase-beta\nsystemBoundary S\nU\nend\nS@{ type: package }",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse",
+          "parentId": "S"
+        }
+      ],
+      "boundaries": [
+        {
+          "id": "S",
+          "label": "S",
+          "members": ["U"],
+          "type": "package"
+        }
+      ],
+      "jsonNodes": [],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta boundary rect": {
+    "source": "usecase-beta\nsystemBoundary S@{ type: rect }\nU\nend",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse",
+          "parentId": "S"
+        }
+      ],
+      "boundaries": [
+        {
+          "id": "S",
+          "label": "S",
+          "members": ["U"]
+        }
+      ],
+      "jsonNodes": [],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta boundary bad type": {
+    "source": "usecase-beta\nsystemBoundary S@{ type: hollow }\nU\nend",
+    "error": true
+  },
+  "meta multiline": {
+    "source": "usecase-beta\nactor A@{\n type: hollow\n business: true\n}\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "hollow",
+          "business": true
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta trailing comma": {
+    "source": "usecase-beta\nactor A@{ type: hollow, }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "hollow"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta quoted keys": {
+    "source": "usecase-beta\nactor A@{ \"type\": \"hollow\" }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "hollow"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta empty": {
+    "source": "usecase-beta\nactor A@{ }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta unknown key": {
+    "source": "usecase-beta\nactor A@{ foo: bar }\nA --> U",
+    "error": true
+  },
+  "meta conflict": {
+    "source": "usecase-beta\nactor A@{ type: hollow }\nactor A@{ type: awesome }",
+    "error": true
+  },
+  "meta repeated": {
+    "source": "usecase-beta\nactor A@{ type: hollow }\nactor A@{ type: hollow }\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "hollow"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta with stereotype and class": {
+    "source": "usecase-beta\nactor A@{ type: hollow } <<boss>> :::c\nclassDef c fill:#fdd\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "type": "hollow",
+          "stereotype": "boss",
+          "classes": ["c"]
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [
+        {
+          "id": "c",
+          "styles": ["fill:#fdd"]
+        }
+      ],
+      "notes": []
+    }
+  },
+  "meta in boundary": {
+    "source": "usecase-beta\nsystemBoundary S\nactor A@{ type: hollow }\nU@{ business: true }\nend\nA --> U",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A",
+          "parentId": "S",
+          "type": "hollow"
+        }
+      ],
+      "useCases": [
+        {
+          "id": "U",
+          "label": "U",
+          "shape": "ellipse",
+          "parentId": "S",
+          "business": true
+        }
+      ],
+      "boundaries": [
+        {
+          "id": "S",
+          "label": "S",
+          "members": ["A", "U"]
+        }
+      ],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "U",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta bad value": {
+    "source": "usecase-beta\nactor A@{ business: \"true\" }",
+    "error": true
+  },
+  "meta no colon": {
+    "source": "usecase-beta\nactor A@{ hollow }",
+    "error": true
+  },
+  "meta unclosed": {
+    "source": "usecase-beta\nactor A@{ type: hollow",
+    "error": true
+  },
+  "meta edge assignment": {
+    "source": "usecase-beta\nA e1@--> B\ne1@{ animate: true }",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward",
+          "id": "e1",
+          "animate": true
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta edge slow": {
+    "source": "usecase-beta\nA e1@--> B\ne1@{ animation: slow }",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "B",
+          "type": "association",
+          "arrow": "forward",
+          "id": "e1",
+          "animate": true,
+          "animation": "slow"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "meta edge bad animation": {
+    "source": "usecase-beta\nA e1@--> B\ne1@{ animation: medium }",
+    "error": true
+  },
+  "meta edge bad key": {
+    "source": "usecase-beta\nA e1@--> B\ne1@{ type: hollow }",
+    "error": true
+  },
+  "json table": {
+    "source": "usecase-beta\njson J @ {\"a\": 1, \"b\": \"x\", \"c\": [1,2,3], \"d\": {\"e\": true, \"f\": null}}",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "a",
+              "value": "1"
+            },
+            {
+              "key": "b",
+              "value": "x"
+            },
+            {
+              "key": "c",
+              "value": "1"
+            },
+            {
+              "key": "",
+              "value": "2"
+            },
+            {
+              "key": "",
+              "value": "3"
+            },
+            {
+              "key": "d.e",
+              "value": "true"
+            },
+            {
+              "key": "d.f",
+              "value": "null"
+            }
+          ]
+        }
+      ],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json tight": {
+    "source": "usecase-beta\njson J@{\"a\": 1}\nA --> J",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "a",
+              "value": "1"
+            }
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "J",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json nested arrays": {
+    "source": "usecase-beta\njson J @ {\"a\": [{\"x\":1},{\"y\":2}], \"e\": [], \"o\": {}, \"s\":\"a long string value here\"}",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "a[0].x",
+              "value": "1"
+            },
+            {
+              "key": "a[1].y",
+              "value": "2"
+            },
+            {
+              "key": "e",
+              "value": "[]"
+            },
+            {
+              "key": "o",
+              "value": "{}"
+            },
+            {
+              "key": "s",
+              "value": "a long string value here"
+            }
+          ]
+        }
+      ],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json integer keys": {
+    "source": "usecase-beta\njson J @ {\"b\":1,\"2\":2,\"a\":3,\"1\":4}",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "b",
+              "value": "1"
+            },
+            {
+              "key": "2",
+              "value": "2"
+            },
+            {
+              "key": "a",
+              "value": "3"
+            },
+            {
+              "key": "1",
+              "value": "4"
+            }
+          ]
+        }
+      ],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json multiline": {
+    "source": "usecase-beta\njson J @ {\n \"a\": 1,\n \"b\": 2\n}",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "a",
+              "value": "1"
+            },
+            {
+              "key": "b",
+              "value": "2"
+            }
+          ]
+        }
+      ],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json class": {
+    "source": "usecase-beta\njson J @ {\"a\": 1} :::c\nclassDef c fill:#fdd",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "a",
+              "value": "1"
+            }
+          ],
+          "classes": ["c"]
+        }
+      ],
+      "relationships": [],
+      "classDefs": [
+        {
+          "id": "c",
+          "styles": ["fill:#fdd"]
+        }
+      ],
+      "notes": []
+    }
+  },
+  "json style": {
+    "source": "usecase-beta\njson J @ {\"b\":1,\"a\":2}\nstyle J fill:#fdd\nclass J k",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "b",
+              "value": "1"
+            },
+            {
+              "key": "a",
+              "value": "2"
+            }
+          ],
+          "classes": ["k"],
+          "styles": ["fill:#fdd"]
+        }
+      ],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json association": {
+    "source": "usecase-beta\nactor A\njson J @ {\"a\": 1}\nA --> J\nA <-- J\nA -- J",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "a",
+              "value": "1"
+            }
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "J",
+          "type": "association",
+          "arrow": "forward"
+        },
+        {
+          "source": "A",
+          "target": "J",
+          "type": "association",
+          "arrow": "backward"
+        },
+        {
+          "source": "A",
+          "target": "J",
+          "type": "association",
+          "arrow": "none"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json label edge": {
+    "source": "usecase-beta\nactor A\njson J @ {\"a\": 1}\nJ -- lbl --> A",
+    "usecase": {
+      "direction": "LR",
+      "actors": [
+        {
+          "id": "A",
+          "label": "A"
+        }
+      ],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "a",
+              "value": "1"
+            }
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "source": "J",
+          "target": "A",
+          "type": "association",
+          "arrow": "forward",
+          "label": "lbl"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json used first": {
+    "source": "usecase-beta\nA --> J\njson J @ {\"a\": 1}",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [
+        {
+          "id": "A",
+          "label": "A",
+          "shape": "ellipse"
+        }
+      ],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "a",
+              "value": "1"
+            }
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "source": "A",
+          "target": "J",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json to json": {
+    "source": "usecase-beta\njson J @ {\"a\": 1}\njson K @ {\"b\": 2}\nJ --> K",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "a",
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "id": "K",
+          "rows": [
+            {
+              "key": "b",
+              "value": "2"
+            }
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "source": "J",
+          "target": "K",
+          "type": "association",
+          "arrow": "forward"
+        }
+      ],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json circle": {
+    "source": "usecase-beta\nactor A\njson J @ {\"a\": 1}\nA --o J",
+    "error": true
+  },
+  "json cross": {
+    "source": "usecase-beta\nactor A\njson J @ {\"a\": 1}\nA --x J",
+    "error": true
+  },
+  "json include": {
+    "source": "usecase-beta\nactor A\njson J @ {\"a\": 1}\nA ..> : include J",
+    "error": true
+  },
+  "json generalization": {
+    "source": "usecase-beta\nactor A\njson J @ {\"a\": 1}\nA --|> J",
+    "error": true
+  },
+  "json note": {
+    "source": "usecase-beta\njson J @ {\"a\": 1}\nnote for J \"hi\"",
+    "error": true
+  },
+  "json twice": {
+    "source": "usecase-beta\njson J @ {\"a\": 1}\njson J @ {\"b\": 2}",
+    "error": true
+  },
+  "json in boundary": {
+    "source": "usecase-beta\nsystemBoundary S\njson J @ {\"a\": 1}\nend",
+    "error": true
+  },
+  "json array root": {
+    "source": "usecase-beta\njson J @ [1,2]",
+    "error": true
+  },
+  "json quoted name": {
+    "source": "usecase-beta\njson \"J K\" @ {\"a\": 1}",
+    "error": true
+  },
+  "json invalid": {
+    "source": "usecase-beta\njson J @ {\"a\": }",
+    "error": true
+  },
+  "json metadata": {
+    "source": "usecase-beta\njson J @ {\"a\": 1}\nJ@{ business: true }",
+    "error": true
+  },
+  "json scalars": {
+    "source": "usecase-beta\njson J @ {\"s\": \"\", \"n\": -1.5e2, \"t\": true, \"z\": 0, \"u\": \"\\u00e9\\n\"}",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "s",
+              "value": ""
+            },
+            {
+              "key": "n",
+              "value": "-150"
+            },
+            {
+              "key": "t",
+              "value": "true"
+            },
+            {
+              "key": "z",
+              "value": "0"
+            },
+            {
+              "key": "u",
+              "value": "é\n"
+            }
+          ]
+        }
+      ],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json empty": {
+    "source": "usecase-beta\njson J @ {}",
+    "usecase": {
+      "direction": "LR",
+      "actors": [],
+      "useCases": [],
+      "boundaries": [],
+      "jsonNodes": [
+        {
+          "id": "J",
+          "rows": [
+            {
+              "key": "",
+              "value": "{}"
+            }
+          ]
+        }
+      ],
+      "relationships": [],
+      "classDefs": [],
+      "notes": []
+    }
+  },
+  "json as actor": {
+    "source": "usecase-beta\njson J @ {\"a\": 1}\nactor J",
+    "error": true
+  },
+  "json as use case": {
+    "source": "usecase-beta\njson J @ {\"a\": 1}\nJ",
+    "error": true
   }
 }

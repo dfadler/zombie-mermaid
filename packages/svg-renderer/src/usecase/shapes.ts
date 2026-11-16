@@ -12,12 +12,13 @@
 // A label wraps at 120px, as a flowchart label does.
 // ============================================================================
 
+import { USECASE_JSON_SEP } from '@zombie-mermaid/mermaid-parser'
 import { FLOWCHART_WRAP_WIDTH } from '../layout-engine/wrap-label.ts'
 import { textWidth as advance } from '../timeline/layout.ts'
 import { trebuchetKerning } from '../requirement/kerning.ts'
 
 /** Text width as Chromium measures it: Trebuchet MS advances plus kerning. */
-const textWidth = (text: string, size: number): number =>
+export const textWidth = (text: string, size: number): number =>
   advance(text, size) + trebuchetKerning(text, false) * (size / 16)
 
 export const USECASE = {
@@ -42,20 +43,22 @@ export const USECASE = {
 } as const
 
 export function isUsecaseShape(shape: string): boolean {
-  return (
-    shape === 'usecase-actor' ||
-    shape === 'usecase-ellipse' ||
-    shape === 'usecase-rect' ||
-    shape === 'usecase-note'
-  )
+  return shape.startsWith('usecase-')
 }
+
+/** A stick figure, hollow figure, silhouette or icon actor. */
+export const isUsecaseActor = (shape: string): boolean =>
+  shape.startsWith('usecase-actor')
 
 /**
  * The label text of a use case node, wrapped at 120px as Mermaid wraps it:
  * greedy at word boundaries, a word wider than that stays whole.
  */
 export function usecaseLabelText(shape: string, label: string): string {
-  const size = fontOf(shape)
+  return wrapText(label, fontOf(shape))
+}
+
+function wrapText(label: string, size: number): string {
   const out: string[] = []
   for (const para of label.split('\n')) {
     let cur = ''
@@ -72,9 +75,9 @@ export function usecaseLabelText(shape: string, label: string): string {
 }
 
 export function fontOf(shape: string): number {
-  return shape === 'usecase-actor'
+  return isUsecaseActor(shape)
     ? USECASE.actorFont
-    : shape === 'usecase-note'
+    : shape === 'usecase-note' || shape === 'usecase-json'
       ? USECASE.noteFont
       : USECASE.caseFont
 }
@@ -82,10 +85,57 @@ export function fontOf(shape: string): number {
 /** Line height of a label: the font size at 1.5. */
 export const lineHeight = (shape: string): number => fontOf(shape) * 1.5
 
+/** One cell of a json table: its wrapped lines and the box they fill (none for no text). */
+function cell(text: string): {
+  lines: string[]
+  width: number
+  height: number
+} {
+  if (text === '') return { lines: [], width: 0, height: 0 }
+  const lines = wrapText(text, USECASE.noteFont).split('\n')
+  const widest = Math.max(...lines.map((l) => textWidth(l, USECASE.noteFont)))
+  return {
+    lines,
+    width: lines.length > 1 ? Math.max(widest, FLOWCHART_WRAP_WIDTH) : widest,
+    height: lines.length * lineHeight('usecase-json'),
+  }
+}
+
+/** The key/value table of a `usecase-json` node (mermaid@12.3.0's `usecaseJsonTable`): 8px of padding a cell, a 1px border. */
+export function jsonTable(label: string) {
+  const [title = '', ...rest] = label.split('\n')
+  const pad = 8
+  const head = cell(title)
+  const rows = rest.map((r) => {
+    const at = r.indexOf(USECASE_JSON_SEP)
+    const key = cell(r.slice(0, at))
+    const value = cell(r.slice(at + 1))
+    return { key, value, height: Math.max(key.height, value.height) + pad }
+  })
+  const keyWidth = Math.max(0, ...rows.map((r) => r.key.width)) + pad * 2
+  const valueMeasured = Math.max(0, ...rows.map((r) => r.value.width)) + pad * 2
+  const titleWidth = Math.max(head.width, USECASE.minLabelWidth) + pad * 2
+  const inner = Math.max(titleWidth, keyWidth + valueMeasured)
+  const titleHeight = head.height + pad
+  return {
+    title: head,
+    titleHeight,
+    rows,
+    keyWidth,
+    valueWidth: inner - keyWidth,
+    inner,
+    innerHeight: titleHeight + rows.reduce((a, r) => a + r.height, 0),
+  }
+}
+
 export function usecaseNodeSize(
   shape: string,
   label: string,
 ): { width: number; height: number } {
+  if (shape === 'usecase-json') {
+    const t = jsonTable(label)
+    return { width: t.inner + 2, height: t.innerHeight + 2 }
+  }
   const lines = usecaseLabelText(shape, label).split('\n')
   const font = fontOf(shape)
   let widest = Math.max(...lines.map((l) => textWidth(l, font)))
@@ -100,6 +150,9 @@ export function usecaseNodeSize(
     case 'usecase-note':
       return { width: box + 20, height: rows + 20 }
     case 'usecase-actor':
+    case 'usecase-actor-hollow':
+    case 'usecase-actor-awesome':
+    case 'usecase-actor-icon':
       return {
         width: Math.max(widest + 2 * USECASE.actorPad, USECASE.actorMinWidth),
         height: USECASE.actorHeight + (lines.length - 1) * lineHeight(shape),

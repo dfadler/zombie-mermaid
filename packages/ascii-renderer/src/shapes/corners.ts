@@ -54,6 +54,22 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
     ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
   },
+  'usecase-actor-hollow': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+  'usecase-actor-awesome': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+  'usecase-actor-icon': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+  'usecase-json': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
   'usecase-ellipse': {
     unicode: { tl: '╭', tr: '╮', bl: '╰', br: '╯' },
     ascii: { tl: '.', tr: '.', bl: "'", br: "'" },

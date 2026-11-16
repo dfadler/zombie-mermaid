@@ -3,6 +3,7 @@ import {
   parseStyleProps,
   stripFrontMatter,
 } from '@zombie-mermaid/core'
+import { jsonObjectEnd, jsonRows } from './json.ts'
 import type {
   UsecaseClassDef,
   UsecaseActor,
@@ -10,6 +11,7 @@ import type {
   UsecaseCase,
   UsecaseDiagram,
   UsecaseDirection,
+  UsecaseJson,
   UsecaseNote,
   UsecaseRelationship,
 } from './types.ts'
@@ -43,11 +45,10 @@ import type {
 //   - `TD` is `TB`.
 //
 // Also read: `<<stereotype>>` and `:::class` after a name, `classDef` / `class`
-// / `style`, `--o` / `--x` / `o--` / `x--` markers, `id@` edge ids with an
-// `id@{ animate: true }` line, and markdown strings (backticks dropped).
-//
-// Not supported yet (an error saying so): `@{ … }` metadata on a node and
-// `json` nodes (#3131).
+// / `style`, `--o` / `--x` / `o--` / `x--` markers, `id@` edge ids, markdown
+// strings (backticks dropped), `@{ key: value }` metadata after a name (or as
+// a `Name@{ … }` line for a name declared elsewhere; it may span lines) and
+// `json Name @ { … }` nodes, which only association lines may join.
 // ============================================================================
 
 const RESERVED = new Set([
@@ -72,10 +73,54 @@ const RESERVED = new Set([
 const isReserved = (id: string): boolean =>
   RESERVED.has(id) || /^(?:include|extend)$/i.test(id)
 
-const UNSUPPORTED: Array<[RegExp, string]> = [
-  [/@\{/, '`@{ … }` metadata'],
-  [/^json\s/, '`json` nodes'],
-]
+interface Prop {
+  key: string
+  value: string | boolean
+  line: number
+}
+
+/** Index of the `}` closing a `@{` body that starts at `from` (strings may hold it), or -1. */
+function metaEnd(s: string, from: number): number {
+  let quoted = ''
+  for (let i = from; i < s.length; i++) {
+    const c = s[i]!
+    if (quoted) {
+      if (c === quoted) quoted = ''
+    } else if (c === '"' || c === "'") quoted = c
+    else if (c === '}') return i
+  }
+  return -1
+}
+
+/** `key: value` pairs of a metadata body, separated by commas or line breaks; `null` when one is malformed. */
+function metaProps(body: string, line: number): Prop[] | null {
+  const parts: string[] = []
+  let quoted = ''
+  let from = 0
+  for (let i = 0; i <= body.length; i++) {
+    const c = body[i]
+    if (quoted) {
+      if (c === quoted) quoted = ''
+    } else if (c === '"' || c === "'") quoted = c
+    else if (c === ',' || c === '\n' || i === body.length) {
+      parts.push(body.slice(from, i).trim())
+      from = i + 1
+    }
+  }
+  const props: Prop[] = []
+  for (const part of parts) {
+    if (part === '') continue
+    const m = /^(\w+|"[^"]*"|'[^']*')\s*:\s*(\w+|"[^"]*"|'[^']*')$/.exec(part)
+    if (!m) return null
+    const bare = (x: string): string => (/^["']/.test(x) ? x.slice(1, -1) : x)
+    props.push({
+      key: bare(m[1]!),
+      value: m[2] === 'true' ? true : m[2] === 'false' ? false : bare(m[2]!),
+      line,
+    })
+  }
+  return props
+}
 
 interface Entity {
   id: string
@@ -84,6 +129,7 @@ interface Entity {
   shape: 'ellipse' | 'rect'
   stereotype?: string
   classes?: string[]
+  meta?: Prop[]
 }
 
 interface Element {
@@ -95,6 +141,9 @@ interface Element {
   stereotype?: string
   classes: string[]
   styles: string[]
+  line: number
+  /** `@{ … }` of the declarations, in source order; applied once every element's kind is final. */
+  decl: Prop[]
   parentId?: string
   /** Only named in a relationship so far: an `actor` statement can still claim it. */
   weak: boolean
@@ -112,8 +161,17 @@ export function parseUsecase(source: string): UsecaseDiagram {
 
   const elements = new Map<string, Element>()
   const boundaries = new Map<string, UsecaseBoundary>()
+  const jsons = new Map<string, UsecaseJson>()
+  const boundaryPackage = new Set<string>()
+  const assignments: Array<{ id: string; line: number; props: Prop[] }> = []
   const relationships: UsecaseRelationship[] = []
   const relationLines: number[] = []
+  // `json` names are known up front: a line may join one before its statement.
+  const jsonIds = new Set<string>()
+  for (const raw of lines) {
+    const j = /^\s*json[\t ]+(\w+)[\t ]*@/.exec(raw)
+    if (j) jsonIds.add(j[1]!)
+  }
   const notes: Array<UsecaseNote & { line: number }> = []
   let direction: UsecaseDirection = 'LR'
   let boundary: UsecaseBoundary | undefined
@@ -134,6 +192,13 @@ export function parseUsecase(source: string): UsecaseDiagram {
     allowBracket: boolean,
   ): { ent: Entity; rest: string } => {
     const r = bareEntity(s, allowBracket)
+    if (r.rest.startsWith('@{')) {
+      const end = metaEnd(r.rest, 2)
+      const props = end < 0 ? null : metaProps(r.rest.slice(2, end), n)
+      if (!props) return fail("Invalid '@{ … }' metadata")
+      r.ent.meta = props
+      r.rest = r.rest.slice(end + 1).trim()
+    }
     const st = /^<<([^<>]*)>>/.exec(r.rest)
     if (st) {
       r.ent.stereotype = st[1]!.trim()
@@ -202,18 +267,22 @@ export function parseUsecase(source: string): UsecaseDiagram {
     const kind =
       wanted === 'ref' || wanted === 'weak' ? (prev?.kind ?? 'usecase') : wanted
     if (boundaries.has(e.id)) fail(`ID '${e.id}' is already a system boundary`)
+    if (jsonIds.has(e.id)) fail(`ID '${e.id}' is already a json node`)
     const meta = (el: Element): void => {
+      el.decl.push(...(e.meta ?? []))
       if (e.stereotype !== undefined) el.stereotype = e.stereotype
       for (const c of e.classes ?? [])
         if (!el.classes.includes(c)) el.classes.push(c)
     }
     if (!prev) {
-      const { classes: _c, ...own } = e
+      const { classes: _c, meta: _m, ...own } = e
       const el: Element = {
         kind,
         ...own,
         classes: [],
         styles: [],
+        line: n,
+        decl: [],
         weak: wanted === 'weak',
       }
       meta(el)
@@ -337,14 +406,16 @@ export function parseUsecase(source: string): UsecaseDiagram {
     if (to.rest !== '') fail(`Unexpected '${to.rest}'`)
     // Mermaid: `:::` on a relationship endpoint only applies to a declared node.
     for (const e of [from, to.ent])
-      if (e.classes && !elements.has(e.id))
+      if (e.classes && !elements.has(e.id) && !jsonIds.has(e.id))
         fail(`'${e.id}' uses ::: without being declared`)
-    const source = declare('weak', from)
-    const target = declare('weak', to.ent)
+    const end = (e: Entity): string =>
+      jsonIds.has(e.id) ? e.id : declare('weak', e).id
+    const source = end(from)
+    const target = end(to.ent)
     const { rest: _rest, ...link } = a
     relationships.push({
-      source: source.id,
-      target: target.id,
+      source,
+      target,
       ...link,
       ...(idm && { id: idm[1]! }),
     })
@@ -354,11 +425,17 @@ export function parseUsecase(source: string): UsecaseDiagram {
   const styleList = (s: string): string[] =>
     Object.entries(parseStyleProps(s)).map(([k, v]) => `${k}:${v}`)
   const classDefs: UsecaseClassDef[] = []
-  const edgeMeta: Array<{ id: string; line: number; body: string }> = []
+  const boundaryMeta = (id: string, p: Prop): void => {
+    n = p.line
+    if (p.key !== 'type' || (p.value !== 'rect' && p.value !== 'package'))
+      fail(`Metadata property '${p.key}' is invalid for boundary '${id}'`)
+    if (p.value === 'package') boundaryPackage.add(id)
+    else boundaryPackage.delete(id)
+  }
 
-  for (const [i, raw] of lines.entries()) {
+  for (let i = 0; i < lines.length; i++) {
     n = i + 1
-    const line = raw.trim()
+    let line = lines[i]!.trim()
     if (accBlock) {
       if (line.includes('}')) accBlock = false
       continue
@@ -374,13 +451,52 @@ export function parseUsecase(source: string): UsecaseDiagram {
       accBlock = !line.includes('}')
       continue
     }
-    const em = /^(\w+)@\{([^}]*)\}$/.exec(line)
-    if (em) {
-      edgeMeta.push({ id: em[1]!, line: n, body: em[2]! })
+    // A `@{ … }` body or a json object may run over several lines.
+    const open = (t: string): boolean => {
+      const j = /^json[\t ]+\w+[\t ]*@[\t ]*(?=\{)/.exec(t)
+      if (j) return jsonObjectEnd(t, j[0].length) < 0
+      const at = t.indexOf('@{')
+      return at >= 0 && metaEnd(t, at + 2) < 0
+    }
+    while (open(line)) {
+      if (i + 1 >= lines.length) return fail("Unclosed '{'")
+      line += '\n' + lines[++i]!.trim()
+    }
+
+    const js = /^json[\t ]+(\w+)[\t ]*@[\t ]*(?=\{)/.exec(line)
+    if (js) {
+      const id = js[1]!
+      if (boundary) fail("A json node cannot be inside a 'systemBoundary'")
+      const end = jsonObjectEnd(line, js[0].length)
+      const rows = jsonRows(line.slice(js[0].length, end))
+      if (typeof rows === 'string') fail(rows)
+      const rest = line.slice(end).trim()
+      const cl = /^:::([\w-]+(?:\s*,\s*[\w-]+)*)$/.exec(rest)
+      if (rest !== '' && !cl) fail(`Unexpected '${rest}'`)
+      if (jsons.has(id)) fail(`ID '${id}' is declared more than once`)
+      jsons.set(id, {
+        id,
+        rows: rows as UsecaseJson['rows'],
+        ...(cl && { classes: cl[1]!.split(',').map((x) => x.trim()) }),
+      })
       continue
     }
-    for (const [re, what] of UNSUPPORTED)
-      if (re.test(line)) fail(`${what} are not supported yet`)
+    // `Name@{ … }` on a line of its own sets metadata on a name declared elsewhere.
+    const asg = boundary ? null : /^(\w+|"[^"\r\n]*"|'[^'\r\n]*')@\{/.exec(line)
+    if (asg) {
+      const end = metaEnd(line, asg[0].length)
+      const props =
+        end < 0 ? null : metaProps(line.slice(asg[0].length, end), n)
+      if (!props) fail("Invalid '@{ … }' metadata")
+      if (line.slice(end + 1).trim() !== '')
+        fail(`Unexpected '${line.slice(end + 1).trim()}'`)
+      assignments.push({
+        id: /^["']/.test(asg[1]!) ? idOf(asg[1]!.slice(1, -1)) : asg[1]!,
+        line: n,
+        props: props!,
+      })
+      continue
+    }
 
     // Split by hand: a regex over `\s+` runs is polynomial on hostile input.
     const kw = /^(classDef|class|style)\s/.exec(line)
@@ -412,11 +528,12 @@ export function parseUsecase(source: string): UsecaseDiagram {
           : words.length > 1 && /^[\w-]+$/.test(name))
       ) {
         for (const id of ids) {
-          const el = elements.get(id)
+          const el = elements.get(id) ?? jsons.get(id)
           if (!el) fail(`'${id}' is not declared`)
           else if (kw[1] === 'class') {
+            el.classes ??= []
             if (!el.classes.includes(name)) el.classes.push(name)
-          } else el.styles.push(...styleList(tail))
+          } else (el.styles ??= []).push(...styleList(tail))
         }
         continue
       }
@@ -438,8 +555,10 @@ export function parseUsecase(source: string): UsecaseDiagram {
       if (rest !== '') fail(`Unexpected '${rest}'`)
       if (boundaries.has(ent.id) || elements.has(ent.id))
         fail(`ID '${ent.id}' is already declared`)
+      if (jsonIds.has(ent.id)) fail(`ID '${ent.id}' is already declared`)
       boundary = { id: ent.id, label: ent.label, members: [] }
       boundaries.set(ent.id, boundary)
+      for (const p of ent.meta ?? []) boundaryMeta(ent.id, p)
       continue
     }
     const note = /^note\s+for\s+(\w+)\s+(\S.*)$/.exec(line)
@@ -481,30 +600,116 @@ export function parseUsecase(source: string): UsecaseDiagram {
     fail(`System boundary '${boundary.id}' is not closed with 'end'`)
 
   // An actor statement may come after the relationship, so the kinds are only final now.
+  const kindOf = (id: string): 'actor' | 'usecase' | 'json' =>
+    jsonIds.has(id) ? 'json' : elements.get(id)!.kind
   for (const [i, r] of relationships.entries()) {
     n = relationLines[i]!
-    const from = elements.get(r.source)!.kind
-    const to = elements.get(r.target)!.kind
+    const from = kindOf(r.source)
+    const to = kindOf(r.target)
     if (
       (r.type === 'include' || r.type === 'extend') &&
       (from !== 'usecase' || to !== 'usecase')
     )
       fail(`${r.type} relationship requires use-case endpoints`)
-    if (r.type === 'generalization' && from !== to)
+    if (r.type === 'generalization' && (from !== to || from === 'json'))
       fail(
         'Generalization requires actor-to-actor or use-case-to-use-case endpoints',
       )
+    if (
+      r.type === 'association' &&
+      (from === 'json' || to === 'json') &&
+      !['forward', 'backward', 'none'].includes(r.arrow)
+    )
+      fail(
+        `JSON relationship '${r.source}' to '${r.target}' permits only point, reversed-point, or markerless solid association`,
+      )
   }
-  for (const m of edgeMeta) {
-    n = m.line
-    const r = relationships.find((x) => x.id === m.id)
-    if (!r) fail('`@{ … }` metadata on a node is not supported yet')
+
+  // `@{ … }`: declarations first (a clash between two is an error), then the
+  // `Name@{ … }` lines, which replace.
+  interface Meta {
+    type?: string
+    icon?: string
+    business?: boolean
+  }
+  const metaOf = new Map<string, Meta>()
+  const applyProp = (
+    el: Element,
+    st: Meta,
+    p: Prop,
+    replace: boolean,
+  ): void => {
+    n = p.line
+    const set = <K extends keyof Meta>(k: K, v: Meta[K]): void => {
+      if (!replace && st[k] !== undefined && st[k] !== v)
+        fail(
+          `${el.kind === 'actor' ? 'Actor' : 'Use case'} '${el.id}' has conflicting ${k} metadata`,
+        )
+      st[k] = v
+    }
+    if (p.key === 'business' && typeof p.value === 'boolean')
+      set('business', p.value)
+    else if (
+      el.kind === 'actor' &&
+      p.key === 'type' &&
+      (p.value === 'normal' || p.value === 'hollow' || p.value === 'awesome')
+    )
+      set('type', p.value)
+    else if (
+      el.kind === 'actor' &&
+      p.key === 'icon' &&
+      typeof p.value === 'string'
+    )
+      set('icon', p.value)
     else
-      for (const kv of m.body.split(',')) {
-        const [k, v = ''] = kv.split(':').map((x) => x.trim())
-        if (k === 'animate') r.animate = v === 'true'
-        else if (k === 'animation') r.animation = v
+      fail(`Metadata property '${p.key}' is invalid for ${el.kind} '${el.id}'`)
+  }
+  for (const el of elements.values()) {
+    const st: Meta = {}
+    for (const p of el.decl) applyProp(el, st, p, false)
+    metaOf.set(el.id, st)
+  }
+  for (const a of assignments) {
+    const el = elements.get(a.id)
+    const r = relationships.find((x) => x.id === a.id)
+    for (const p of a.props) {
+      n = p.line
+      if (el) applyProp(el, metaOf.get(a.id)!, p, true)
+      else if (boundaries.has(a.id)) boundaryMeta(a.id, p)
+      else if (r) {
+        if (p.key === 'animate' && typeof p.value === 'boolean')
+          r.animate = p.value
+        else if (
+          p.key === 'animation' &&
+          (p.value === 'fast' || p.value === 'slow')
+        )
+          r.animation = p.value
+        else fail(`Metadata property '${p.key}' is invalid for edge '${a.id}'`)
+      } else if (jsonIds.has(a.id))
+        fail(`Metadata property '${p.key}' is invalid for json '${a.id}'`)
+      else {
+        const hint = a.props.some((q) => q.key === 'icon' || q.key === 'type')
+          ? ' (metadata implies actor)'
+          : ''
+        fail(`Metadata target '${a.id}' is unresolved${hint}`)
       }
+    }
+  }
+  for (const r of relationships) if (r.animation !== undefined) r.animate = true
+  for (const el of elements.values()) {
+    n = el.line
+    const st = metaOf.get(el.id)!
+    if (el.kind === 'actor') {
+      if (
+        st.icon !== undefined &&
+        st.type !== undefined &&
+        st.type !== 'normal'
+      )
+        fail(`Actor '${el.id}' cannot combine icon with type '${st.type}'`)
+      if (st.business && (st.icon !== undefined || st.type === 'awesome'))
+        fail(`Business actor '${el.id}' must use normal or hollow geometry`)
+    } else if (el.shape === 'rect' && st.business)
+      fail(`Rectangular use case '${el.id}' cannot be a business use case`)
   }
   for (const note of notes) {
     n = note.line
@@ -515,15 +720,26 @@ export function parseUsecase(source: string): UsecaseDiagram {
   const actors: UsecaseActor[] = []
   const useCases: UsecaseCase[] = []
   for (const el of elements.values()) {
+    const st = metaOf.get(el.id)!
     const extra = {
+      ...(st.business && { business: true as const }),
       ...(el.parentId === undefined ? {} : { parentId: el.parentId }),
       ...(el.stereotype === undefined ? {} : { stereotype: el.stereotype }),
       ...(el.classes.length > 0 && { classes: el.classes }),
       ...(el.styles.length > 0 && { styles: el.styles }),
     }
-    if (el.kind === 'actor')
-      actors.push({ id: el.id, label: el.label, ...extra })
-    else
+    if (el.kind === 'actor') {
+      const type = st.icon === undefined ? st.type : 'icon'
+      actors.push({
+        id: el.id,
+        label: el.label,
+        ...(type === 'hollow' || type === 'awesome' || type === 'icon'
+          ? { type }
+          : {}),
+        ...(st.icon === undefined ? {} : { icon: st.icon }),
+        ...extra,
+      })
+    } else
       useCases.push({ id: el.id, label: el.label, shape: el.shape, ...extra })
   }
   return {
@@ -531,7 +747,10 @@ export function parseUsecase(source: string): UsecaseDiagram {
     direction,
     actors,
     useCases,
-    boundaries: [...boundaries.values()],
+    boundaries: [...boundaries.values()].map((b) =>
+      boundaryPackage.has(b.id) ? { ...b, type: 'package' as const } : b,
+    ),
+    jsonNodes: [...jsons.values()],
     relationships,
     notes: notes.map(({ target, label }) => ({ target, label })),
   }

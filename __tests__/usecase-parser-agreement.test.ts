@@ -12,15 +12,10 @@ const FIXTURE = JSON.parse(
   ),
 ) as Record<string, { source: string; usecase?: unknown; error?: true }>
 
-// Syntax mermaid accepts that parseUsecase rejects with a "not supported yet" error.
-const UNSUPPORTED = ['metadata', 'json']
-
 describe('usecase parser agreement with mermaid 12.3.0', () => {
   for (const [name, { source, usecase, error }] of Object.entries(FIXTURE)) {
     it(name, () => {
-      if (UNSUPPORTED.includes(name)) {
-        expect(() => parseUsecase(source)).toThrow(/not supported yet/)
-      } else if (error) expect(() => parseUsecase(source)).toThrow()
+      if (error) expect(() => parseUsecase(source)).toThrow()
       else expect(parseUsecase(source)).toEqual(usecase)
     })
   }
