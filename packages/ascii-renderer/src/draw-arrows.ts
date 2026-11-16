@@ -45,6 +45,7 @@ import {
   dirEquals,
   flowLaneLabel,
   flowLanePolyline,
+  isPlainLeftHook,
   leavesRightFace,
 } from './edge-routing.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
@@ -1286,6 +1287,18 @@ function resolveLabelPlacementUncached(
       {
         x: line[0]!.x - Math.floor(displayWidth(edge.text) / 2),
         y: Math.floor((line[0]!.y + line[1]!.y) / 2),
+        text: edge.text,
+      },
+    ]
+  }
+  // #3158: a lone left hook's label sits left of its vertical leg, on the row
+  // between the legs, clear of the stroke as mermaid draws it.
+  if (isPlainLeftHook(edge) && splitLines(edge.text).length === 1) {
+    const [, top, bottom] = pathToDrawing(graph, edge)
+    return [
+      {
+        x: top!.x - 1 - displayWidth(edge.text),
+        y: Math.floor((top!.y + bottom!.y) / 2),
         text: edge.text,
       },
     ]

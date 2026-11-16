@@ -88,9 +88,6 @@ export function baseElkLayoutOptions(spec: {
 export const BLOCK: {
     readonly padding: 8;
     readonly lineHeight: 24;
-    readonly labelPaddingX: 32;
-    readonly roundPaddingX: 16;
-    readonly labelPaddingY: 16;
     readonly fontSize: 16;
     readonly margin: 5;
     readonly cornerRadius: 5;

@@ -636,7 +636,7 @@ paint, identical results):
 | `primaryTextColor`, `primaryBorderColor` (`base`)                                                 | text colour; start of a border gradient | ignored; with the option: `fg`; a solid `border` |
 | `lineColor`, any theme                                                                            | edge and arrowhead colour               | ignored; with the option: `line`                 |
 | `pie1`..`pie12`, any theme                                                                        | the Nth slice in source order, wrapping | ignored; with the option: same                   |
-| invalid `primaryColor` (`#12345`)                                                                 | throws `Unsupported color format`       | ignored, renders                                 |
+| unparsable `primaryColor`, `lineColor`, `primaryTextColor` (`#12345`; the last two under `base`)  | throws `Unsupported color format`       | same (`MermaidParseError`, #3163)                |
 | invalid `pie1` (`notacolor`)                                                                      | slice painted `#333`                    | ignored, theme colour kept                       |
 | `secondaryColor`, `tertiaryColor`, `background`, `fontFamily`, `nodeBorder`, `pie*TextColor`, ... | applied or used to derive other colours | not supported, listed in `InitConfig.ignored`    |
 
@@ -655,8 +655,8 @@ mermaid.js 12.1.0 and 12.2.0 render the diagram without raising, and the browser
 the bad declaration, so the default paint stays. zombie-mermaid also renders and drops
 the value (it never reaches the SVG). The agentic-mermaid project refuses such input by
 name instead. The difference is deliberate, not a gap: parity with mermaid.js here means
-tolerating the input. (An invalid `themeVariables` colour is a separate case, listed in
-the table above, where mermaid itself throws.)
+tolerating the input. (An unparsable `primaryColor`, `lineColor` or `primaryTextColor` is a separate case, listed in
+the table above: mermaid throws and so does zombie-mermaid.)
 
 ## ASCII: opt-in layout-faithful mode (`--layout mermaid`)
 
@@ -1707,8 +1707,10 @@ rectangles, lane labels, arrows and the drawing size agree on every gallery samp
 
 ## Block diagrams
 
-Checked against mermaid 12.3.0 with `pnpm run block:oracle`: every block's rectangle, its corner
-radius and the drawing size agree on every gallery sample.
+Checked against mermaid 12.3.0 with `pnpm run block:oracle`: every block's drawn box and centre
+(and, for a shape, its circle radii, polygon points or cylinder path), its corner radius, every
+link's path and label place, and the drawing size agree on every gallery sample and on a case for
+each shape, each block arrow direction list, a wider cell and a two-line label.
 
 - **Text widths.** Mermaid measures labels in the browser; this library sums Trebuchet MS advances
   and ignores kerning, so a label can differ by about a pixel (`A label` measures 0.9px wider
@@ -1716,10 +1718,20 @@ radius and the drawing size agree on every gallery sample.
 - **Palette.** Blocks use the theme's node fill and border; a group is a light mix of the border
   colour into the background. Mermaid uses its own purple and yellow.
 - **Labels are `<text>`.** Mermaid draws `foreignObject` HTML; the text is the same.
-- **Not drawn yet.** Links, the other shapes, styling and markdown strings: see
-  [#3105](https://github.com/dfadler/zombie-mermaid/issues/3105),
-  [#3106](https://github.com/dfadler/zombie-mermaid/issues/3106),
-  [#3107](https://github.com/dfadler/zombie-mermaid/issues/3107).
+- **Link labels** are not wrapped at 200px as Mermaid does, and sit on a half-transparent patch of
+  the background instead of its `labelBkg` box.
+- **Styles.** `classDef`, `class` and `style` items are applied as Mermaid does (inline on the
+  rectangle, `color` on the label), except declarations with `url(`, `@import` or `expression(`,
+  which are dropped. A `style` on a block declared later, or on several ids, is a parse error (Mermaid
+  throws a `TypeError`); `class` on an id that is not declared is ignored.
+- **Markdown strings** (`["`**x**`"]`) are a parse error in Mermaid 12.3.0 and are one here.
+- **Shapes.** A stadium and an asymmetric block are rough.js paths in Mermaid (curved
+  approximations of straight lines); here they are plain polygons with the same bounding box, and
+  the oracle compares only that box and the centre.
+- **Links at a 2 x 4px gap.** A block arrow's tip sits exactly 8px from the next cell, twice the 4px arrow marker offset. Mermaid's offset rule has a strict `<` there, so a last-digit difference in text width flips it and the link collapses to a point in one renderer and not the other. The oracle's ring-of-links cases leave block arrows out for this reason.
+- **Links to a diamond.** Mermaid 12.3.0 throws `this.calcIntersect is not a function` when a link
+  starts or ends at `{"x"}`, so the whole diagram fails to render there; here the link is clipped
+  to the diamond's outline.
 - **`~~~`.** Mermaid's lexer reads `~~~` as a block id (its id rule comes before the invisible-link rule); so does this parser.
 - **ASCII.** Mermaid has no ASCII output; the box grid is this library's own.
 

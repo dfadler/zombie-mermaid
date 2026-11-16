@@ -36,6 +36,14 @@ export interface ArchitectureInitLayout {
 }
 
 // @public
+export function assertThemeVariableColors(text: string): void;
+
+// @public
+export interface BlockInitConfig {
+    padding?: number;
+}
+
+// @public
 export function buildStyleBlock(font: string, mono: MonoFontEmbed | false, nonce?: string, body?: MonoFontEmbed): string;
 
 // @public (undocumented)
@@ -201,6 +209,9 @@ export const DEFAULTS: Readonly<{
     fg: string;
     muted: string;
 }>;
+
+// @public
+export function deriveBorderColor(value: string): string | null;
 
 // @public
 export function describeIgnored(config: InitConfig): string[];
@@ -419,6 +430,7 @@ export function hasMeasuredAdvance(char: string): boolean;
 // @public
 export interface InitConfig {
     architectureLayout?: ArchitectureInitLayout;
+    block?: BlockInitConfig;
     c4Layout?: C4InitLayout;
     classLayout?: ClassInitLayout;
     erLayout?: ErInitLayout;
@@ -436,6 +448,7 @@ export interface InitConfig {
     quadrant?: QuadrantConfig;
     radar?: RadarInitConfig;
     radarTheme?: RadarStyleConfig;
+    rawThemeColors?: Partial<Record<RawThemeColor, string>>;
     sankey?: SankeyInitConfig;
     sequenceHideUnused?: boolean;
     sequenceLayout?: SequenceInitLayout;
@@ -461,6 +474,9 @@ export function isEdgeWithinOwnCluster(edge: {
 
 // @public
 export function isInitDirective(line: string): boolean;
+
+// @public
+export function isMermaidThemeColor(value: string): boolean;
 
 // @public
 export function isMonospaceFont(font: string): boolean;

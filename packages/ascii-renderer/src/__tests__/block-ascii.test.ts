@@ -61,6 +61,47 @@ describe('block ASCII', () => {
     )
   })
 
+  it('gives each shape its own delimiters', () => {
+    const shape = (decl: string, ascii = false) =>
+      render(`block-beta\n  ${decl}`, ascii)
+    expect(shape('a(("x"))')).toBe(['◯───◯', '│ x │', '◯───◯'].join('\n'))
+    expect(shape('a((("x")))', true)).toBe(
+      ['@---@', '| x |', '@---@'].join('\n'),
+    )
+    expect(shape('a{"x"}')).toBe(['◇───◇', '│ x │', '◇───◇'].join('\n'))
+    expect(shape('a{{"x"}}')).toBe(['⌜───⌝', '│ x │', '⌞───⌟'].join('\n'))
+    expect(shape('a(["x"])', true)).toBe(['(---)', '| x |', '(---)'].join('\n'))
+    expect(shape('a[["x"]]')).toBe(['┌─────┐', '││ x ││', '└─────┘'].join('\n'))
+    expect(shape('a[("x")]')).toBe(
+      ['╭───╮', '│───│', '│ x │', '╰───╯'].join('\n'),
+    )
+    expect(shape('a>"x"]').split('\n')[1]).toBe('> x │')
+    expect(shape('a[/"x"/]', true)).toBe(['/---/', '| x |', '/---/'].join('\n'))
+    expect(shape('a[\\"x"\\]', true)).toBe(
+      ['\\---\\', '| x |', '\\---\\'].join('\n'),
+    )
+    expect(shape('a[/"x"\\]', true)).toBe(
+      ['/---\\', '| x |', '+---+'].join('\n'),
+    )
+    expect(shape('a[\\"x"/]', true)).toBe(
+      ['+---+', '| x |', '\\---/'].join('\n'),
+    )
+  })
+
+  it('points a block arrow at each side it lists', () => {
+    expect(render('block-beta\n  a<["x"]>(right)').split('\n')[1]).toBe('│ x ▶')
+    expect(render('block-beta\n  a<["x"]>(left)').split('\n')[1]).toBe('◀ x │')
+    expect(render('block-beta\n  a<["x"]>(x, y)')).toBe(
+      ['┌─▲─┐', '◀ x ▶', '└─▼─┘'].join('\n'),
+    )
+    expect(render('block-beta\n  a<["x"]>(up)', true)).toBe(
+      ['+-^-+', '| x |', '+---+'].join('\n'),
+    )
+    expect(render('block-beta\n  a<["x"]>(down)', true)).toBe(
+      ['+---+', '| x |', '+-v-+'].join('\n'),
+    )
+  })
+
   it('lines up wide characters and multi-line labels', () => {
     const out = render('block-beta\n  a["日本<br/>x"]')
     expect(out.split('\n')[1]).toBe('│ 日本 │')
@@ -76,5 +117,142 @@ describe('block ASCII', () => {
       colorMode: 'truecolor',
     })
     expect(out).toContain('\u001b[')
+  })
+
+  describe('links', () => {
+    it('draws a labelled arrow in the room between blocks on a row', () => {
+      expect(render('block-beta\n  a space b\n  a -- "go" --> b')).toBe(
+        [
+          '┌───┐     go      ┌───┐',
+          '│ a │────────────▶│ b │',
+          '└───┘             └───┘',
+        ].join('\n'),
+      )
+    })
+
+    it('draws vertical links, markers, thick and dotted lines', () => {
+      expect(
+        render(
+          'block-beta\n  columns 1\n  a\n  b\n  c\n  d\n  a --> b\n  b ==x c\n  c -.-o d',
+        ),
+      ).toContain('▼')
+      const out = render(
+        'block-beta\n  columns 1\n  a\n  b\n  c\n  d\n  a --> b\n  b ==x c\n  c -.-o d',
+      )
+      expect(out).toContain('║')
+      expect(out).toContain('x')
+      expect(out).toContain('┆')
+      expect(out).toContain('o')
+      const up = render('block-beta\n  columns 1\n  a\n  b\n  b --> a')
+      expect(up).toContain('▲')
+    })
+
+    it('goes round a corner for blocks that share no row or column', () => {
+      const se = render(
+        'block-beta\n  columns 2\n  a space\n  space b\n  a --> b',
+      ).split('\n')
+      expect(se.join('\n')).toContain('┐')
+      expect(se.join('\n')).toContain('▼')
+      expect(
+        render('block-beta\n  columns 2\n  space a\n  b space\n  a --> b'),
+      ).toContain('┌')
+      expect(
+        render('block-beta\n  columns 2\n  space a\n  b space\n  b --> a'),
+      ).toContain('┘')
+      expect(
+        render('block-beta\n  columns 2\n  a space\n  space b\n  b --> a'),
+      ).toContain('└')
+      expect(
+        render(
+          'block-beta\n  columns 2\n  a space\n  space b\n  a -- "l" --> b',
+        ),
+      ).toContain('l')
+    })
+
+    it('draws leftwards, with ASCII glyphs, and ignores a link to itself', () => {
+      expect(render('block-beta\n  a space b\n  b --> a', true)).toContain(
+        '<---',
+      )
+      expect(render('block-beta\n  a space b\n  a ==> b', true)).toContain(
+        '===>',
+      )
+      expect(render('block-beta\n  a\n  a --> a')).toBe(
+        ['┌───┐', '│ a │', '└───┘'].join('\n'),
+      )
+      expect(
+        render('block-beta\n  columns 1\n  a\n  b\n  a --> b', true),
+      ).toContain('v')
+    })
+  })
+
+  describe('links in every direction', () => {
+    const ring = (centre: string, mark: string) =>
+      `block-beta\n  columns 3\n  a b c\n  d ${centre} f\n  g h i\n` +
+      ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'i']
+        .map((n) => `  e ${mark} ${n}\n  ${n} ${mark} e`)
+        .join('\n')
+
+    it('draws every link of a ring of blocks without overwriting a box', () => {
+      for (const mark of ['-->', '==x', '-.-o', '<-->']) {
+        for (const useAscii of [false, true]) {
+          const out = render(ring('e["mid"]', mark), useAscii)
+          // Every block keeps its frame: three rows of three labels.
+          expect(out.match(/mid/g)).toHaveLength(1)
+          for (const n of 'abcdfghi') expect(out).toContain(` ${n} `)
+        }
+      }
+    })
+
+    it('draws labels on horizontal, vertical and elbow links, and links in both directions', () => {
+      const out = render(
+        'block-beta\n  columns 2\n  a b\n  c d\n  a -- "right" --> b\n  b -- "down" --> d\n  d -- "left" --> c\n  c -- "up" --> a\n  a -- "diag" --> d\n  d -- "back" --> a',
+      )
+      // Where two labels would overlap the first one drawn wins.
+      expect(out).toContain('right')
+      expect(out).toContain('▶')
+      expect(out).toContain('▼')
+      expect(out).toContain('◀')
+      expect(out).toContain('▲')
+    })
+
+    it('draws shapes in a diagram with links', () => {
+      const out = render(ring('e(("mid"))', '-->'))
+      expect(out).toContain('◯')
+    })
+  })
+
+  describe('link routing', () => {
+    it('draws a link between two members of a group inside the group frame', () => {
+      expect(
+        render(
+          'block-beta\n  block:g\n    columns 2\n    a b\n  end\n  a --> b',
+        ),
+      ).toContain('───▶')
+    })
+
+    it('keeps a label beside a vertical link whole in a one-column diagram', () => {
+      expect(
+        render('block-beta\n  columns 1\n  a\n  b\n  a -- "next" --> b'),
+      ).toContain('│ next')
+    })
+
+    it('routes a diagonal link around a block in its way, never through it', () => {
+      expect(render('block-beta\n  columns 2\n  a b\n  c d\n  a --> d')).toBe(
+        [
+          '┌───┐    ┌───┐',
+          '│ a │─┐  │ b │',
+          '└───┘ │  └───┘',
+          '      │',
+          '      │',
+          '┌───┐ │  ┌───┐',
+          '│ c │ └─▶│ d │',
+          '└───┘    └───┘',
+        ].join('\n'),
+      )
+      // Up and to the left, and with the start marker, through the same corridor.
+      const back = render('block-beta\n  columns 2\n  a b\n  c d\n  d <--> a')
+      expect(back).toContain('◀')
+      expect(back).toContain('▶')
+    })
   })
 })

@@ -203,6 +203,7 @@ import {
   checkLineLength,
   checkGraphSize,
   applyThemeVariables,
+  assertThemeVariableColors,
 } from '@zombie-mermaid/core'
 import { resolveCssColors } from './resolve-colors.ts'
 import { resolveFontSizes } from './styles.ts'
@@ -427,6 +428,8 @@ function renderMermaidSVGRaw(
   checkLineLength(text, options.limits)
   const acc = extractAccessibility(decodeSourceEntities(text))
   const decoded = acc.text
+  // Mermaid throws on a colour it cannot derive from (#3163).
+  if (options.honorThemeVariables !== false) assertThemeVariableColors(decoded)
 
   const font = options.font ?? 'Inter'
   // Box sizing depends on the metrics model, so pick it before any layout runs.
