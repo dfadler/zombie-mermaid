@@ -200,6 +200,11 @@
     "legacy": true
   },
   {
+    "file": "scripts/text-metrics-font.ts",
+    "reason": "dev tooling CLI: runs on import and needs a real Chromium to measure the label font (regenerates trebuchet-advances.ts)",
+    "maxLines": 28
+  },
+  {
     "file": "scripts/elk-layout-font.ts",
     "reason": "dev tooling CLI: runs on import and needs a real Chromium to measure the label font (regenerates font-advances.json)",
     "maxLines": 28
