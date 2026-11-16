@@ -633,7 +633,7 @@ paint, identical results):
 | ------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------ |
 | `theme: base` + `primaryColor`, flowchart                                                         | node fill follows it                    | ignored; with the option: node fill (`surface`)  |
 | `primaryColor` under the default, `dark`, `forest`, `neutral` themes                              | ignored                                 | same                                             |
-| `primaryTextColor`, `primaryBorderColor` (`base`)                                                 | text colour; start of a border gradient | ignored; with the option: `fg`; a solid `border` |
+| `primaryTextColor`, `primaryBorderColor` (`base`)                                                 | text colour; start of a border gradient | ignored; with the option: `fg`; `border` (flowchart and state: start of a border gradient, #3164) |
 | `lineColor`, any theme                                                                            | edge and arrowhead colour               | ignored; with the option: `line`                 |
 | `pie1`..`pie12`, any theme                                                                        | the Nth slice in source order, wrapping | ignored; with the option: same                   |
 | unparsable `primaryColor`, `lineColor`, `primaryTextColor` (`#12345`; the last two under `base`)  | throws `Unsupported color format`       | same (`MermaidParseError`, #3163)                |
@@ -641,7 +641,7 @@ paint, identical results):
 | `secondaryColor`, `tertiaryColor`, `background`, `fontFamily`, `nodeBorder`, `pie*TextColor`, ... | applied or used to derive other colours | not supported, listed in `InitConfig.ignored`    |
 
 Mermaid derives many colours from `primaryColor` (secondary/tertiary, subgraph
-fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
+fill, the other pie slices); zombie-mermaid does not, so a
 `base` diagram with only `primaryColor` set does not look the same in both. Only
 flowchart, state and pie read the directive. Details and the opt-in table:
 [Configuration directives](diagrams.md#themevariables).
@@ -1288,7 +1288,7 @@ paint, identical results):
 | ------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------ |
 | `theme: base` + `primaryColor`, flowchart                                                         | node fill follows it                    | ignored; with the option: node fill (`surface`)  |
 | `primaryColor` under the default, `dark`, `forest`, `neutral` themes                              | ignored                                 | same                                             |
-| `primaryTextColor`, `primaryBorderColor` (`base`)                                                 | text colour; start of a border gradient | ignored; with the option: `fg`; a solid `border` |
+| `primaryTextColor`, `primaryBorderColor` (`base`)                                                 | text colour; start of a border gradient | ignored; with the option: `fg`; `border` (flowchart and state: start of a border gradient, #3164) |
 | `lineColor`, any theme                                                                            | edge and arrowhead colour               | ignored; with the option: `line`                 |
 | `pie1`..`pie12`, any theme                                                                        | the Nth slice in source order, wrapping | ignored; with the option: same                   |
 | invalid `primaryColor` (`#12345`)                                                                 | throws `Unsupported color format`       | ignored, renders                                 |
@@ -1296,7 +1296,7 @@ paint, identical results):
 | `secondaryColor`, `tertiaryColor`, `background`, `fontFamily`, `nodeBorder`, `pie*TextColor`, ... | applied or used to derive other colours | not supported, listed in `InitConfig.ignored`    |
 
 Mermaid derives many colours from `primaryColor` (secondary/tertiary, subgraph
-fill, the border gradient, the other pie slices); zombie-mermaid does not, so a
+fill, the other pie slices); zombie-mermaid does not, so a
 `base` diagram with only `primaryColor` set does not look the same in both. Only
 flowchart, state and pie read the directive. Details and the opt-in table:
 [Configuration directives](diagrams.md#themevariables).

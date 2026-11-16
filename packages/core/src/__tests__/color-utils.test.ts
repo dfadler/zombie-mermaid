@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   deriveBorderColor,
+  deriveBorderGradientEnd,
   parseCssColor,
   parseHexColor,
   mixSrgb,
@@ -207,4 +208,22 @@ describe('deriveBorderColor (mermaid 12.3.0 mkBorder, #3165)', () => {
     (v) => expect(deriveBorderColor(v)).toBeNull(),
   )
   it('null for names', () => expect(deriveBorderColor('red')).toBeNull())
+})
+
+describe('deriveBorderGradientEnd (mermaid 12.3.0 base gradient end stop, #3164)', () => {
+  // Measured on 12.3.0 (theme: base, primaryColor -> stop-color of the 100% stop):
+  // #ff0000 -> hsl(-120,60%,40%), #00aa00 -> hsl(0,60%,23.33%). The third is
+  // hand-computed from the same rule: hsl(48,100%,50%) -> hsl(-72,60%,40%).
+  it.each([
+    ['#ff0000', '#2929a3'],
+    ['#00aa00', '#5f1818'],
+    ['hsl(48,100%,50%)', '#8b29a3'],
+  ])('%s', (input, out) => {
+    expect(deriveBorderGradientEnd(input)).toBe(out)
+  })
+  it('a negative shifted hue wraps (hsl(-79.41) is hsl(280.59))', () => {
+    expect(deriveBorderGradientEnd('#fff4dd')).toMatch(/^#d[de]bbee$/)
+  })
+  it('null for names', () =>
+    expect(deriveBorderGradientEnd('red')).toBeNull())
 })
