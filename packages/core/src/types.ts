@@ -373,8 +373,9 @@ export interface RenderOptions {
    * also makes a per-viewer request to Google. `'subset'` embeds Basic Latin
    * (U+0020-007E) of Inter 4.1 (SIL OFL 1.1, weights 400-700) at about 14.7
    * KB of base64 per SVG; other characters fall back to `system-ui`. It takes
-   * effect only when `font` is `'Inter'` (the default); for any other `font`
-   * it is ignored.
+   * effect only when `font` is `'Inter'` (set `font: 'Inter'`, or leave `font`
+   * unset: `embedFont: 'subset'` alone selects Inter; the default is otherwise
+   * mermaid's own stack); for any other `font` it is ignored.
    *
    * The data is not in the default bundle. `renderMermaidSVGAsync()` loads it
    * on demand; the synchronous `renderMermaidSVG()` needs `await

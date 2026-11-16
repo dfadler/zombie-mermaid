@@ -461,13 +461,15 @@ export function measureTextWidth(
   if (trebuchetMetrics && !monospaceMetrics) {
     // Measured advances, no padding: mermaid sizes a label box to its text exactly.
     const table = fontWeight >= 600 ? TREBUCHET_BOLD : TREBUCHET_REGULAR
+    // Non-ASCII keeps the Inter estimate, including its weight ratio.
+    const inter = fontWeight >= 600 ? 0.6 : fontWeight >= 500 ? 0.57 : 0.54
     let px = 0
     for (const char of text) {
       const advance = table[char.codePointAt(0)! - 32]
       px +=
         advance !== undefined && char >= ' ' && char <= '~'
           ? (advance * fontSize) / 16
-          : getCharWidth(char) * fontSize * 0.54
+          : getCharWidth(char) * fontSize * inter
     }
     return px
   }

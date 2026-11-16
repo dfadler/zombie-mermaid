@@ -11,7 +11,7 @@
 // colors, and the SVG adapts. No light/dark mode detection needed.
 // ============================================================================
 
-import { MERMAID_FONT_STACK } from './text-metrics.ts'
+import { isTrebuchetFont } from './text-metrics.ts'
 import { escapeXml, escapeAttr } from './multiline-utils.ts'
 import { parseHexColor } from './color-utils.ts'
 import { f } from './render-utils.ts'
@@ -490,7 +490,9 @@ export function buildStyleBlock(
   // its own internal quotes intact.
   const safeFont = isVarReference ? font.trim() : font.replace(/[<>{};'"]/g, '')
   // A comma list is a stack: quote each family, leave generic keywords bare.
-  const isFontStack = font === MERMAID_FONT_STACK
+  // Same predicate that selects Trebuchet metrics, so drawing and sizing agree.
+  const isFontStack =
+    !isVarReference && isTrebuchetFont(font) && font.includes(',')
   const stack = safeFont
     .split(',')
     .map((f) => f.trim())

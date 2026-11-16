@@ -1,8 +1,10 @@
 /**
  * Tests for text-metrics module — variable-width character measurement.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import {
+  setTrebuchetMetrics,
+  isTrebuchetFont,
   getCharWidth,
   measureTextWidth,
   isWideChar,
@@ -482,5 +484,28 @@ describe('isWideChar', () => {
     expect(isWideChar('↕')).toBe(false)
     expect(isWideChar('↩')).toBe(false)
     expect(isWideChar('↪')).toBe(false)
+  })
+})
+
+describe('Trebuchet metrics (#3217)', () => {
+  afterEach(() => setTrebuchetMetrics(false))
+
+  it('measures x x20 at mermaid’s 160.3px, unpadded', () => {
+    setTrebuchetMetrics(true)
+    expect(measureTextWidth('x'.repeat(20), 16, 400)).toBeCloseTo(160.3125, 4)
+  })
+
+  it('keeps the Inter weight ratio for non-ASCII text', () => {
+    setTrebuchetMetrics(true)
+    expect(measureTextWidth('漢'.repeat(10), 16, 700)).toBeGreaterThan(
+      measureTextWidth('漢'.repeat(10), 16, 400),
+    )
+  })
+
+  it('selects Trebuchet metrics for a stack that starts with it', () => {
+    expect(isTrebuchetFont('"trebuchet ms", verdana, arial, sans-serif')).toBe(
+      true,
+    )
+    expect(isTrebuchetFont('Inter')).toBe(false)
   })
 })
