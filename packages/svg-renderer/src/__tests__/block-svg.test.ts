@@ -352,4 +352,34 @@ describe('block styling', () => {
       })
     }
   })
+
+  describe('degenerate links', () => {
+    const finite = (src: string) => {
+      const d = layout(src)
+      for (const e of d.edges) {
+        expect(e.path).not.toContain('NaN')
+        for (const p of e.points) expect(Number.isFinite(p.x + p.y)).toBe(true)
+      }
+      for (const v of Object.values(d.viewBox))
+        expect(Number.isFinite(v)).toBe(true)
+      return d
+    }
+
+    it('draws no NaN for blocks that touch (padding 0)', () => {
+      const d = finite(
+        '%%{init: {"block": {"padding": 0}}}%%\nblock-beta\n  columns 2\n  a b\n  a --> b',
+      )
+      expect(d.viewBox.width).toBeGreaterThan(10)
+    })
+
+    it('draws no NaN for a link from a circle, a double circle or a box to itself', () => {
+      for (const decl of ['a(("x"))', 'a((("x")))', 'a["x"]', 'a{{"x"}}'])
+        finite(`block-beta\n  ${decl}\n  a --> a`)
+    })
+
+    it('ignores a class name that is an Object.prototype member and has no classDef', () => {
+      const d = layout('block-beta\n  a\n  class a toString')
+      expect(d.nodes[0]!.css).toEqual([])
+    })
+  })
 })

@@ -339,4 +339,12 @@ describe('parseBlock', () => {
       expect(e.root.children[0]!.shape).toBe('circle')
     })
   })
+
+  it('treats a class named like an Object.prototype member as an ordinary name', () => {
+    const d = parseBlock(
+      'block-beta\n  classDef constructor fill:red\n  classDef constructor stroke:blue\n  a\n  class a toString',
+    )
+    expect(d.classDefs.constructor).toEqual(['fill:red', 'stroke:blue'])
+    expect(d.root.children[0]!.classes).toEqual(['toString'])
+  })
 })

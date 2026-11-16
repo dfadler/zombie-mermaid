@@ -576,7 +576,11 @@ export function clipToShape(
 ): Pt {
   const { clip } = geometry
   const node = { x: cx, y: cy, width: clip.width, height: clip.height }
-  if (clip.r !== undefined) return intersectEllipse(node, clip.r, clip.r, p)
+  if (clip.r !== undefined) {
+    // A link from a block to itself targets the centre: no direction, so the centre.
+    if (p.x === cx && p.y === cy) return { x: cx, y: cy }
+    return intersectEllipse(node, clip.r, clip.r, p)
+  }
   if (clip.points) return intersectPolygon(node, clip.points, p)
   // Cylinder: the rectangle's crossing, moved onto the rim of the top or bottom ellipse.
   const { rx = 0, ry = 0 } = clip

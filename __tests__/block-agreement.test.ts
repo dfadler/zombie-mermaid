@@ -144,6 +144,18 @@ describe('parseBlockSvg shapes', () => {
     expect(kinds('block-beta\n  a>"x"]')).toEqual(['rough'])
   })
 
+  it('reads a rough shape from its own group, not the links drawn after it', () => {
+    const withLink = ROUGH.replace(
+      '</g></g></g></svg>',
+      '</g></g></g><path d="M500 500 L900 900" class="flowchart-link"></path></svg>',
+    )
+    expect(parseBlockSvg(withLink).blocks[0]).toMatchObject({
+      kind: 'rough',
+      width: 60,
+      height: 32,
+    })
+  })
+
   it('notices a shape of another size or another kind', () => {
     const wider = parseBlockSvg(CIRCLE.replace('r="24"', 'r="26"'))
     expect(blockAgreement(parseBlockSvg(CIRCLE), wider).blocks).toBe(0)

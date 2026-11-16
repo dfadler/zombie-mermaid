@@ -597,7 +597,10 @@ export function parseBlock(text: string): BlockDiagram {
     const children: RawBlock[] = []
     for (const block of blockList) {
       if (block.type === 'classDef') {
-        classDefs[block.id] = [...(classDefs[block.id] ?? []), ...block.items!]
+        classDefs[block.id] = [
+          ...(Object.hasOwn(classDefs, block.id) ? classDefs[block.id]! : []),
+          ...block.items!,
+        ]
         continue
       }
       if (block.type === 'applyClass') {

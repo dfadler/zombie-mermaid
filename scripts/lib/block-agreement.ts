@@ -204,8 +204,11 @@ export function parseBlockSvg(svg: string): BlockLayout {
     } else {
       // Mermaid's rough.js group: absolute path numbers, moved by the group's own transform.
       const [px, py] = translate(first[0])
-      const all = [...g.matchAll(/<path\b[^>]*\sd="([^"]*)"/g)].flatMap((m) =>
-        nums(m[1]!),
+      const own = g.slice(g.indexOf(first[0]))
+      // Only this node's own group: the links drawn after it are not part of the shape.
+      const group = own.slice(0, own.indexOf('</g>') + 4)
+      const all = [...group.matchAll(/<path\b[^>]*\sd="([^"]*)"/g)].flatMap(
+        (m) => nums(m[1]!),
       )
       const xs = all.filter((_, i) => i % 2 === 0).map((n) => n + px + tx + ox)
       const ys = all.filter((_, i) => i % 2 === 1).map((n) => n + py + ty + oy)

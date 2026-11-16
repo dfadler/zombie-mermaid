@@ -335,11 +335,24 @@ function drawEdges(
   rects: Map<string, Rect>,
   g: typeof UNI,
 ): void {
-  const put = (x: number, y: number, s: string, line = true): boolean => {
+  // Groups around both ends of the link you are drawing: their frames are not in its way.
+  let enclosing = new Set<Rect>()
+  const blocked = (x: number, y: number): boolean => {
     const c = canvas[y]?.[x]
-    if (c === undefined || c.s !== ' ') return false
+    if (c === undefined || c.s !== ' ') return true
     for (const r of rects.values())
-      if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return false
+      if (
+        !enclosing.has(r) &&
+        x >= r.x &&
+        x < r.x + r.w &&
+        y >= r.y &&
+        y < r.y + r.h
+      )
+        return true
+    return false
+  }
+  const put = (x: number, y: number, s: string, line = true): boolean => {
+    if (blocked(x, y)) return false
     canvas[y]![x] = { s, line }
     return true
   }
@@ -363,6 +376,17 @@ function drawEdges(
     const a = rects.get(e.start)
     const b = rects.get(e.end)
     if (!a || !b || a === b) continue
+    enclosing = new Set(
+      [...rects.values()].filter(
+        (r) =>
+          r !== a &&
+          r !== b &&
+          r.x <= Math.min(a.x, b.x) &&
+          r.y <= Math.min(a.y, b.y) &&
+          r.x + r.w >= Math.max(a.x + a.w, b.x + b.w) &&
+          r.y + r.h >= Math.max(a.y + a.h, b.y + b.h),
+      ),
+    )
     const hch =
       e.thickness === 'thick' ? g.th : e.pattern === 'dotted' ? g.dh : g.lh
     const vch =
@@ -403,24 +427,87 @@ function drawEdges(
       if (ta) canvas[t]![x] = { s: ta, line: true }
       if (label) text(x + 2, Math.floor((y0 + y1) / 2), label)
     } else {
-      // Diagonal: out of the side of `a` along its middle row, then along b's middle column to b.
+      // Diagonal: one elbow, out of a side of `a` and into a side of `b`. Try the two L routes and,
+      // when a block sits on both, a route down the gap beside `a`; keep the first that is clear.
       const east = b.x > a.x
       const south = b.y > a.y
-      const y = a.y + Math.floor(a.h / 2)
-      const x = b.x + Math.floor(b.w / 2)
-      const x0 = east ? a.x + a.w : a.x - 1
-      const y1 = south ? b.y - 1 : b.y + b.h
-      for (let cx = Math.min(x0, x); cx <= Math.max(x0, x); cx++)
-        if (cx !== x) put(cx, y, hch)
-      const corner = east ? (south ? g.cTR : g.cBR) : south ? g.cTL : g.cBL
-      put(x, y, corner)
-      for (let cy = Math.min(y, y1); cy <= Math.max(y, y1); cy++)
-        if (cy !== y) put(x, cy, vch)
-      const sa = head(e.arrowTypeStart, east ? 'l' : 'r')
-      const ta = head(e.arrowTypeEnd, south ? 'd' : 'u')
-      if (sa) canvas[y]![x0] = { s: sa, line: true }
-      if (ta) canvas[y1]![x] = { s: ta, line: true }
-      if (label) text(Math.min(x0, x) + 1, y - 1, label)
+      const ya = a.y + Math.floor(a.h / 2)
+      const yb = b.y + Math.floor(b.h / 2)
+      const xa = a.x + Math.floor(a.w / 2)
+      const xb = b.x + Math.floor(b.w / 2)
+      const sideX = east ? a.x + a.w : a.x - 1
+      const routes: [number, number][][] = [
+        [
+          [sideX, ya],
+          [xb, ya],
+          [xb, south ? b.y - 1 : b.y + b.h],
+        ],
+        [
+          [xa, south ? a.y + a.h : a.y - 1],
+          [xa, yb],
+          [east ? b.x - 1 : b.x + b.w, yb],
+        ],
+        [
+          [sideX, ya],
+          [sideX + (east ? 1 : -1), ya],
+          [sideX + (east ? 1 : -1), yb],
+          [east ? b.x - 1 : b.x + b.w, yb],
+        ],
+      ]
+      const cells = (r: [number, number][]): [number, number][] => {
+        const out: [number, number][] = []
+        r.forEach(([x, y], i) => {
+          const [px, py] = r[i - 1] ?? [x, y]
+          const n = Math.max(Math.abs(x - px), Math.abs(y - py))
+          for (let k = i === 0 ? 0 : 1; k <= n; k++)
+            out.push([px + Math.sign(x - px) * k, py + Math.sign(y - py) * k])
+        })
+        return out
+      }
+      const route =
+        routes.find((r) => cells(r).every(([x, y]) => !blocked(x, y))) ??
+        routes[0]!
+      const dir = (
+        [x0, y0]: [number, number],
+        [x1, y1]: [number, number],
+      ): 'r' | 'l' | 'd' | 'u' =>
+        x1 !== x0 ? (x1 > x0 ? 'r' : 'l') : y1 > y0 ? 'd' : 'u'
+      const turn: Record<string, string> = {
+        rd: g.cTR,
+        ru: g.cBR,
+        ld: g.cTL,
+        lu: g.cBL,
+        dr: g.cBL,
+        dl: g.cBR,
+        ur: g.cTL,
+        ul: g.cTR,
+      }
+      const opposite = { r: 'l', l: 'r', d: 'u', u: 'd' } as const
+      for (let i = 1; i < route.length - 1; i++)
+        put(
+          route[i]![0],
+          route[i]![1],
+          turn[dir(route[i - 1]!, route[i]!) + dir(route[i]!, route[i + 1]!)]!,
+        )
+      const walk = cells(route)
+      for (const [x, y] of walk) {
+        const horizontal = route.some(
+          ([vx, vy], i) =>
+            i > 0 &&
+            route[i - 1]![1] === vy &&
+            y === vy &&
+            x >= Math.min(vx, route[i - 1]![0]) &&
+            x <= Math.max(vx, route[i - 1]![0]),
+        )
+        put(x, y, horizontal ? hch : vch)
+      }
+      const first = route[0]!
+      const last = route[route.length - 1]!
+      const sa = head(e.arrowTypeStart, opposite[dir(first, route[1]!)])
+      const ta = head(e.arrowTypeEnd, dir(route[route.length - 2]!, last))
+      if (sa) canvas[first[1]]![first[0]] = { s: sa, line: true }
+      if (ta) canvas[last[1]]![last[0]] = { s: ta, line: true }
+      if (label) text(Math.min(first[0], route[1]![0]) + 1, first[1] - 1, label)
     }
   }
 }
@@ -438,7 +525,11 @@ export function renderBlockAscii(
     diagram.edges.length > 0 ? { x: Math.max(4, widest + 2), y: 2 } : PLAIN_GAPS
   const size = measure(diagram.root, gap, true)
   if (size.w <= 0 || size.h <= 0) return ''
-  const canvas = blank(size.w, size.h)
+  // A label beside a vertical link can reach past the boxes; trailing blanks are trimmed on output.
+  const canvas = blank(
+    size.w + (diagram.edges.length > 0 ? widest + 3 : 0),
+    size.h,
+  )
   const rects = new Map<string, Rect>()
   draw(canvas, diagram.root, 0, 0, size, g, gap, rects, true)
   drawEdges(canvas, diagram.edges, rects, g)

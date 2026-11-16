@@ -2477,7 +2477,8 @@ and a `block ... end` group is a larger box around its cells.
 - Cells are one column apart and touch vertically (a diagram with links leaves 4 columns and 2 rows
   between cells, more for a long link label); labels are centred in both directions.
 - A link is a straight line in that room between blocks that share a row or a column, else one
-  elbow, and never overwrites a box. The end gets `▶` (`>`), `x` or `o`; `==` draws `═` / `║` and
+  elbow (or, when a block is in the way of both elbows, a route down the gap beside the first
+  block), and never overwrites a box; a link inside a group may cross the group's frame area. The end gets `▶` (`>`), `x` or `o`; `==` draws `═` / `║` and
   `-.-` `┄` / `┆`. Where two links would run over each other the first one drawn wins.
 - Frames use the line colour, labels the foreground.
 

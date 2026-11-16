@@ -216,8 +216,43 @@ describe('block ASCII', () => {
     })
 
     it('draws shapes in a diagram with links', () => {
-      const out = render(ring('e(("mid"))', '-->').replace(/\be\b/g, 'e'))
+      const out = render(ring('e(("mid"))', '-->'))
       expect(out).toContain('◯')
+    })
+  })
+
+  describe('link routing', () => {
+    it('draws a link between two members of a group inside the group frame', () => {
+      expect(
+        render(
+          'block-beta\n  block:g\n    columns 2\n    a b\n  end\n  a --> b',
+        ),
+      ).toContain('───▶')
+    })
+
+    it('keeps a label beside a vertical link whole in a one-column diagram', () => {
+      expect(
+        render('block-beta\n  columns 1\n  a\n  b\n  a -- "next" --> b'),
+      ).toContain('│ next')
+    })
+
+    it('routes a diagonal link around a block in its way, never through it', () => {
+      expect(render('block-beta\n  columns 2\n  a b\n  c d\n  a --> d')).toBe(
+        [
+          '┌───┐    ┌───┐',
+          '│ a │─┐  │ b │',
+          '└───┘ │  └───┘',
+          '      │',
+          '      │',
+          '┌───┐ │  ┌───┐',
+          '│ c │ └─▶│ d │',
+          '└───┘    └───┘',
+        ].join('\n'),
+      )
+      // Up and to the left, and with the start marker, through the same corridor.
+      const back = render('block-beta\n  columns 2\n  a b\n  c d\n  d <--> a')
+      expect(back).toContain('◀')
+      expect(back).toContain('▶')
     })
   })
 })

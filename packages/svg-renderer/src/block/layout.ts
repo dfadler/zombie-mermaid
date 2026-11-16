@@ -245,7 +245,9 @@ function withMarkerOffsets(data: Pt[], start: string, end: string): Pt[] {
   const sOff = markerOffset(start)
   const eOff = markerOffset(end)
   const last = data.length - 1
-  const angle = (a: Pt, b: Pt) => Math.atan((b.y - a.y) / (b.x - a.x))
+  // Touching blocks (padding 0) can give a zero-length segment: no direction, so no offset.
+  const angle = (a: Pt, b: Pt) =>
+    a.x === b.x && a.y === b.y ? 0 : Math.atan((b.y - a.y) / (b.x - a.x))
   const right = data[0]!.x < data[last]!.x
   const down = data[0]!.y < data[last]!.y
   return data.map((d, i) => {
@@ -351,7 +353,9 @@ function compileStyles(
 ): [string, string][] {
   const props = new Map<string, string>()
   const items = [
-    ...node.classes.flatMap((c) => classDefs[c] ?? []),
+    ...node.classes.flatMap((c) =>
+      Object.hasOwn(classDefs, c) ? classDefs[c]! : [],
+    ),
     ...node.styles,
   ]
   for (const item of items) {
