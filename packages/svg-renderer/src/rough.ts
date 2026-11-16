@@ -53,11 +53,7 @@ function line(
   const lengthSq = (x1 - x2) ** 2 + (y1 - y2) ** 2
   const length = Math.sqrt(lengthSq)
   const gain =
-    length < 200
-      ? 1
-      : length > 500
-        ? 0.4
-        : -0.0016668 * length + 1.233334
+    length < 200 ? 1 : length > 500 ? 0.4 : -0.0016668 * length + 1.233334
   let off = MAX_OFFSET
   if (off * off * 100 > lengthSq) off = length / 10
   const half = off / 2

@@ -124,7 +124,8 @@ describe('ishikawa.diagramPadding', () => {
 })
 
 describe('look: handDrawn', () => {
-  const body = 'ishikawa\n  Effect\n    A\n      a1\n    B\n      b1\n        b2'
+  const body =
+    'ishikawa\n  Effect\n    A\n      a1\n    B\n      b1\n        b2'
   const hd = (seed?: number): string =>
     renderMermaidSVG(
       `%%{init: {"look":"handDrawn"${seed === undefined ? '' : `,"handDrawnSeed":${seed}`}}}%%\n${body}`,
@@ -135,7 +136,7 @@ describe('look: handDrawn', () => {
     expect(svg).not.toContain('marker-start')
     expect(svg).not.toContain('<line')
     expect(svg).not.toContain('<defs><marker')
-    // spine + 5 bones, one arrowhead (fill + outline) per bone, head, label boxes
+    // Spine + 5 bones, one arrowhead (fill + outline) per bone, head, label boxes
     expect(svg.match(/class="ishikawa-spine"/g)).toHaveLength(1)
     expect(svg.match(/stroke="none" stroke-width="0"/g)).toHaveLength(5)
     expect(svg).toContain('class="ishikawa-head"')
@@ -158,9 +159,9 @@ describe('look: handDrawn', () => {
   it('leaves the default look and other looks untouched', () => {
     const classic = renderMermaidSVG(body)
     expect(classic).toContain('marker-start')
-    expect(
-      renderMermaidSVG(`%%{init: {"look":"neo"}}%%\n${body}`),
-    ).toBe(classic)
+    expect(renderMermaidSVG(`%%{init: {"look":"neo"}}%%\n${body}`)).toBe(
+      classic,
+    )
   })
 
   it('draws a lone effect (a zero-length spine)', () => {

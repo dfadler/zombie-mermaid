@@ -17,8 +17,10 @@ describe('rough.js subset', () => {
 
   it('draws a rectangle outline like rough.rectangle', () => {
     const d = roughRectOutline(0, 0, 10, 8, 1.5, 42)
-    expect(d.split('M')).toHaveLength(9) // four sides, two strokes each
-    expect(d.startsWith('M-1.496201396919787 -1.137630715034902 C2.429642696')).toBe(true)
+    expect(d.split('M')).toHaveLength(9) // Four sides, two strokes each
+    expect(
+      d.startsWith('M-1.496201396919787 -1.137630715034902 C2.429642696'),
+    ).toBe(true)
   })
 
   it('outlines a quadratic path through its cubic form like rough.path', () => {
@@ -32,7 +34,11 @@ describe('rough.js subset', () => {
     expect(fill).toBe(
       'M9.67956824431636 7.800395536353022 C5.726846226603015 13.739052339420269, 1.8546090713923045 14.915342892026889, -3.3818194094265697 15.208629197784285 C-1.278123935207725 11.656491999030113, -2.888865936741233 7.551136908680199, -3.056015535444021 5.074088581651449 C0.7604191893917853 6.284041111767798, 1.8615150587052849 5.044916914092278, 9.967304864586456 11.152652320451645',
     )
-    expect(outline.startsWith('M8.661756787382885 8.982472155156106 C7.988893065997351')).toBe(true)
+    expect(
+      outline.startsWith(
+        'M8.661756787382885 8.982472155156106 C7.988893065997351',
+      ),
+    ).toBe(true)
   })
 
   it('is deterministic, treats seed 0 as a fixed seed, and varies with the seed', () => {
