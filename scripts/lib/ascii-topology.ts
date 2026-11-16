@@ -151,10 +151,13 @@ const facesOf = (d: { x: number; y: number }, dir: string): AsciiFace[] =>
   )
 
 /**
- * The end direction of a decision's right-leaving start, read off the drawn
- * first stroke cell: above the diamond's middle row is its upper slant (T or R, as `ADJ`
- * reads a diagonal end), below it the lower one (B or R), on it the right tip (R). The grid's own start
- * direction is Right for all three, so the face comes from the drawing.
+ * The end direction of a decision's start, read off the drawn first stroke cell.
+ * LR/RL (grid start Right): above the diamond's middle row is its upper slant (T or R, as `ADJ`
+ * reads a diagonal end), below it the lower one (B or R), on it the right tip (R).
+ * TD/BT (grid start Down): left of the diamond's middle column is its lower-left
+ * slant (B or L), right of it the lower-right one (B or R), on it the vertex (B).
+ * The grid's own start direction is the flow face for all of them, so the face
+ * comes from the drawing. mermaid and ELK leave a decision on its slants.
  */
 function diamondStartDir(
   e: AsciiGraph['edges'][number],
@@ -162,18 +165,16 @@ function diamondStartDir(
 ): { x: number; y: number } | undefined {
   const at = e.ends?.start
   const n = e.from
-  if (
-    n.shape !== 'diamond' ||
-    !n.drawingCoord ||
-    !n.drawing ||
-    !at ||
-    (dir !== 'LR' && dir !== 'RL') ||
-    e.startDir.x !== 2 ||
-    e.startDir.y !== 1
-  )
+  if (n.shape !== 'diamond' || !n.drawingCoord || !n.drawing || !at)
     return undefined
-  const mid = n.drawingCoord.y + (n.drawing[0]!.length - 1) / 2
-  return at.y < mid ? { x: 2, y: 0 } : at.y > mid ? { x: 2, y: 2 } : undefined
+  if (dir === 'LR' || dir === 'RL') {
+    if (e.startDir.x !== 2 || e.startDir.y !== 1) return undefined
+    const mid = n.drawingCoord.y + (n.drawing[0]!.length - 1) / 2
+    return at.y < mid ? { x: 2, y: 0 } : at.y > mid ? { x: 2, y: 2 } : undefined
+  }
+  if (e.startDir.x !== 1 || e.startDir.y !== 2) return undefined
+  const mid = n.drawingCoord.x + (n.drawing.length - 1) / 2
+  return at.x < mid ? { x: 0, y: 2 } : at.x > mid ? { x: 2, y: 2 } : undefined
 }
 
 export interface GridRender {
