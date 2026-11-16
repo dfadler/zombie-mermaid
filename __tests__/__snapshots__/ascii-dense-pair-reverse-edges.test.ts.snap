@@ -41,10 +41,9 @@ exports[`four edges that all run from the later node to the earlier > snapshots 
 `;
 
 exports[`four edges that all run from the later node to the earlier > snapshots SVG and ASCII (unicode and ASCII-only), LR and RL > svg-LR 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 526.12 191.6" width="526.12" height="191.6" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 522.15 191.6" width="522.15" height="191.6" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -68,28 +67,28 @@ exports[`four edges that all run from the later node to the earlier > snapshots 
   }
 </style>
 <defs>
-  <marker id="zm1tz6y2m-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmdpzds7-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1tz6y2m-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmdpzds7-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="false" data-label="UN" d="M 190 91.25 L 202.93 91.25 Q 210 91.25, 210 84.18 L 210 58.07 Q 210 51, 217.07 51 L 309.05 51 Q 316.12 51, 316.12 58.07 L 316.12 84.18 Q 316.12 91.25, 323.19 91.25 L 336.12 91.25" fill="none" stroke="var(--_line)" stroke-width="1" />
-<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="false" data-label="14" d="M 190 102.05 L 225.13 102.05 Q 230 102.05, 230 97.17 L 230 97.17 Q 230 92.3, 234.88 92.3 L 291.25 92.3 Q 296.12 92.3, 296.12 97.17 L 296.12 97.17 Q 296.12 102.05, 301 102.05 L 336.12 102.05" fill="none" stroke="var(--_line)" stroke-width="1" />
-<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 190 112.85 L 225.13 112.85 Q 230 112.85, 230 117.72 L 230 117.72 Q 230 122.6, 234.88 122.6 L 291.25 122.6 Q 296.12 122.6, 296.12 117.72 L 296.12 117.72 Q 296.12 112.85, 301 112.85 L 336.12 112.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1tz6y2m-arrowhead)" />
-<path class="edge" data-from="n2" data-to="n0" data-style="thick" data-arrow-start="false" data-arrow-end="true" d="M 190 123.65 L 202.93 123.65 Q 210 123.65, 210 130.72 L 210 136.53 Q 210 143.6, 217.07 143.6 L 309.05 143.6 Q 316.12 143.6, 316.12 136.53 L 316.12 130.72 Q 316.12 123.65, 323.19 123.65 L 336.12 123.65" fill="none" stroke="var(--_line)" stroke-width="3.5" marker-end="url(#zm1tz6y2m-arrowhead)" />
+<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="false" data-label="UN" d="M 190 91.25 L 202.93 91.25 Q 210 91.25, 210 84.18 L 210 58.07 Q 210 51, 217.07 51 L 305.08 51 Q 312.15 51, 312.15 58.07 L 312.15 84.18 Q 312.15 91.25, 319.22 91.25 L 332.15 91.25" fill="none" stroke="var(--_line)" stroke-width="1" />
+<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="false" data-label="14" d="M 190 102.05 L 225.13 102.05 Q 230 102.05, 230 97.17 L 230 97.17 Q 230 92.3, 234.88 92.3 L 287.28 92.3 Q 292.15 92.3, 292.15 97.17 L 292.15 97.17 Q 292.15 102.05, 297.03 102.05 L 332.15 102.05" fill="none" stroke="var(--_line)" stroke-width="1" />
+<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 190 112.85 L 225.13 112.85 Q 230 112.85, 230 117.72 L 230 117.72 Q 230 122.6, 234.88 122.6 L 287.28 122.6 Q 292.15 122.6, 292.15 117.72 L 292.15 117.72 Q 292.15 112.85, 297.03 112.85 L 332.15 112.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmdpzds7-arrowhead)" />
+<path class="edge" data-from="n2" data-to="n0" data-style="thick" data-arrow-start="false" data-arrow-end="true" d="M 190 123.65 L 202.93 123.65 Q 210 123.65, 210 130.72 L 210 136.53 Q 210 143.6, 217.07 143.6 L 305.08 143.6 Q 312.15 143.6, 312.15 136.53 L 312.15 130.72 Q 312.15 123.65, 319.22 123.65 L 332.15 123.65" fill="none" stroke="var(--_line)" stroke-width="3.5" marker-end="url(#zmdpzds7-arrowhead)" />
 <g class="edge-label" data-from="n2" data-to="n0" data-label="UN">
-  <rect x="254" y="43" width="18.12" height="14.3" fill="var(--bg)" />
-  <text x="263.06" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">UN</text>
+  <rect x="254" y="43" width="14.15" height="14.3" fill="var(--bg)" />
+  <text x="261.08" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">UN</text>
 </g>
 <g class="edge-label" data-from="n2" data-to="n0" data-label="14">
-  <rect x="256.45" y="84.3" width="13.23" height="14.3" fill="var(--bg)" />
-  <text x="263.06" y="91.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">14</text>
+  <rect x="255.31" y="84.3" width="11.54" height="14.3" fill="var(--bg)" />
+  <text x="261.08" y="91.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">14</text>
 </g>
 <g class="node" data-id="n0" data-label="uuJTo" data-shape="rounded">
-  <rect x="336.12" y="80.45" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="411.12" y="107.45" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">uuJTo</text>
+  <rect x="332.15" y="80.45" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="407.15" y="107.45" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">uuJTo</text>
 </g>
 <g class="node" data-id="n2" data-label="oBn9" data-shape="rounded">
   <rect x="40" y="80.45" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
@@ -99,10 +98,9 @@ exports[`four edges that all run from the later node to the earlier > snapshots 
 `;
 
 exports[`four edges that all run from the later node to the earlier > snapshots SVG and ASCII (unicode and ASCII-only), LR and RL > svg-RL 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 526.12 191.6" width="526.12" height="191.6" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 522.15 191.6" width="522.15" height="191.6" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -126,32 +124,32 @@ exports[`four edges that all run from the later node to the earlier > snapshots 
   }
 </style>
 <defs>
-  <marker id="zmdpp7ca-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm22wx43-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmdpp7ca-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm22wx43-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="false" data-label="UN" d="M 336.12 91.25 L 323.19 91.25 Q 316.12 91.25, 316.12 84.18 L 316.12 58.07 Q 316.12 51, 309.05 51 L 217.07 51 Q 210 51, 210 58.07 L 210 84.18 Q 210 91.25, 202.93 91.25 L 190 91.25" fill="none" stroke="var(--_line)" stroke-width="1" />
-<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="false" data-label="14" d="M 336.12 102.05 L 301 102.05 Q 296.12 102.05, 296.12 97.17 L 296.12 97.17 Q 296.12 92.3, 291.25 92.3 L 234.88 92.3 Q 230 92.3, 230 97.17 L 230 97.17 Q 230 102.05, 225.13 102.05 L 190 102.05" fill="none" stroke="var(--_line)" stroke-width="1" />
-<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 336.12 112.85 L 301 112.85 Q 296.12 112.85, 296.12 117.72 L 296.12 117.72 Q 296.12 122.6, 291.25 122.6 L 234.88 122.6 Q 230 122.6, 230 117.72 L 230 117.72 Q 230 112.85, 225.13 112.85 L 190 112.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmdpp7ca-arrowhead)" />
-<path class="edge" data-from="n2" data-to="n0" data-style="thick" data-arrow-start="false" data-arrow-end="true" d="M 336.12 123.65 L 323.19 123.65 Q 316.12 123.65, 316.12 130.72 L 316.12 136.53 Q 316.12 143.6, 309.05 143.6 L 217.07 143.6 Q 210 143.6, 210 136.53 L 210 130.72 Q 210 123.65, 202.93 123.65 L 190 123.65" fill="none" stroke="var(--_line)" stroke-width="3.5" marker-end="url(#zmdpp7ca-arrowhead)" />
+<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="false" data-label="UN" d="M 332.15 91.25 L 319.22 91.25 Q 312.15 91.25, 312.15 84.18 L 312.15 58.07 Q 312.15 51, 305.08 51 L 217.07 51 Q 210 51, 210 58.07 L 210 84.18 Q 210 91.25, 202.93 91.25 L 190 91.25" fill="none" stroke="var(--_line)" stroke-width="1" />
+<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="false" data-label="14" d="M 332.15 102.05 L 297.03 102.05 Q 292.15 102.05, 292.15 97.17 L 292.15 97.17 Q 292.15 92.3, 287.28 92.3 L 234.88 92.3 Q 230 92.3, 230 97.17 L 230 97.17 Q 230 102.05, 225.13 102.05 L 190 102.05" fill="none" stroke="var(--_line)" stroke-width="1" />
+<path class="edge" data-from="n2" data-to="n0" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 332.15 112.85 L 297.03 112.85 Q 292.15 112.85, 292.15 117.72 L 292.15 117.72 Q 292.15 122.6, 287.28 122.6 L 234.88 122.6 Q 230 122.6, 230 117.72 L 230 117.72 Q 230 112.85, 225.13 112.85 L 190 112.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm22wx43-arrowhead)" />
+<path class="edge" data-from="n2" data-to="n0" data-style="thick" data-arrow-start="false" data-arrow-end="true" d="M 332.15 123.65 L 319.22 123.65 Q 312.15 123.65, 312.15 130.72 L 312.15 136.53 Q 312.15 143.6, 305.08 143.6 L 217.07 143.6 Q 210 143.6, 210 136.53 L 210 130.72 Q 210 123.65, 202.93 123.65 L 190 123.65" fill="none" stroke="var(--_line)" stroke-width="3.5" marker-end="url(#zm22wx43-arrowhead)" />
 <g class="edge-label" data-from="n2" data-to="n0" data-label="UN">
-  <rect x="254" y="43" width="18.12" height="14.3" fill="var(--bg)" />
-  <text x="263.06" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">UN</text>
+  <rect x="254" y="43" width="14.15" height="14.3" fill="var(--bg)" />
+  <text x="261.08" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">UN</text>
 </g>
 <g class="edge-label" data-from="n2" data-to="n0" data-label="14">
-  <rect x="256.45" y="84.3" width="13.23" height="14.3" fill="var(--bg)" />
-  <text x="263.06" y="91.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">14</text>
+  <rect x="255.31" y="84.3" width="11.54" height="14.3" fill="var(--bg)" />
+  <text x="261.08" y="91.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">14</text>
 </g>
 <g class="node" data-id="n0" data-label="uuJTo" data-shape="rounded">
   <rect x="40" y="80.45" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="115" y="107.45" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">uuJTo</text>
 </g>
 <g class="node" data-id="n2" data-label="oBn9" data-shape="rounded">
-  <rect x="336.12" y="80.45" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="411.12" y="107.45" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">oBn9</text>
+  <rect x="332.15" y="80.45" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="407.15" y="107.45" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">oBn9</text>
 </g>
 </svg>"
 `;

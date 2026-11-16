@@ -39,8 +39,7 @@ exports[`fan-in landing cells (#2678) > A & B --> C > BT: snapshots SVG and ASCI
 exports[`fan-in landing cells (#2678) > A & B --> C > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 216" width="424" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -64,15 +63,15 @@ exports[`fan-in landing cells (#2678) > A & B --> C > BT: snapshots SVG and ASCI
   }
 </style>
 <defs>
-  <marker id="zm1xrn9j8-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm5p6ecz-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1xrn9j8-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm5p6ecz-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1xrn9j8-arrowhead)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1xrn9j8-arrowhead)" />
+<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5p6ecz-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5p6ecz-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
   <rect x="40" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="116" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>
@@ -127,8 +126,7 @@ exports[`fan-in landing cells (#2678) > A & B --> C > TD: snapshots SVG and ASCI
 exports[`fan-in landing cells (#2678) > A & B --> C > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 216" width="424" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -152,15 +150,15 @@ exports[`fan-in landing cells (#2678) > A & B --> C > TD: snapshots SVG and ASCI
   }
 </style>
 <defs>
-  <marker id="zmw0gbz5-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm16iokne-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmw0gbz5-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm16iokne-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 115.07 L 186.67 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmw0gbz5-arrowhead)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 100.93 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 115.07 L 237.33 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmw0gbz5-arrowhead)" />
+<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 115.07 L 186.67 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm16iokne-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 100.93 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 115.07 L 237.33 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm16iokne-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
   <rect x="40" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="116" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>
@@ -257,8 +255,7 @@ exports[`fan-in landing cells (#2678) > colour-coded edges > BT: snapshots SVG a
 exports[`fan-in landing cells (#2678) > colour-coded edges > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 578.3" width="424" height="578.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -282,31 +279,31 @@ exports[`fan-in landing cells (#2678) > colour-coded edges > BT: snapshots SVG a
   }
 </style>
 <defs>
-  <marker id="zmpayumg-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmvnp2uf-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmpayumg-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmvnp2uf-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmpayumg-arrowhead-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmvnp2uf-arrowhead-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="#565f89" stroke="#565f89" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmpayumg-arrowhead-start-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmvnp2uf-arrowhead-start-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="#565f89" stroke="#565f89" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 490.3 L 212 450.3" fill="none" stroke="#7aa2f7" stroke-width="3px" marker-end="url(#zmpayumg-arrowhead-23565f89)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 305.3 L 183 263.37 Q 183 256.3, 175.93 256.3 L 123.07 256.3 Q 116 256.3, 116 249.23 L 116 176" fill="none" stroke="#9ece6a" stroke-width="2px" marker-end="url(#zmpayumg-arrowhead-23565f89)" />
-<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 305.3 L 241 263.37 Q 241 256.3, 248.07 256.3 L 300.93 256.3 Q 308 256.3, 308 249.23 L 308 176" fill="none" stroke="#f7768e" stroke-width="2px" marker-end="url(#zmpayumg-arrowhead-23565f89)" />
-<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zmpayumg-arrowhead-23565f89)" />
-<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zmpayumg-arrowhead-23565f89)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 490.3 L 212 450.3" fill="none" stroke="#7aa2f7" stroke-width="3px" marker-end="url(#zmvnp2uf-arrowhead-23565f89)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 305.3 L 183 263.37 Q 183 256.3, 175.93 256.3 L 123.07 256.3 Q 116 256.3, 116 249.23 L 116 176" fill="none" stroke="#9ece6a" stroke-width="2px" marker-end="url(#zmvnp2uf-arrowhead-23565f89)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 305.3 L 241 263.37 Q 241 256.3, 248.07 256.3 L 300.93 256.3 Q 308 256.3, 308 249.23 L 308 176" fill="none" stroke="#f7768e" stroke-width="2px" marker-end="url(#zmvnp2uf-arrowhead-23565f89)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zmvnp2uf-arrowhead-23565f89)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zmvnp2uf-arrowhead-23565f89)" />
 <g class="edge-label" data-from="B" data-to="C" data-label="Yes">
-  <rect x="105" y="219" width="21.34" height="14.3" fill="var(--bg)" />
-  <text x="115.67" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
+  <rect x="107.5" y="219" width="16.73" height="14.3" fill="var(--bg)" />
+  <text x="115.86" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
 </g>
 <g class="edge-label" data-from="B" data-to="D" data-label="No">
-  <rect x="299.5" y="219" width="16.53" height="14.3" fill="var(--bg)" />
-  <text x="307.76" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
+  <rect x="301.5" y="219" width="12.92" height="14.3" fill="var(--bg)" />
+  <text x="307.96" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
 </g>
 <g class="node" data-id="A" data-label="Start" data-shape="rectangle">
   <rect x="136" y="490.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
@@ -412,8 +409,7 @@ exports[`fan-in landing cells (#2678) > colour-coded edges > TD: snapshots SVG a
 exports[`fan-in landing cells (#2678) > colour-coded edges > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 578.3" width="424" height="578.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -437,31 +433,31 @@ exports[`fan-in landing cells (#2678) > colour-coded edges > TD: snapshots SVG a
   }
 </style>
 <defs>
-  <marker id="zmr6nyq6-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm11ugshz-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmr6nyq6-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm11ugshz-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmr6nyq6-arrowhead-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm11ugshz-arrowhead-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="#565f89" stroke="#565f89" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmr6nyq6-arrowhead-start-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm11ugshz-arrowhead-start-23565f89" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="#565f89" stroke="#565f89" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 88 L 212 128" fill="none" stroke="#7aa2f7" stroke-width="3px" marker-end="url(#zmr6nyq6-arrowhead-23565f89)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 273 L 183 314.93 Q 183 322, 175.93 322 L 123.07 322 Q 116 322, 116 329.07 L 116 402.3" fill="none" stroke="#9ece6a" stroke-width="2px" marker-end="url(#zmr6nyq6-arrowhead-23565f89)" />
-<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 273 L 241 314.93 Q 241 322, 248.07 322 L 300.93 322 Q 308 322, 308 329.07 L 308 402.3" fill="none" stroke="#f7768e" stroke-width="2px" marker-end="url(#zmr6nyq6-arrowhead-23565f89)" />
-<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 450.3 L 116 463.23 Q 116 470.3, 123.07 470.3 L 179.6 470.3 Q 186.67 470.3, 186.67 477.37 L 186.67 490.3" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zmr6nyq6-arrowhead-23565f89)" />
-<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 450.3 L 308 463.23 Q 308 470.3, 300.93 470.3 L 244.4 470.3 Q 237.33 470.3, 237.33 477.37 L 237.33 490.3" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zmr6nyq6-arrowhead-23565f89)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 88 L 212 128" fill="none" stroke="#7aa2f7" stroke-width="3px" marker-end="url(#zm11ugshz-arrowhead-23565f89)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 273 L 183 314.93 Q 183 322, 175.93 322 L 123.07 322 Q 116 322, 116 329.07 L 116 402.3" fill="none" stroke="#9ece6a" stroke-width="2px" marker-end="url(#zm11ugshz-arrowhead-23565f89)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 273 L 241 314.93 Q 241 322, 248.07 322 L 300.93 322 Q 308 322, 308 329.07 L 308 402.3" fill="none" stroke="#f7768e" stroke-width="2px" marker-end="url(#zm11ugshz-arrowhead-23565f89)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 450.3 L 116 463.23 Q 116 470.3, 123.07 470.3 L 179.6 470.3 Q 186.67 470.3, 186.67 477.37 L 186.67 490.3" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zm11ugshz-arrowhead-23565f89)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 450.3 L 308 463.23 Q 308 470.3, 300.93 470.3 L 244.4 470.3 Q 237.33 470.3, 237.33 477.37 L 237.33 490.3" fill="none" stroke="#565f89" stroke-width="1" marker-end="url(#zm11ugshz-arrowhead-23565f89)" />
 <g class="edge-label" data-from="B" data-to="C" data-label="Yes">
-  <rect x="105" y="345" width="21.34" height="14.3" fill="var(--bg)" />
-  <text x="115.67" y="352.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
+  <rect x="107.5" y="345" width="16.73" height="14.3" fill="var(--bg)" />
+  <text x="115.86" y="352.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
 </g>
 <g class="edge-label" data-from="B" data-to="D" data-label="No">
-  <rect x="299.5" y="345" width="16.53" height="14.3" fill="var(--bg)" />
-  <text x="307.76" y="352.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
+  <rect x="301.5" y="345" width="12.92" height="14.3" fill="var(--bg)" />
+  <text x="307.96" y="352.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
 </g>
 <g class="node" data-id="A" data-label="Start" data-shape="rectangle">
   <rect x="136" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
@@ -571,8 +567,7 @@ exports[`fan-in landing cells (#2678) > diamond fan-in > BT: snapshots SVG and A
 exports[`fan-in landing cells (#2678) > diamond fan-in > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 584.3" width="424" height="584.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -596,25 +591,25 @@ exports[`fan-in landing cells (#2678) > diamond fan-in > BT: snapshots SVG and A
   }
 </style>
 <defs>
-  <marker id="zm9ebgl7-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1lxsef4-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm9ebgl7-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1lxsef4-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 490.3 L 212 450.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9ebgl7-arrowhead)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 305.3 L 183 263.37 Q 183 256.3, 175.93 256.3 L 123.07 256.3 Q 116 256.3, 116 249.23 L 116 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9ebgl7-arrowhead)" />
-<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 305.3 L 241 263.37 Q 241 256.3, 248.07 256.3 L 300.93 256.3 Q 308 256.3, 308 249.23 L 308 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9ebgl7-arrowhead)" />
-<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9ebgl7-arrowhead)" />
-<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm9ebgl7-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 490.3 L 212 450.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lxsef4-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 305.3 L 183 263.37 Q 183 256.3, 175.93 256.3 L 123.07 256.3 Q 116 256.3, 116 249.23 L 116 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lxsef4-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 305.3 L 241 263.37 Q 241 256.3, 248.07 256.3 L 300.93 256.3 Q 308 256.3, 308 249.23 L 308 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lxsef4-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lxsef4-arrowhead)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lxsef4-arrowhead)" />
 <g class="edge-label" data-from="B" data-to="C" data-label="Yes">
-  <rect x="105" y="219" width="21.34" height="14.3" fill="var(--bg)" />
-  <text x="115.67" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
+  <rect x="107.5" y="219" width="16.73" height="14.3" fill="var(--bg)" />
+  <text x="115.86" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
 </g>
 <g class="edge-label" data-from="B" data-to="D" data-label="No">
-  <rect x="299.5" y="219" width="16.53" height="14.3" fill="var(--bg)" />
-  <text x="307.76" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
+  <rect x="301.5" y="219" width="12.92" height="14.3" fill="var(--bg)" />
+  <text x="307.96" y="226.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
 </g>
 <g class="node" data-id="A" data-label="Start" data-shape="rounded">
   <rect x="137" y="490.3" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
@@ -724,8 +719,7 @@ exports[`fan-in landing cells (#2678) > diamond fan-in > TD: snapshots SVG and A
 exports[`fan-in landing cells (#2678) > diamond fan-in > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 584.3" width="424" height="584.3" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -749,25 +743,25 @@ exports[`fan-in landing cells (#2678) > diamond fan-in > TD: snapshots SVG and A
   }
 </style>
 <defs>
-  <marker id="zmluu726-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1mwno2f-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmluu726-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1mwno2f-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 94 L 212 134" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmluu726-arrowhead)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 279 L 183 320.93 Q 183 328, 175.93 328 L 123.07 328 Q 116 328, 116 335.07 L 116 408.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmluu726-arrowhead)" />
-<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 279 L 241 320.93 Q 241 328, 248.07 328 L 300.93 328 Q 308 328, 308 335.07 L 308 408.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmluu726-arrowhead)" />
-<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 456.3 L 116 469.23 Q 116 476.3, 123.07 476.3 L 179.6 476.3 Q 186.67 476.3, 186.67 483.37 L 186.67 496.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmluu726-arrowhead)" />
-<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 456.3 L 308 469.23 Q 308 476.3, 300.93 476.3 L 244.4 476.3 Q 237.33 476.3, 237.33 483.37 L 237.33 496.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmluu726-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 212 94 L 212 134" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1mwno2f-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" d="M 183 279 L 183 320.93 Q 183 328, 175.93 328 L 123.07 328 Q 116 328, 116 335.07 L 116 408.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1mwno2f-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" d="M 241 279 L 241 320.93 Q 241 328, 248.07 328 L 300.93 328 Q 308 328, 308 335.07 L 308 408.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1mwno2f-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 456.3 L 116 469.23 Q 116 476.3, 123.07 476.3 L 179.6 476.3 Q 186.67 476.3, 186.67 483.37 L 186.67 496.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1mwno2f-arrowhead)" />
+<path class="edge" data-from="D" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 456.3 L 308 469.23 Q 308 476.3, 300.93 476.3 L 244.4 476.3 Q 237.33 476.3, 237.33 483.37 L 237.33 496.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1mwno2f-arrowhead)" />
 <g class="edge-label" data-from="B" data-to="C" data-label="Yes">
-  <rect x="105" y="351" width="21.34" height="14.3" fill="var(--bg)" />
-  <text x="115.67" y="358.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
+  <rect x="107.5" y="351" width="16.73" height="14.3" fill="var(--bg)" />
+  <text x="115.86" y="358.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">Yes</text>
 </g>
 <g class="edge-label" data-from="B" data-to="D" data-label="No">
-  <rect x="299.5" y="351" width="16.53" height="14.3" fill="var(--bg)" />
-  <text x="307.76" y="358.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
+  <rect x="301.5" y="351" width="12.92" height="14.3" fill="var(--bg)" />
+  <text x="307.96" y="358.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">No</text>
 </g>
 <g class="node" data-id="A" data-label="Start" data-shape="rounded">
   <rect x="137" y="40" width="150" height="54" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
@@ -851,8 +845,7 @@ exports[`fan-in landing cells (#2678) > parallel links > BT: snapshots SVG and A
 exports[`fan-in landing cells (#2678) > parallel links > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 304" width="424" height="304" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -876,17 +869,17 @@ exports[`fan-in landing cells (#2678) > parallel links > BT: snapshots SVG and A
   }
 </style>
 <defs>
-  <marker id="zmee4r8t-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm1llk64s-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmee4r8t-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm1llk64s-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 216 L 116 203.07 Q 116 196, 123.07 196 L 179.6 196 Q 186.67 196, 186.67 188.93 L 186.67 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmee4r8t-arrowhead)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 216 L 308 203.07 Q 308 196, 300.93 196 L 244.4 196 Q 237.33 196, 237.33 188.93 L 237.33 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmee4r8t-arrowhead)" />
-<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 186.67 128 L 186.67 115.07 Q 186.67 108, 179.6 108 L 123.07 108 Q 116 108, 116 100.93 L 116 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmee4r8t-arrowhead)" />
-<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 237.33 128 L 237.33 115.07 Q 237.33 108, 244.4 108 L 300.93 108 Q 308 108, 308 100.93 L 308 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmee4r8t-arrowhead)" />
+<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 216 L 116 203.07 Q 116 196, 123.07 196 L 179.6 196 Q 186.67 196, 186.67 188.93 L 186.67 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1llk64s-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 216 L 308 203.07 Q 308 196, 300.93 196 L 244.4 196 Q 237.33 196, 237.33 188.93 L 237.33 176" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1llk64s-arrowhead)" />
+<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 186.67 128 L 186.67 115.07 Q 186.67 108, 179.6 108 L 123.07 108 Q 116 108, 116 100.93 L 116 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1llk64s-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 237.33 128 L 237.33 115.07 Q 237.33 108, 244.4 108 L 300.93 108 Q 308 108, 308 100.93 L 308 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1llk64s-arrowhead)" />
 <g class="node" data-id="A" data-label="Input" data-shape="rectangle">
   <rect x="40" y="216" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="116" y="240" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Input</text>
@@ -969,8 +962,7 @@ exports[`fan-in landing cells (#2678) > parallel links > TD: snapshots SVG and A
 exports[`fan-in landing cells (#2678) > parallel links > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 304" width="424" height="304" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -994,17 +986,17 @@ exports[`fan-in landing cells (#2678) > parallel links > TD: snapshots SVG and A
   }
 </style>
 <defs>
-  <marker id="zmnj340h-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmeuswr0-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmnj340h-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmeuswr0-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 115.07 L 186.67 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnj340h-arrowhead)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 100.93 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 115.07 L 237.33 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnj340h-arrowhead)" />
-<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 186.67 176 L 186.67 188.93 Q 186.67 196, 179.6 196 L 123.07 196 Q 116 196, 116 203.07 L 116 216" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnj340h-arrowhead)" />
-<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 237.33 176 L 237.33 188.93 Q 237.33 196, 244.4 196 L 300.93 196 Q 308 196, 308 203.07 L 308 216" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnj340h-arrowhead)" />
+<path class="edge" data-from="A" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 115.07 L 186.67 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmeuswr0-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 100.93 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 115.07 L 237.33 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmeuswr0-arrowhead)" />
+<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 186.67 176 L 186.67 188.93 Q 186.67 196, 179.6 196 L 123.07 196 Q 116 196, 116 203.07 L 116 216" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmeuswr0-arrowhead)" />
+<path class="edge" data-from="C" data-to="E" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 237.33 176 L 237.33 188.93 Q 237.33 196, 244.4 196 L 300.93 196 Q 308 196, 308 203.07 L 308 216" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmeuswr0-arrowhead)" />
 <g class="node" data-id="A" data-label="Input" data-shape="rectangle">
   <rect x="40" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="116" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Input</text>
@@ -1069,8 +1061,7 @@ exports[`fan-in landing cells (#2678) > self-loop on the target > BT: snapshots 
 exports[`fan-in landing cells (#2678) > self-loop on the target > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 216" width="424" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -1094,16 +1085,16 @@ exports[`fan-in landing cells (#2678) > self-loop on the target > BT: snapshots 
   }
 </style>
 <defs>
-  <marker id="zm1lpqg9g-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmpfvc6b-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1lpqg9g-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmpfvc6b-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lpqg9g-arrowhead)" />
-<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lpqg9g-arrowhead)" />
-<path class="edge" data-from="D" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 136 68 L 120 68 Q 116 68, 116 64 L 116 64 Q 116 60, 120 60 L 136 60" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1lpqg9g-arrowhead)" />
+<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 100.93 L 186.67 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmpfvc6b-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 115.07 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 100.93 L 237.33 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmpfvc6b-arrowhead)" />
+<path class="edge" data-from="D" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 136 68 L 120 68 Q 116 68, 116 64 L 116 64 Q 116 60, 120 60 L 136 60" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmpfvc6b-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
   <rect x="40" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="116" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>
@@ -1160,8 +1151,7 @@ exports[`fan-in landing cells (#2678) > self-loop on the target > TD: snapshots 
 exports[`fan-in landing cells (#2678) > self-loop on the target > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 216" width="424" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -1185,16 +1175,16 @@ exports[`fan-in landing cells (#2678) > self-loop on the target > TD: snapshots 
   }
 </style>
 <defs>
-  <marker id="zmmo1by4-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmqp2suj-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zmmo1by4-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmqp2suj-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 115.07 L 186.67 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmmo1by4-arrowhead)" />
-<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 100.93 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 115.07 L 237.33 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmmo1by4-arrowhead)" />
-<path class="edge" data-from="D" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 136 148 L 120 148 Q 116 148, 116 152 L 116 152 Q 116 156, 120 156 L 136 156" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmmo1by4-arrowhead)" />
+<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 179.6 108 Q 186.67 108, 186.67 115.07 L 186.67 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmqp2suj-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 100.93 Q 308 108, 300.93 108 L 244.4 108 Q 237.33 108, 237.33 115.07 L 237.33 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmqp2suj-arrowhead)" />
+<path class="edge" data-from="D" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 136 148 L 120 148 Q 116 148, 116 152 L 116 152 Q 116 156, 120 156 L 136 156" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmqp2suj-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
   <rect x="40" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="116" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>
@@ -1286,8 +1276,7 @@ exports[`fan-in landing cells (#2678) > state join > BT: snapshots SVG and ASCII
 exports[`fan-in landing cells (#2678) > state join > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 338 408" width="338" height="408" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -1311,20 +1300,20 @@ exports[`fan-in landing cells (#2678) > state join > BT: snapshots SVG and ASCII
   }
 </style>
 <defs>
-  <marker id="zm1alt96h-arrowhead" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm42wj7e-arrowhead" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto">
     <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
   </marker>
-  <marker id="zm1alt96h-arrowhead-start" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm42wj7e-arrowhead-start" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
   </marker>
 </defs>
-<path class="edge" data-from="_start" data-to="f" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 354 L 169 319.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
-<path class="edge" data-from="f" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 160.67 304 L 160.67 291.07 Q 160.67 284, 153.6 284 L 115.07 284 Q 108 284, 108 276.93 L 108 269.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
-<path class="edge" data-from="f" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 177.33 304 L 177.33 291.07 Q 177.33 284, 184.4 284 L 222.93 284 Q 230 284, 230 276.93 L 230 189.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
-<path class="edge" data-from="A" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 224 L 108 183.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
-<path class="edge" data-from="c" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 150 L 108 131.07 Q 108 124, 115.07 124 L 153.6 124 Q 160.67 124, 160.67 116.93 L 160.67 109.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
-<path class="edge" data-from="B" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 230 144 L 230 131.07 Q 230 124, 222.93 124 L 184.4 124 Q 177.33 124, 177.33 116.93 L 177.33 109.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
-<path class="edge" data-from="j" data-to="_end" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 94 L 169 59.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1alt96h-arrowhead)" />
+<path class="edge" data-from="_start" data-to="f" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 354 L 169 319.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm42wj7e-arrowhead)" />
+<path class="edge" data-from="f" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 160.67 304 L 160.67 291.07 Q 160.67 284, 153.6 284 L 115.07 284 Q 108 284, 108 276.93 L 108 269.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm42wj7e-arrowhead)" />
+<path class="edge" data-from="f" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 177.33 304 L 177.33 291.07 Q 177.33 284, 184.4 284 L 222.93 284 Q 230 284, 230 276.93 L 230 189.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm42wj7e-arrowhead)" />
+<path class="edge" data-from="A" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 224 L 108 183.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm42wj7e-arrowhead)" />
+<path class="edge" data-from="c" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 150 L 108 131.07 Q 108 124, 115.07 124 L 153.6 124 Q 160.67 124, 160.67 116.93 L 160.67 109.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm42wj7e-arrowhead)" />
+<path class="edge" data-from="B" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 230 144 L 230 131.07 Q 230 124, 222.93 124 L 184.4 124 Q 177.33 124, 177.33 116.93 L 177.33 109.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm42wj7e-arrowhead)" />
+<path class="edge" data-from="j" data-to="_end" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 94 L 169 59.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm42wj7e-arrowhead)" />
 <g class="node" data-id="_start" data-label="" data-shape="state-start">
   <circle cx="169" cy="361" r="7" fill="var(--_text)" stroke="none" />
 </g>
@@ -1431,8 +1420,7 @@ exports[`fan-in landing cells (#2678) > state join > TD: snapshots SVG and ASCII
 exports[`fan-in landing cells (#2678) > state join > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 338 408" width="338" height="408" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -1456,20 +1444,20 @@ exports[`fan-in landing cells (#2678) > state join > TD: snapshots SVG and ASCII
   }
 </style>
 <defs>
-  <marker id="zmyku4me-arrowhead" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmiqa2yv-arrowhead" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto">
     <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
   </marker>
-  <marker id="zmyku4me-arrowhead-start" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmiqa2yv-arrowhead-start" markerWidth="20" markerHeight="14" refX="17" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <path d="M 19,7 L11,14 L13,7 L11,0 Z" fill="var(--_arrow)" />
   </marker>
 </defs>
-<path class="edge" data-from="_start" data-to="f" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 54 L 169 88.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
-<path class="edge" data-from="f" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 160.67 104 L 160.67 116.93 Q 160.67 124, 153.6 124 L 115.07 124 Q 108 124, 108 131.07 L 108 138.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
-<path class="edge" data-from="f" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 177.33 104 L 177.33 116.93 Q 177.33 124, 184.4 124 L 222.93 124 Q 230 124, 230 131.07 L 230 218.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
-<path class="edge" data-from="A" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 184 L 108 224.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
-<path class="edge" data-from="c" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 258 L 108 276.93 Q 108 284, 115.07 284 L 153.6 284 Q 160.67 284, 160.67 291.07 L 160.67 298.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
-<path class="edge" data-from="B" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 230 264 L 230 276.93 Q 230 284, 222.93 284 L 184.4 284 Q 177.33 284, 177.33 291.07 L 177.33 298.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
-<path class="edge" data-from="j" data-to="_end" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 314 L 169 348.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyku4me-arrowhead)" />
+<path class="edge" data-from="_start" data-to="f" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 54 L 169 88.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmiqa2yv-arrowhead)" />
+<path class="edge" data-from="f" data-to="A" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 160.67 104 L 160.67 116.93 Q 160.67 124, 153.6 124 L 115.07 124 Q 108 124, 108 131.07 L 108 138.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmiqa2yv-arrowhead)" />
+<path class="edge" data-from="f" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 177.33 104 L 177.33 116.93 Q 177.33 124, 184.4 124 L 222.93 124 Q 230 124, 230 131.07 L 230 218.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmiqa2yv-arrowhead)" />
+<path class="edge" data-from="A" data-to="c" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 184 L 108 224.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmiqa2yv-arrowhead)" />
+<path class="edge" data-from="c" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 108 258 L 108 276.93 Q 108 284, 115.07 284 L 153.6 284 Q 160.67 284, 160.67 291.07 L 160.67 298.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmiqa2yv-arrowhead)" />
+<path class="edge" data-from="B" data-to="j" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 230 264 L 230 276.93 Q 230 284, 222.93 284 L 184.4 284 Q 177.33 284, 177.33 291.07 L 177.33 298.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmiqa2yv-arrowhead)" />
+<path class="edge" data-from="j" data-to="_end" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 169 314 L 169 348.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmiqa2yv-arrowhead)" />
 <g class="node" data-id="_start" data-label="" data-shape="state-start">
   <circle cx="169" cy="47" r="7" fill="var(--_text)" stroke="none" />
 </g>
@@ -1539,8 +1527,7 @@ exports[`fan-in landing cells (#2678) > three strokes, narrow target > BT: snaps
 exports[`fan-in landing cells (#2678) > three strokes, narrow target > BT: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 616 216" width="616" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -1564,16 +1551,16 @@ exports[`fan-in landing cells (#2678) > three strokes, narrow target > BT: snaps
   }
 </style>
 <defs>
-  <marker id="zm55g1yr-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm14idw0-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm55g1yr-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm14idw0-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 262.93 108 Q 270 108, 270 100.93 L 270 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm55g1yr-arrowhead)" />
-<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm55g1yr-arrowhead)" />
-<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 500 128 L 500 115.07 Q 500 108, 492.93 108 L 353.07 108 Q 346 108, 346 100.93 L 346 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm55g1yr-arrowhead)" />
+<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 128 L 116 115.07 Q 116 108, 123.07 108 L 262.93 108 Q 270 108, 270 100.93 L 270 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14idw0-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 128 L 308 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14idw0-arrowhead)" />
+<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 500 128 L 500 115.07 Q 500 108, 492.93 108 L 353.07 108 Q 346 108, 346 100.93 L 346 88" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14idw0-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
   <rect x="40" y="128" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="116" y="152" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>
@@ -1632,8 +1619,7 @@ exports[`fan-in landing cells (#2678) > three strokes, narrow target > TD: snaps
 exports[`fan-in landing cells (#2678) > three strokes, narrow target > TD: snapshots SVG and ASCII (grid and ELK hints) > svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 616 216" width="616" height="216" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -1657,16 +1643,16 @@ exports[`fan-in landing cells (#2678) > three strokes, narrow target > TD: snaps
   }
 </style>
 <defs>
-  <marker id="zm1fzihnh-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zmtmjod6-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm1fzihnh-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zmtmjod6-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 262.93 108 Q 270 108, 270 115.07 L 270 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fzihnh-arrowhead)" />
-<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fzihnh-arrowhead)" />
-<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 500 88 L 500 100.93 Q 500 108, 492.93 108 L 353.07 108 Q 346 108, 346 115.07 L 346 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fzihnh-arrowhead)" />
+<path class="edge" data-from="A" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 116 88 L 116 100.93 Q 116 108, 123.07 108 L 262.93 108 Q 270 108, 270 115.07 L 270 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmtmjod6-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 308 88 L 308 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmtmjod6-arrowhead)" />
+<path class="edge" data-from="C" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 500 88 L 500 100.93 Q 500 108, 492.93 108 L 353.07 108 Q 346 108, 346 115.07 L 346 128" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmtmjod6-arrowhead)" />
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
   <rect x="40" y="40" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
   <text x="116" y="64" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">A</text>

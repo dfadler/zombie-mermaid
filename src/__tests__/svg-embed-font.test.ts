@@ -23,10 +23,17 @@ describe('embedFont', () => {
     await loadEmbeddedFont() // Data being loaded must not switch it on.
     for (const options of [{}, { embedFont: false as const }]) {
       const svg = renderMermaidSVG(SRC, options)
-      expect(svg).toContain('fonts.googleapis.com')
+      // The default is mermaid's own stack (no Google Fonts request); Inter is opt-in.
+      expect(svg).not.toContain('fonts.googleapis.com')
+      expect(svg).toContain(
+        "font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif",
+      )
       expect(svg).not.toContain('@font-face')
       expect(svg).not.toContain('data:font/woff2')
     }
+    expect(renderMermaidSVG(SRC, { font: 'Inter' })).toContain(
+      'fonts.googleapis.com',
+    )
   })
 
   it('embeds a woff2 subset and drops the @import when opted in (async)', async () => {

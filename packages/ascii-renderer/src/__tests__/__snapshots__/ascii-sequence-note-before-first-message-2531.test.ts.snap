@@ -27,10 +27,9 @@ exports[`ASCII sequence note before a block first message (#2531) > snapshots AS
 `;
 
 exports[`ASCII sequence note before a block first message (#2531) > snapshots ASCII and SVG for first > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 408.13 391" width="408.13" height="391" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 399.66 391" width="399.66" height="391" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -54,53 +53,53 @@ exports[`ASCII sequence note before a block first message (#2531) > snapshots AS
   }
 </style>
 <defs>
-  <marker id="zmyiq8fc-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zm3r382e-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
   </marker>
-  <marker id="zmyiq8fc-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zm3r382e-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zmyiq8fc-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+  <marker id="zm3r382e-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
     <path d="M2.5 2.5 L7.5 7.5 M7.5 2.5 L2.5 7.5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
 </defs>
-<line class="lifeline" data-actor="A" x1="198.13" y1="70" x2="198.13" y2="321" stroke="var(--_line)" stroke-width="0.5" />
-<line class="lifeline" data-actor="B" x1="338.13" y1="70" x2="338.13" y2="321" stroke="var(--_line)" stroke-width="0.5" />
+<line class="lifeline" data-actor="A" x1="189.66" y1="70" x2="189.66" y2="321" stroke="var(--_line)" stroke-width="0.5" />
+<line class="lifeline" data-actor="B" x1="329.66" y1="70" x2="329.66" y2="321" stroke="var(--_line)" stroke-width="0.5" />
 <g class="block" data-type="alt" data-label="ok">
-  <rect x="30" y="125" width="319.13" height="176" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="2 2" />
-  <polygon points="30,125 61.47,125 61.47,139.4 57.15,143 30,143" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="30" y="125" width="310.66" height="176" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="2 2" />
+  <polygon points="30,125 59.47,125 59.47,139.4 55.15,143 30,143" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="36" y="134" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.85">alt</text>
-  <text x="205.3" y="134" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[ok]</text>
-  <line x1="30" y1="215" x2="349.13" y2="215" stroke="var(--_line)" stroke-width="2" stroke-dasharray="3 3" />
-  <text x="189.56" y="229" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">[bad]</text>
+  <text x="200.06" y="134" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[ok]</text>
+  <line x1="30" y1="215" x2="340.66" y2="215" stroke="var(--_line)" stroke-width="2" stroke-dasharray="3 3" />
+  <text x="185.33" y="229" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">[bad]</text>
 </g>
 <g class="actor-footer" data-id="A" data-label="A" data-type="participant">
-  <rect x="158.13" y="321" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="198.13" y="341" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="149.66" y="321" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="189.66" y="341" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="actor-footer" data-id="B" data-label="B" data-type="participant">
-  <rect x="298.13" y="321" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="338.13" y="341" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="289.66" y="321" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="329.66" y="341" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 <g class="message" data-from="A" data-to="B" data-label="go" data-line-style="solid" data-arrow-head="filled" data-self="false" data-bidirectional="false">
-  <line x1="198.13" y1="191" x2="338.13" y2="191" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyiq8fc-seq-arrow)" />
-  <text x="268.13" y="181" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">go</text>
+  <line x1="189.66" y1="191" x2="329.66" y2="191" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm3r382e-seq-arrow)" />
+  <text x="259.66" y="181" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">go</text>
 </g>
 <g class="message" data-from="B" data-to="A" data-label="back" data-line-style="solid" data-arrow-head="filled" data-self="false" data-bidirectional="false">
-  <line x1="338.13" y1="281" x2="198.13" y2="281" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmyiq8fc-seq-arrow)" />
-  <text x="268.13" y="271" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">back</text>
+  <line x1="329.66" y1="281" x2="189.66" y2="281" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm3r382e-seq-arrow)" />
+  <text x="259.66" y="271" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">back</text>
 </g>
 <g class="note" data-position="left" data-actors="A">
-  <rect x="40" y="90" width="108.13" height="23" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="94.06" y="101.5" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">no message yet</text>
+  <rect x="40" y="90" width="99.66" height="23" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="89.83" y="101.5" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">no message yet</text>
 </g>
 <g class="actor" data-id="A" data-label="A" data-type="participant">
-  <rect x="158.13" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="198.13" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="149.66" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="189.66" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="actor" data-id="B" data-label="B" data-type="participant">
-  <rect x="298.13" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="338.13" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="289.66" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="329.66" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;
@@ -130,10 +129,9 @@ exports[`ASCII sequence note before a block first message (#2531) > snapshots AS
 `;
 
 exports[`ASCII sequence note before a block first message (#2531) > snapshots ASCII and SVG for issue > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 453.09 309" width="453.09" height="309" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 444.31 309" width="444.31" height="309" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -157,23 +155,23 @@ exports[`ASCII sequence note before a block first message (#2531) > snapshots AS
   }
 </style>
 <defs>
-  <marker id="zm1fc0wrf-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zm1dp16f9-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
   </marker>
-  <marker id="zm1fc0wrf-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zm1dp16f9-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zm1fc0wrf-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+  <marker id="zm1dp16f9-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
     <path d="M2.5 2.5 L7.5 7.5 M7.5 2.5 L2.5 7.5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
 </defs>
 <line class="lifeline" data-actor="A" x1="70" y1="70" x2="70" y2="239" stroke="var(--_line)" stroke-width="0.5" />
 <line class="lifeline" data-actor="B" x1="210" y1="70" x2="210" y2="239" stroke="var(--_line)" stroke-width="0.5" />
 <g class="block" data-type="loop" data-label="retry">
-  <rect x="59" y="133" width="364.09" height="86" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="2 2" />
-  <polygon points="59,133 101.74,133 101.74,147.4 97.42,151 59,151" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="59" y="133" width="355.31" height="86" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="2 2" />
+  <polygon points="59,133 97.1,133 97.1,147.4 92.78,151 59,151" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="65" y="142" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.85">loop</text>
-  <text x="262.42" y="142" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[retry]</text>
+  <text x="255.71" y="142" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[retry]</text>
 </g>
 <g class="actor-footer" data-id="A" data-label="A" data-type="participant">
   <rect x="30" y="239" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
@@ -184,16 +182,16 @@ exports[`ASCII sequence note before a block first message (#2531) > snapshots AS
   <text x="210" y="259" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 <g class="message" data-from="A" data-to="B" data-label="first" data-line-style="solid" data-arrow-head="filled" data-self="false" data-bidirectional="false">
-  <line x1="70" y1="90" x2="210" y2="90" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fc0wrf-seq-arrow)" />
+  <line x1="70" y1="90" x2="210" y2="90" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1dp16f9-seq-arrow)" />
   <text x="140" y="80" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">first</text>
 </g>
 <g class="message" data-from="A" data-to="B" data-label="fetch" data-line-style="solid" data-arrow-head="filled" data-self="false" data-bidirectional="false">
-  <line x1="70" y1="199" x2="210" y2="199" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1fc0wrf-seq-arrow)" />
+  <line x1="70" y1="199" x2="210" y2="199" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1dp16f9-seq-arrow)" />
   <text x="140" y="189" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">fetch</text>
 </g>
 <g class="note" data-position="right" data-actors="B">
-  <rect x="260" y="98" width="153.09" height="23" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="336.55" y="109.5" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">before the first message</text>
+  <rect x="260" y="98" width="144.31" height="23" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="332.16" y="109.5" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">before the first message</text>
 </g>
 <g class="actor" data-id="A" data-label="A" data-type="participant">
   <rect x="30" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
@@ -236,10 +234,9 @@ exports[`ASCII sequence note before a block first message (#2531) > snapshots AS
 `;
 
 exports[`ASCII sequence note before a block first message (#2531) > snapshots ASCII and SVG for nested > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 308.58 381" width="308.58" height="381" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 305.58 381" width="305.58" height="381" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -263,57 +260,57 @@ exports[`ASCII sequence note before a block first message (#2531) > snapshots AS
   }
 </style>
 <defs>
-  <marker id="zmiig2ir-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zme9uyrb-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
   </marker>
-  <marker id="zmiig2ir-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+  <marker id="zme9uyrb-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
     <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
-  <marker id="zmiig2ir-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+  <marker id="zme9uyrb-seq-lost" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
     <path d="M2.5 2.5 L7.5 7.5 M7.5 2.5 L2.5 7.5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
   </marker>
 </defs>
-<line class="lifeline" data-actor="A" x1="79.55" y1="70" x2="79.55" y2="311" stroke="var(--_line)" stroke-width="0.5" />
-<line class="lifeline" data-actor="B" x1="219.55" y1="70" x2="219.55" y2="311" stroke="var(--_line)" stroke-width="0.5" />
+<line class="lifeline" data-actor="A" x1="78.07" y1="70" x2="78.07" y2="311" stroke="var(--_line)" stroke-width="0.5" />
+<line class="lifeline" data-actor="B" x1="218.07" y1="70" x2="218.07" y2="311" stroke="var(--_line)" stroke-width="0.5" />
 <g class="block" data-type="opt" data-label="inner">
-  <rect x="68.55" y="197" width="200.03" height="86" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="2 2" />
-  <polygon points="68.55,197 105.01,197 105.01,211.4 100.69,215 68.55,215" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="74.55" y="206" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.85">opt</text>
-  <text x="186.8" y="206" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[inner]</text>
+  <rect x="67.07" y="197" width="198.51" height="86" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="2 2" />
+  <polygon points="67.07,197 100.06,197 100.06,211.4 95.74,215 67.07,215" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="73.07" y="206" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.85">opt</text>
+  <text x="182.82" y="206" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[inner]</text>
 </g>
 <g class="block" data-type="loop" data-label="outer">
-  <rect x="30" y="152" width="248.58" height="139" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="2 2" />
-  <polygon points="30,152 72.74,152 72.74,166.4 68.42,170 30,170" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="30" y="152" width="245.58" height="139" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="2" stroke-dasharray="2 2" />
+  <polygon points="30,152 68.1,152 68.1,166.4 63.78,170 30,170" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
   <text x="36" y="161" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.85">loop</text>
-  <text x="175.66" y="161" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[outer]</text>
+  <text x="171.84" y="161" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-sec)" dy="3.85">[outer]</text>
 </g>
 <g class="actor-footer" data-id="A" data-label="A" data-type="participant">
-  <rect x="39.55" y="311" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="79.55" y="331" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="38.07" y="311" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="78.07" y="331" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="actor-footer" data-id="B" data-label="B" data-type="participant">
-  <rect x="179.55" y="311" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="219.55" y="331" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="178.07" y="311" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="218.07" y="331" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 <g class="message" data-from="A" data-to="B" data-label="go" data-line-style="solid" data-arrow-head="filled" data-self="false" data-bidirectional="false">
-  <line x1="79.55" y1="263" x2="219.55" y2="263" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmiig2ir-seq-arrow)" />
-  <text x="149.55" y="253" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">go</text>
+  <line x1="78.07" y1="263" x2="218.07" y2="263" stroke="var(--_line)" stroke-width="1" marker-end="url(#zme9uyrb-seq-arrow)" />
+  <text x="148.07" y="253" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">go</text>
 </g>
 <g class="note" data-position="over" data-actors="A">
-  <rect x="40" y="90" width="79.1" height="23" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="79.55" y="101.5" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">outer note</text>
+  <rect x="40" y="90" width="76.14" height="23" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="78.07" y="101.5" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">outer note</text>
 </g>
 <g class="note" data-position="over" data-actors="B">
-  <rect x="180.52" y="117" width="78.06" height="23" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="219.55" y="128.5" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">inner note</text>
+  <rect x="180.56" y="117" width="75.02" height="23" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="218.07" y="128.5" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.85">inner note</text>
 </g>
 <g class="actor" data-id="A" data-label="A" data-type="participant">
-  <rect x="39.55" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="79.55" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
+  <rect x="38.07" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="78.07" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">A</text>
 </g>
 <g class="actor" data-id="B" data-label="B" data-type="participant">
-  <rect x="179.55" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="219.55" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
+  <rect x="178.07" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="218.07" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">B</text>
 </g>
 </svg>"
 `;

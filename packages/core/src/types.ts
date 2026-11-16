@@ -362,7 +362,7 @@ export interface RenderOptions {
   /** Node/group stroke color → CSS variable --border */
   border?: string
 
-  /** Font family for all text. Default: 'Inter' */
+  /** Font family for all text. Default: mermaid's stack, `"trebuchet ms", verdana, arial, sans-serif` */
   font?: string
   /**
    * Inline the font as a base64 `woff2` `@font-face` in the SVG's own

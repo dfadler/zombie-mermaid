@@ -5,7 +5,7 @@
  * places the box beside the edge, so the renderer snaps it onto the route.
  */
 import { describe, it, expect } from 'vitest'
-import { splitStatements } from '@zombie-mermaid/core'
+import { splitStatements, setTrebuchetMetrics } from '@zombie-mermaid/core'
 import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'
 import { layoutClassDiagramSync } from '../class/layout.ts'
 import { renderMermaidSVG, renderClassSvg } from '../index.ts'
@@ -23,6 +23,8 @@ const plates = (svg: string) =>
 
 describe('class relationship label is centred on its edge', () => {
   it('draws one plate per label, centred on the edge x, on the edge y-range', () => {
+    // renderMermaidSVG measures in mermaid's font; lay out the same way to compare.
+    setTrebuchetMetrics(true)
     const rels = layoutClassDiagramSync(
       parseClassDiagram(splitStatements(SRC)),
     ).relationships

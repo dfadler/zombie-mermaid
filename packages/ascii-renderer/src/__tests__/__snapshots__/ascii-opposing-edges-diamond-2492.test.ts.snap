@@ -27,10 +27,9 @@ exports[`opposing edges at a diamond / slanted node (#2492) > snapshots ASCII an
 `;
 
 exports[`opposing edges at a diamond / slanted node (#2492) > snapshots ASCII and SVG for the issue source > svg 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 743.05 254" width="743.05" height="254" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 738.88 254" width="738.88" height="254" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
     --_text:          var(--fg);
@@ -54,24 +53,24 @@ exports[`opposing edges at a diamond / slanted node (#2492) > snapshots ASCII an
   }
 </style>
 <defs>
-  <marker id="zm4gxqmw-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+  <marker id="zm17lp39p-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
-  <marker id="zm4gxqmw-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+  <marker id="zm17lp39p-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
     <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 127 L 232 127" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm4gxqmw-arrowhead)" />
-<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="yes" d="M 362.5 83.5 L 418.93 83.5 Q 426 83.5, 426 76.43 L 426 76.32 Q 426 69.25, 433.07 69.25 L 514.05 69.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm4gxqmw-arrowhead)" />
-<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="no" d="M 406 127 L 421.75 127 Q 426 127, 426 131.25 L 426 131.25 Q 426 135.5, 430.25 135.5 L 487.18 135.5 Q 494.05 135.5, 494.05 142.38 L 494.05 142.38 Q 494.05 149.25, 500.93 149.25 L 514.05 149.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm4gxqmw-arrowhead)" />
-<path class="edge" data-from="D" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 514.05 165.25 L 497.63 165.25 Q 494.05 165.25, 494.05 168.82 L 494.05 168.82 Q 494.05 172.4, 490.48 172.4 L 426.95 172.4 Q 426 172.4, 426 171.45 L 426 171.45 Q 426 170.5, 425.05 170.5 L 362.5 170.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm4gxqmw-arrowhead)" />
+<path class="edge" data-from="A" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 127 L 232 127" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17lp39p-arrowhead)" />
+<path class="edge" data-from="B" data-to="C" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="yes" d="M 362.5 83.5 L 418.93 83.5 Q 426 83.5, 426 76.43 L 426 76.32 Q 426 69.25, 433.07 69.25 L 509.88 69.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17lp39p-arrowhead)" />
+<path class="edge" data-from="B" data-to="D" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="no" d="M 406 127 L 421.75 127 Q 426 127, 426 131.25 L 426 131.25 Q 426 135.5, 430.25 135.5 L 483 135.5 Q 489.88 135.5, 489.88 142.38 L 489.88 142.38 Q 489.88 149.25, 496.75 149.25 L 509.88 149.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17lp39p-arrowhead)" />
+<path class="edge" data-from="D" data-to="B" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 509.88 165.25 L 493.45 165.25 Q 489.88 165.25, 489.88 168.82 L 489.88 168.82 Q 489.88 172.4, 486.3 172.4 L 426.95 172.4 Q 426 172.4, 426 171.45 L 426 171.45 Q 426 170.5, 425.05 170.5 L 362.5 170.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17lp39p-arrowhead)" />
 <g class="edge-label" data-from="B" data-to="C" data-label="yes">
-  <rect x="450" y="61.25" width="20.05" height="14.3" fill="var(--bg)" />
-  <text x="460.03" y="68.4" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">yes</text>
+  <rect x="450" y="61.25" width="15.88" height="14.3" fill="var(--bg)" />
+  <text x="457.94" y="68.4" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">yes</text>
 </g>
 <g class="edge-label" data-from="B" data-to="D" data-label="no">
-  <rect x="452.66" y="127.5" width="14.74" height="14.3" fill="var(--bg)" />
-  <text x="460.03" y="134.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">no</text>
+  <rect x="451.98" y="127.5" width="11.91" height="14.3" fill="var(--bg)" />
+  <text x="457.94" y="134.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">no</text>
 </g>
 <g class="node" data-id="A" data-label="A" data-shape="rectangle">
   <rect x="40" y="103" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
@@ -82,12 +81,12 @@ exports[`opposing edges at a diamond / slanted node (#2492) > snapshots ASCII an
   <text x="319" y="127" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Valid?</text>
 </g>
 <g class="node" data-id="C" data-label="C" data-shape="rectangle">
-  <rect x="514.05" y="45.25" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="590.05" y="69.25" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">C</text>
+  <rect x="509.88" y="45.25" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="585.88" y="69.25" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">C</text>
 </g>
 <g class="node" data-id="D" data-label="Ask Again" data-shape="parallelogram">
-  <polygon points="542.4,133.25 703.05,133.25 674.7,181.25 514.05,181.25" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="608.55" y="157.25" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Ask Again</text>
+  <polygon points="538.23,133.25 698.88,133.25 670.53,181.25 509.88,181.25" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="604.38" y="157.25" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Ask Again</text>
 </g>
 </svg>"
 `;
