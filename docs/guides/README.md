@@ -11,6 +11,7 @@ syntax for X"_, these answer _"how do I get X done"_.
 | [Which package do I install?](choosing-a-package.md)             | pick between `zombie-mermaid`, the renderers, and MCP  |
 | [Migrating: `elkjs` is an optional peer](elkjs-optional-peer.md) | upgrade from 4.x and register `elkjs` in a browser app |
 | [Upgrading from 2.x to 5.x](upgrading-2x-to-5x.md)               | work through every breaking change between 2.x and 5.x |
+| [Upgrading from 5.x to 6.x](upgrading-5x-to-6x.md)               | handle `--max-width` now failing instead of warning    |
 
 Reference docs, for when you know what you're looking for:
 

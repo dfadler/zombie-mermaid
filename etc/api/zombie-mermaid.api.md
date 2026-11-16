@@ -5,6 +5,7 @@
 ```ts
 
 import { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer';
+import { AsciiWidthError } from '@zombie-mermaid/ascii-renderer';
 import { ClassRenderOptions } from '@zombie-mermaid/core';
 import { CommonRenderOptions } from '@zombie-mermaid/core';
 import { createLayoutCache } from '@zombie-mermaid/svg-renderer';
@@ -41,6 +42,8 @@ import { validateMermaid } from '@zombie-mermaid/svg-renderer';
 import { XyChartRenderOptions } from '@zombie-mermaid/core';
 
 export { AsciiRenderOptions }
+
+export { AsciiWidthError }
 
 export { ClassRenderOptions }
 

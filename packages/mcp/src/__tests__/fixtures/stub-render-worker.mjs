@@ -19,6 +19,16 @@ parentPort.on('message', ({ diagram }) => {
     })
     return
   }
+  if (diagram === 'width') {
+    parentPort.postMessage({
+      ok: false,
+      name: 'AsciiWidthError',
+      message: 'stub',
+      line: undefined,
+      width: [31, 20, true],
+    })
+    return
+  }
   if (diagram === 'throw') {
     parentPort.postMessage({
       ok: false,

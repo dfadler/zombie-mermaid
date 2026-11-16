@@ -60,6 +60,18 @@ export const renderAsciiInputShape = {
     .describe(
       'Padding inside node boxes. Default: 1. Flowchart/state diagrams only.',
     ),
+  maxWidth: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe(
+      'Hard limit on output width in terminal columns. Unset = no limit ' +
+        '(no default, not even with profile). If the output is wider, it is ' +
+        're-rendered with compact spacing; if still wider, the tool returns ' +
+        'an error (isError) with the width reached instead of a diagram. ' +
+        'Nothing is wrapped or truncated.',
+    ),
 }
 
 export interface RenderAsciiToolArgs {
@@ -69,6 +81,7 @@ export interface RenderAsciiToolArgs {
   paddingX?: number | undefined
   paddingY?: number | undefined
   boxBorderPadding?: number | undefined
+  maxWidth?: number | undefined
 }
 
 /** The options `renderAsciiHandler` renders with; shared with the worker wrapper. */
@@ -81,6 +94,7 @@ export function asciiRenderOptions(
     paddingX: input.paddingX,
     paddingY: input.paddingY,
     boxBorderPadding: input.boxBorderPadding,
+    maxWidth: input.maxWidth,
     colorMode: 'none',
     limits: MCP_LIMITS,
   }

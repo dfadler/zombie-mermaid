@@ -173,6 +173,37 @@ Render a Mermaid diagram to ASCII/Unicode text. Synchronous.
 | `showCoords`          | `boolean`                              | `false`  | Internal debugging aid: overlays row/column indices on the output. Not a stable API                                                                                                                                                                                                                                                                                                        |
 | `hyperlinks`          | `boolean`                              | `false`  | Wrap `click` hrefs in OSC 8 terminal hyperlinks (see [ASCII terminal hyperlinks](diagrams.md#ascii-terminal-hyperlinks))                                                                                                                                                                                                                                                                   |
 | `profile`             | `'markdown'`                           | —        | Preset for plain, paste-safe output (issues, commits, fenced blocks): defaults `useAscii: true`, `colorMode: 'none'`, `hyperlinks: false`, `showCoords: false`; explicit options still win. Labels are not transliterated, and CJK/emoji column width stays font-dependent ([UAX #11](https://www.unicode.org/reports/tr11/)), so such labels can misalign on proportional fallback fonts. |
+| `maxWidth`            | `number`                               | —        | Hard width limit in terminal columns (positive integer). No default, not even with `profile`. See [Width limit](#width-limit-optionsmaxwidth)                                                                                                                                                                                                                                              |
+
+### Width limit (`options.maxWidth`)
+
+When `maxWidth` is set, the renderer lays the diagram out normally; if the widest
+line (color codes, OSC 8 links and, for `colorMode: 'html'`, tags are not
+counted) is over the limit, it re-renders once with compact spacing
+(`paddingX: 1`, `paddingY: 1`, `boxBorderPadding: 0`, each only where that is
+tighter than the value in effect); if it is still over, it throws
+`AsciiWidthError`. Nothing is wrapped, flipped or truncated. Unset, output is
+byte-identical to before. Anything other than a positive integer throws
+`RangeError`.
+
+`AsciiWidthError` has `code: 'WIDTH_EXCEEDED'`, `actualWidth` (the narrowest
+output reached), `maxWidth` and `compactApplied` (whether the compact retry
+produced that narrowest output).
+
+```ts
+import { renderMermaidASCII, AsciiWidthError } from 'zombie-mermaid'
+
+try {
+  console.log(renderMermaidASCII(code, { profile: 'markdown', maxWidth: 80 }))
+} catch (e) {
+  if (e instanceof AsciiWidthError) console.error(e.actualWidth, e.maxWidth)
+  else throw e
+}
+```
+
+The CLI's `-w/--max-width` and the MCP `render_mermaid_ascii` tool's `maxWidth`
+use this option; both fail (exit 1 / `isError`) instead of returning an
+over-wide diagram.
 
 ASCII-only consumers can import from `zombie-mermaid/ascii` instead of the
 package root to skip loading the SVG renderer (the root entry no longer
