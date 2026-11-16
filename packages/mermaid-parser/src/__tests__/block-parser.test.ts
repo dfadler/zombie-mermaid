@@ -345,6 +345,11 @@ describe('parseBlock', () => {
       'block-beta\n  classDef constructor fill:red\n  classDef constructor stroke:blue\n  a\n  class a toString',
     )
     expect(d.classDefs.constructor).toEqual(['fill:red', 'stroke:blue'])
+    const p = parseBlock(
+      'block-beta\n  a\n  classDef __proto__ fill:red\n  class a __proto__',
+    )
+    expect(Object.hasOwn(p.classDefs, '__proto__')).toBe(true)
+    expect(p.classDefs.__proto__).toEqual(['fill:red'])
     expect(d.root.children[0]!.classes).toEqual(['toString'])
   })
 })

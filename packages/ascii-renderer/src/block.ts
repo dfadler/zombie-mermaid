@@ -335,6 +335,87 @@ function drawEdges(
   rects: Map<string, Rect>,
   g: typeof UNI,
 ): void {
+  /**
+   * The cheapest clear route (a cell per step, a bend costing 6) from a side of `a` to a side of
+   * `b`, as the cells where it starts, bends and ends; undefined when every way is blocked.
+   */
+  const search = (a: Rect, b: Rect): [number, number][] | undefined => {
+    const D: [number, number, 'r' | 'l' | 'd' | 'u'][] = [
+      [1, 0, 'r'],
+      [-1, 0, 'l'],
+      [0, 1, 'd'],
+      [0, -1, 'u'],
+    ]
+    const ring = (r: Rect): [number, number, number][] => {
+      const out: [number, number, number][] = []
+      for (let x = r.x; x < r.x + r.w; x++) {
+        out.push([x, r.y - 1, 3], [x, r.y + r.h, 2])
+      }
+      for (let y = r.y; y < r.y + r.h; y++) {
+        out.push([r.x - 1, y, 1], [r.x + r.w, y, 0])
+      }
+      return out
+    }
+    const key = (x: number, y: number, d: number): string => `${x},${y},${d}`
+    // The way into `b` from each cell beside it is the opposite of the way out of `b`.
+    const goal = new Map<string, true>()
+    for (const [x, y, out] of ring(b)) goal.set(key(x, y, out ^ 1), true)
+    const dist = new Map<string, number>()
+    const prev = new Map<string, string>()
+    // Costs are small whole numbers, so a queue per cost does for a priority queue.
+    const queue: [number, number, number][][] = []
+    let pending = 0
+    const push = (c: number, x: number, y: number, d: number): void => {
+      ;(queue[c] ??= []).push([x, y, d])
+      pending++
+    }
+    // Leave `a` with a straight stem of two cells, so a bend never sits against its frame.
+    for (const [x, y, out] of ring(a)) {
+      const [dx, dy] = D[out]!
+      if (blocked(x, y) || blocked(x + dx, y + dy)) continue
+      dist.set(key(x + dx, y + dy, out), 0)
+      prev.set(key(x + dx, y + dy, out), key(x, y, out))
+      push(0, x + dx, y + dy, out)
+    }
+    for (let c = 0; pending > 0; c++) {
+      for (const [x, y, d] of queue[c] ?? []) {
+        pending--
+        const here = key(x, y, d)
+        if (c > (dist.get(here) ?? Infinity)) continue
+        if (goal.has(here)) {
+          const path: [number, number][] = []
+          for (let k: string | undefined = here; k; k = prev.get(k)) {
+            const [px, py] = k.split(',').map(Number) as [number, number]
+            const last = path[path.length - 1]
+            const before = path[path.length - 2]
+            // Keep only the ends and the bends.
+            if (
+              last &&
+              before &&
+              (before[0] - last[0]) * (last[1] - py) ===
+                (before[1] - last[1]) * (last[0] - px)
+            )
+              path.pop()
+            path.push([px, py])
+          }
+          return path.reverse()
+        }
+        D.forEach(([dx, dy], nd) => {
+          const nx = x + dx
+          const ny = y + dy
+          if (blocked(nx, ny)) return
+          const nc = c + 1 + (nd === d ? 0 : 6)
+          const nk = key(nx, ny, nd)
+          if (nc < (dist.get(nk) ?? Infinity)) {
+            dist.set(nk, nc)
+            prev.set(nk, here)
+            push(nc, nx, ny, nd)
+          }
+        })
+      }
+    }
+    return undefined
+  }
   // Groups around both ends of the link you are drawing: their frames are not in its way.
   let enclosing = new Set<Rect>()
   const blocked = (x: number, y: number): boolean => {
@@ -466,7 +547,9 @@ function drawEdges(
       }
       const route =
         routes.find((r) => cells(r).every(([x, y]) => !blocked(x, y))) ??
-        routes[0]!
+        search(a, b)
+      // No clear route: draw nothing rather than a link that stops at a block.
+      if (route === undefined) continue
       const dir = (
         [x0, y0]: [number, number],
         [x1, y1]: [number, number],

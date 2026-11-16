@@ -377,6 +377,13 @@ describe('block styling', () => {
         finite(`block-beta\n  ${decl}\n  a --> a`)
     })
 
+    it('applies a classDef named __proto__', () => {
+      const d = layout(
+        'block-beta\n  a\n  classDef __proto__ fill:red\n  class a __proto__',
+      )
+      expect(d.nodes[0]!.css).toEqual([['fill', 'red']])
+    })
+
     it('ignores a class name that is an Object.prototype member and has no classDef', () => {
       const d = layout('block-beta\n  a\n  class a toString')
       expect(d.nodes[0]!.css).toEqual([])

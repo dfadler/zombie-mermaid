@@ -591,7 +591,8 @@ export function parseBlock(text: string): BlockDiagram {
   const root: RawBlock = { id: 'root', type: 'composite', columns: -1 }
   db.set('root', root)
   const edges: BlockEdge[] = []
-  const classDefs: Record<string, string[]> = {}
+  // No prototype, so a class named `__proto__` is an ordinary key.
+  const classDefs: Record<string, string[]> = Object.create(null)
   const edgeCount = new Map<string, number>()
   const populate = (blockList: RawBlock[], parent: RawBlock): void => {
     const children: RawBlock[] = []

@@ -249,6 +249,17 @@ describe('block ASCII', () => {
           '└───┘    └───┘',
         ].join('\n'),
       )
+      // Every short way is blocked in a 3x3 grid: the link goes through the gaps, whole.
+      const grid = render(
+        'block-beta\n  columns 3\n  a b c\n  d e f\n  a --> f',
+      )
+      expect(grid).toContain('▶')
+      expect(grid).toContain('└───────────┐')
+      // A link with no clear way is left out, not drawn as a stub.
+      const none = render(
+        'block-beta\n  columns 3\n  a b c\n  d e f\n  g h i\n  a --> i\n  c --> g',
+      )
+      expect(none.match(/▶|◀/g)).toHaveLength(1)
       // Up and to the left, and with the start marker, through the same corridor.
       const back = render('block-beta\n  columns 2\n  a b\n  c d\n  d <--> a')
       expect(back).toContain('◀')
