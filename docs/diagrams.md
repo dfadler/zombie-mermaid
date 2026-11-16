@@ -210,11 +210,18 @@ renderMermaidSVG(source, { honorThemeVariables: false }) // opt out
   is ignored: the same colour check as `style`/`classDef` colours, plus no
   `url()`/`var()`/`env()`/`calc()`, since the value comes from diagram text.
   Mermaid paints a bad `pie1` `#333`.
-- **Not derived.** Mermaid computes secondary/tertiary colours, a gradient
-  node border and the other pie slices from `primaryColor`; zombie-mermaid
-  does not. Under `theme: "base"` a lone `primaryColor` fills the nodes and
-  nothing else changes. `primaryBorderColor` is a solid stroke here, where
-  Mermaid 12.1.0/12.2.0 start a border gradient with it.
+- **Not derived.** Mermaid computes secondary/tertiary colours and the other
+  pie slices from `primaryColor`; zombie-mermaid does not. Under
+  `theme: "base"` a lone `primaryColor` fills the nodes and derives the border
+  (#3165), nothing else.
+- **Border gradient (#3164).** Under `theme: "base"`, flowchart and state draw
+  the node and subgraph border as mermaid 12.3.0 does: a left-to-right
+  gradient from the border colour (`primaryBorderColor`, or the one derived
+  from `primaryColor`) to `primaryColor` with its hue shifted -120°,
+  saturation -40 and lightness -10 (`#fff4dd` when unset). A named
+  `primaryColor` leaves the border solid. Mermaid's `gradientStart` and
+  `gradientStop` variables are not read, and class and ER, which do not read
+  `themeVariables`, keep a solid border. ASCII has no gradient.
 - **`primaryTextColor` becomes `fg`**, so it also moves the colours derived
   from `fg` when `line`/`border` are not given.
 - **ASCII** maps `lineColor`, `primaryBorderColor`, `primaryTextColor` and

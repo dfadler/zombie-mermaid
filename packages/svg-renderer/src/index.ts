@@ -204,6 +204,7 @@ import {
   checkGraphSize,
   applyThemeVariables,
   assertThemeVariableColors,
+  deriveBorderGradientEnd,
 } from '@zombie-mermaid/core'
 import { resolveCssColors } from './resolve-colors.ts'
 import { resolveFontSizes } from './styles.ts'
@@ -338,6 +339,37 @@ export function renderMermaidSVG(
   const { svg, colors } = renderMermaidSVGRaw(text, options)
   const scoped = scopeSvgIds(svg)
   return options.resolveColors ? resolveCssColors(scoped, colors) : scoped
+}
+
+/** mermaid@12.3.0's default `primaryColor` under `theme: base`. */
+const BASE_PRIMARY_COLOR = '#fff4dd'
+
+/**
+ * Draw the node border as mermaid@12.3.0 does under `theme: base`: a
+ * left-to-right gradient from the border colour to `primaryColor` with its hue
+ * shifted -120deg (saturation -40, lightness -10). Points `--_node-stroke` at
+ * the gradient inside the base `<style>` rule, so the contrast and
+ * forced-colors overrides below it still win. A `primaryColor` that cannot be
+ * derived from (a named colour) leaves the border solid. Flowchart and state
+ * only: the other types do not read `themeVariables`.
+ */
+function addBorderGradient(
+  svg: string,
+  primaryColor: string = BASE_PRIMARY_COLOR,
+): string {
+  const end = deriveBorderGradientEnd(primaryColor)
+  const base = /--_node-stroke:(\s+)([^;]+);/.exec(svg)
+  if (!end || !base || !svg.includes('</defs>')) return svg
+  const stop = (offset: number, color: string) =>
+    `<stop offset="${offset}%" stop-color="${color}" />`
+  const gradient =
+    `<linearGradient id="border-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%">` +
+    `${stop(0, 'var(--_node-border)')}${stop(100, end)}</linearGradient>`
+  const withVar = svg.replace(
+    base[0],
+    `--_node-border:${base[1]}${base[2]};\n    --_node-stroke:${base[1]}url(#border-gradient);`,
+  )
+  return withVar.replace('</defs>', `${gradient}\n</defs>`)
 }
 
 /**
@@ -492,6 +524,14 @@ function renderMermaidSVGRaw(
     emit,
   }
   let svg = registered.renderSvg(positioned, ctx, options)
+  const initConfig = (diagram as { initConfig?: InitConfig }).initConfig
+  if (
+    diagramType === 'flowchart' &&
+    options.honorThemeVariables !== false &&
+    initConfig?.theme === 'base'
+  ) {
+    svg = addBorderGradient(svg, initConfig.themeVariables?.primaryColor)
+  }
   if (acc.frontMatterTitle)
     svg = addFrontMatterTitle(svg, acc.frontMatterTitle, diagramType)
   return { svg, colors }

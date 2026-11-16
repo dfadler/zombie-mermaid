@@ -52,6 +52,7 @@ const cases: Array<
     ON,
   ],
   ['flowchart-named-colour', flow({ primaryColor: 'red' }, 'base'), ON],
+  ['flowchart-base-bare', flow({}, 'base'), ON],
   [
     'flowchart-caller-wins',
     flow(BASE_ALL, 'base'),
@@ -116,6 +117,59 @@ describe('honorThemeVariables: behaviour', () => {
     expect(renderMermaidSVG(flow(BASE_ALL, 'base'))).toContain(
       '--surface:#ff0000',
     )
+  })
+
+  describe('node border gradient under theme: base (#3164)', () => {
+    const state = (tv: Record<string, string>, theme?: string) =>
+      `${init(tv, theme)}\nstateDiagram-v2\n  [*] --> A\n  A --> B`
+    const grad = (svg: string) =>
+      /<linearGradient id="(zm[\w]+-border-gradient)"[^>]*x2="100%" y2="0%"><stop offset="0%" stop-color="var\(--_node-border\)" \/><stop offset="100%" stop-color="(#[0-9a-f]{6})" \/><\/linearGradient>/.exec(
+        svg,
+      )
+
+    it('flowchart and state point the node stroke at a gradient to the hue-shifted primaryColor', () => {
+      for (const src of [flow(BASE_ALL, 'base'), state(BASE_ALL, 'base')]) {
+        const svg = renderMermaidSVG(src, ON)
+        const g = grad(svg)
+        // Mermaid 12.3.0: primaryColor #ff0000 gives hsl(-120, 60%, 40%)
+        expect(g?.[2]).toBe('#2929a3')
+        expect(svg).toContain(`--_node-stroke:   url(#${g?.[1]});`)
+        expect(svg).toMatch(/--_node-border:\s+var\(--border,/)
+        // The contrast and forced-colors overrides still replace the gradient
+        expect(svg).toContain('--_node-stroke: CanvasText;')
+      }
+    })
+
+    it('unset primaryColor uses mermaid@12.3.0 default #fff4dd for the end stop', () => {
+      // adjust(#fff4dd, { h: -120, s: -40, l: -10 }) = hsl(-79.41, 60%, 83.33%)
+      // (channel 221.5 rounds either way, so allow #dd or #de)
+      expect(grad(renderMermaidSVG(flow({}, 'base'), ON))?.[2]).toMatch(
+        /^#d[de]bbee$/,
+      )
+    })
+
+    it('stays solid for the default theme, a named primaryColor, opt-out, and class/ER', () => {
+      for (const svg of [
+        renderMermaidSVG(flow(BASE_ALL), ON),
+        renderMermaidSVG(flow({ primaryColor: 'red' }, 'base'), ON),
+        renderMermaidSVG(flow(BASE_ALL, 'base'), OFF),
+        renderMermaidSVG(
+          `${init(BASE_ALL, 'base')}\nclassDiagram\n  class A\n  A <|-- B`,
+          ON,
+        ),
+        renderMermaidSVG(
+          `${init(BASE_ALL, 'base')}\nerDiagram\n  A ||--o{ B : has`,
+          ON,
+        ),
+      ])
+        expect(svg).not.toContain('border-gradient')
+    })
+
+    it('a diagram with a single node still gets the gradient', () => {
+      expect(
+        grad(renderMermaidSVG(`${init({}, 'base')}\nflowchart LR\n  A`, ON)),
+      ).not.toBeNull()
+    })
   })
 
   it('opt out: honorThemeVariables: false equals the same diagram without variables', () => {
@@ -248,7 +302,7 @@ describe('honorThemeVariables: behaviour', () => {
         expect(run).not.toThrow()
       expect(
         renderMermaidSVG(flow({ primaryBorderColor: 'x' }, 'base'), ON),
-      ).toBe(renderMermaidSVG(plain))
+      ).toBe(renderMermaidSVG(flow({}, 'base'), ON))
     })
 
     it('honorThemeVariables: false never throws and equals the plain diagram', () => {

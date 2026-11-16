@@ -244,23 +244,41 @@ function toHsl(value: string): { h: number; s: number; l: number } | null {
   return { h: h * 60, s: s * 100, l: l * 100 }
 }
 
-/**
- * Mermaid's `theme: base` node border when `primaryBorderColor` is unset:
- * `mkBorder(primaryColor)` = khroma `adjust(color, { s: -40, l: -10 })`
- * (mermaid 12.3.0, light mode). Saturation and lightness are clamped to
- * 0-100. Returns `#rrggbb`, or null when `value` is not a hex, `rgb()` or
- * `hsl()` colour (named colours are not resolved).
- */
-export function deriveBorderColor(value: string): string | null {
+/** Khroma `adjust(value, { h, s, l })` as `#rrggbb`, saturation and lightness clamped to 0-100; null when `value` is not a hex, `rgb()` or `hsl()` colour. */
+function adjustHsl(
+  value: string,
+  by: { h: number; s: number; l: number },
+): string | null {
   const hsl = toHsl(value)
   if (!hsl) return null
   const clamp = (n: number) => Math.min(100, Math.max(0, n))
-  const s = clamp(hsl.s - 40) / 100
-  const l = clamp(hsl.l - 10) / 100
+  const s = clamp(hsl.s + by.s) / 100
+  const l = clamp(hsl.l + by.l) / 100
+  const h = hsl.h + by.h
   const a = s * Math.min(l, 1 - l)
   const f = (n: number) => {
-    const k = (n + hsl.h / 30) % 12
+    const k = (((n + h / 30) % 12) + 12) % 12
     return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))
   }
   return formatCssColor({ r: f(0) * 255, g: f(8) * 255, b: f(4) * 255, a: 1 })
+}
+
+/**
+ * Mermaid's `theme: base` node border when `primaryBorderColor` is unset:
+ * `mkBorder(primaryColor)` = khroma `adjust(color, { s: -40, l: -10 })`
+ * (mermaid 12.3.0, light mode). Returns `#rrggbb`, or null when `value` is
+ * not a hex, `rgb()` or `hsl()` colour (named colours are not resolved).
+ */
+export function deriveBorderColor(value: string): string | null {
+  return adjustHsl(value, { h: 0, s: -40, l: -10 })
+}
+
+/**
+ * The end stop of mermaid's `theme: base` node-border gradient (the start
+ * stop is the border): `adjust(primaryColor, { h: -120, s: -40, l: -10 })`,
+ * measured on mermaid 12.3.0. Returns `#rrggbb`, or null like
+ * {@link deriveBorderColor}.
+ */
+export function deriveBorderGradientEnd(value: string): string | null {
+  return adjustHsl(value, { h: -120, s: -40, l: -10 })
 }

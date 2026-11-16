@@ -214,6 +214,9 @@ export const DEFAULTS: Readonly<{
 export function deriveBorderColor(value: string): string | null;
 
 // @public
+export function deriveBorderGradientEnd(value: string): string | null;
+
+// @public
 export function describeIgnored(config: InitConfig): string[];
 
 // @public
