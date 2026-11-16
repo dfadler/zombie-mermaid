@@ -389,6 +389,7 @@ export function layoutSimple(
       inlineStyle: resolveNodeStyle(id, graph),
       className: graph.classAssignments.get(id),
       interaction: graph.interactions.get(id),
+      ...(node.business ? { business: true } : {}),
     }
   })
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))

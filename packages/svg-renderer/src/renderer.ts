@@ -1775,7 +1775,10 @@ function renderJsonTable(
   const t = jsonTable(node.label)
   const size = fontOf(node.shape)
   const color = escapeAttr(node.inlineStyle?.color ?? 'var(--_text)')
-  const attrs = f`text-anchor="middle" font-size="${size}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${color}"`
+  const family = node.inlineStyle?.['font-family']
+  const attrs =
+    f`text-anchor="middle" font-size="${size}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${color}"` +
+    (family ? f` style="font-family: ${escapeAttr(family)};"` : '')
   const left = node.x + 1
   const parts = [
     f`<rect x="${node.x}" y="${node.y}" width="${node.width}" height="${node.height}" fill="${fill}" stroke="${stroke}" stroke-width="1" />`,

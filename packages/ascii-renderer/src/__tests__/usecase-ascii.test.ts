@@ -58,4 +58,10 @@ describe('use case ASCII', () => {
     expect(out).toMatch(/a {3}: 1/)
     expect(out).toContain('bcd : x')
   })
+
+  it('aligns json keys by display columns', () => {
+    const out = render('usecase-beta\njson J @ {"名": 1, "abc": 2}')
+    expect(out).toMatch(/名 {2}: 1/)
+    expect(out).toContain('abc : 2')
+  })
 })

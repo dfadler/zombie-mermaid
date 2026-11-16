@@ -79,6 +79,19 @@ interface Prop {
   line: number
 }
 
+/** Index of the first `@{` outside a quoted label, or -1. */
+function metaStart(s: string): number {
+  let quoted = ''
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]!
+    if (quoted) {
+      if (c === quoted) quoted = ''
+    } else if (c === '"' || c === "'") quoted = c
+    else if (c === '@' && s[i + 1] === '{') return i
+  }
+  return -1
+}
+
 /** Index of the `}` closing a `@{` body that starts at `from` (strings may hold it), or -1. */
 function metaEnd(s: string, from: number): number {
   let quoted = ''
@@ -168,7 +181,16 @@ export function parseUsecase(source: string): UsecaseDiagram {
   const relationLines: number[] = []
   // `json` names are known up front: a line may join one before its statement.
   const jsonIds = new Set<string>()
+  let inAcc = false // An `accDescr { … }` block holds free text.
   for (const raw of lines) {
+    if (inAcc) {
+      inAcc = !raw.includes('}')
+      continue
+    }
+    if (/^\s*accDescr\s*\{/.test(raw)) {
+      inAcc = !raw.includes('}')
+      continue
+    }
     const j = /^\s*json[\t ]+(\w+)[\t ]*@/.exec(raw)
     if (j) jsonIds.add(j[1]!)
   }
@@ -456,7 +478,7 @@ export function parseUsecase(source: string): UsecaseDiagram {
     const open = (t: string): boolean => {
       const j = /^json[\t ]+\w+[\t ]*@[\t ]*(?=\{)/.exec(t)
       if (j) return jsonObjectEnd(t, j[0].length) < 0
-      const at = t.indexOf('@{')
+      const at = metaStart(t)
       return at >= 0 && metaEnd(t, at + 2) < 0
     }
     while (open(line)) {

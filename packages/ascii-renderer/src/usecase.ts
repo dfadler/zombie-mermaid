@@ -12,6 +12,7 @@ import {
   parseUsecase,
   usecaseToGraph,
 } from '@zombie-mermaid/mermaid-parser'
+import { displayWidth } from './display-width.ts'
 import { renderGraphAscii } from './flowchart.ts'
 import type { FlowchartAsciiExtras } from './flowchart.ts'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
@@ -29,10 +30,18 @@ const BUSINESS_FIGURE = ' O/\n/|\\\n/ \\'
 function jsonText(label: string): string {
   const [title = '', ...rows] = label.split('\n')
   const cells = rows.map((r) => r.split(USECASE_JSON_SEP) as [string, string])
-  const pad = Math.max(0, ...cells.map(([k]) => [...k].length))
-  const lines = cells.map(([k, v]) => `${k.padEnd(pad)} : ${v}`)
-  const wide = Math.max(0, ...lines.map((l) => [...l].length))
-  return [title, '', ...lines.map((l) => l.padEnd(wide))].join('\n')
+  // Pad by display columns: a wide glyph takes two.
+  const spaces = (n: number): string => ' '.repeat(Math.max(0, n))
+  const pad = Math.max(0, ...cells.map(([k]) => displayWidth(k)))
+  const lines = cells.map(
+    ([k, v]) => `${k}${spaces(pad - displayWidth(k))} : ${v}`,
+  )
+  const wide = Math.max(0, ...lines.map(displayWidth))
+  return [
+    title,
+    '',
+    ...lines.map((l) => l + spaces(wide - displayWidth(l))),
+  ].join('\n')
 }
 
 /** Render a `usecase-beta` diagram to ASCII/Unicode text art. */

@@ -348,14 +348,28 @@ describe('usecaseToGraph', () => {
   it('rejects clashes and malformed metadata', () => {
     for (const src of [
       '',
-      'json J @ {"a":1}\nsystemBoundary J\nend',
       'actor A\nA@{ hollow }',
       'actor A@{ hollow }',
       'A --> U@{ business: true }\nA --> U@{ business: false }',
     ])
-      expect(() =>
-        parseUsecase(src.startsWith('json') || src === '' ? src : H + src),
-      ).toThrow()
+      expect(() => parseUsecase(src === '' ? src : H + src)).toThrow()
+    expect(() =>
+      parseUsecase(H + 'json J @ {"a":1}\nsystemBoundary J\nend'),
+    ).toThrow(/already declared/)
+    // Free text and quoted labels do not count as json nodes or metadata.
+    expect(p('accDescr {\njson A @ x\n}\nactor A').actors).toHaveLength(1)
+    expect(p('actor A\nnote for A "Write @{ here"').notes[0]!.label).toBe(
+      'Write @{ here',
+    )
+    // A cell never holds the row separator.
+    expect(
+      p('json J @ {"a\u2063b": "c\u2063d"}').jsonNodes[0]!.rows,
+    ).toHaveLength(1)
+    expect(
+      usecaseToGraph(p('json J @ {"a\u2063b": "c\u2063d"}'))
+        .nodes.get('J')!
+        .label.split('\u2063'),
+    ).toHaveLength(2)
     expect(p('A:::c\nA:::c').useCases[0]!.classes).toEqual(['c'])
     expect(p('A\nsystemBoundary S\nA\nend').boundaries[0]!.members).toEqual([
       'A',

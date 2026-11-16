@@ -14,13 +14,15 @@ const markerAt = (arrow: string, kind: 'circle' | 'cross') =>
 /** Separates a json row's key from its value in the node label. */
 export const USECASE_JSON_SEP = '\u2063'
 
+// A cell is one line, and never holds the separator (it would split the row).
+const cell = (s: string): string =>
+  s.replace(/[\r\n\t]+/g, ' ').replaceAll(USECASE_JSON_SEP, '')
+
 /** A json node's label: its name, then one `key<SEP>value` line per row (line breaks in a cell become spaces). */
 export const usecaseJsonLabel = (j: UsecaseJson): string =>
   [
     j.id,
-    ...j.rows.map((r) =>
-      `${r.key}${USECASE_JSON_SEP}${r.value}`.replace(/[\r\n\t]+/g, ' '),
-    ),
+    ...j.rows.map((r) => `${cell(r.key)}${USECASE_JSON_SEP}${cell(r.value)}`),
   ].join('\n')
 
 /** The node id of the note drawn for `note for <target>`, the nth in the source. */

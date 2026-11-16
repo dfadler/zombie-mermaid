@@ -175,4 +175,13 @@ describe('use case SVG', () => {
       usecaseNodeSize('usecase-json', `J\n${long}`).height,
     ).toBeGreaterThan(usecaseNodeSize('usecase-json', 'J\nk\u2063v').height)
   })
+
+  it('keeps business on the simple layout and a json font-family', () => {
+    const src =
+      'usecase-beta\nactor A@{ business: true }\njson J @ {"a": 1}\nclassDef f font-family:Courier\nclass J f\nA --> J'
+    expect(renderMermaidSVG(src, { layout: 'simple' } as never)).toContain(
+      'M 1.4353',
+    )
+    expect(renderMermaidSVG(src)).toContain('font-family: Courier')
+  })
 })
