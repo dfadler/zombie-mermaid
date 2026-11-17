@@ -1167,6 +1167,19 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before (upstream): the frame floats apart from `Start`, a separate `S` box takes the edges, and only the `1` edge reaches `T`. After: `Start` feeds the frame, and both edges leave its bottom wall as parallel strokes into `T`’s top face, labels `1` and `2` side by side, as in mermaid 12.3.0.',
   },
+  {
+    id: 'state-start-dot-composite-centre',
+    title: 'State diagram: start dot off-centre from a composite',
+    symptom:
+      'The `[*]` dot joined to a composite state sat about 3px to one side of the arrow leaving it. mermaid@12.3.0 and GitHub draw it centred on the composite.',
+    source:
+      'stateDiagram-v2\n  [*] --> W\n  W --> Q\n  state W {\n    B\n    --\n    C\n  }',
+    fixCommit: 'PENDING',
+    pr: 0,
+    render: 'svg',
+    lookFor:
+      'Before: the dot is left of the arrow. After: the dot sits directly above the arrow, on the composite’s centre line.',
+  },
 ]
 
 /** Entries shown on the page: everything not parked. */

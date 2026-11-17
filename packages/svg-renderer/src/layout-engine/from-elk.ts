@@ -323,7 +323,7 @@ export function elkToPositioned(
   // edge bundling and clipping recalculate edge paths from corrected positions.
   // mermaid@12.3.0 keeps ELK's own placement for state diagrams, where a note
   // group or composite staggers its layer on purpose (#3004).
-  if (isStateGraph(graph)) centreStateMarkers(nodes, edges, graph.direction)
+  if (isStateGraph(graph)) centreStateMarkers(nodes, groups, edges, graph.direction)
   else alignLayerNodes(nodes, edges, graph.direction)
 
   // Synthesize self-loop edges now that node positions are final. These
@@ -401,11 +401,22 @@ export function elkToPositioned(
  */
 function centreStateMarkers(
   nodes: PositionedNode[],
+  groups: PositionedGroup[],
   edges: PositionedEdge[],
   direction: MermaidGraph['direction'],
 ): void {
   const horizontal = direction === 'LR' || direction === 'RL'
-  const byId = new Map(nodes.map((n) => [n.id, n]))
+  // A composite state is a group, not a node: the dot's neighbour may be one.
+  const byId = new Map<string, { x: number; y: number; width: number; height: number }>(
+    nodes.map((n) => [n.id, n]),
+  )
+  const addGroups = (gs: PositionedGroup[]): void => {
+    for (const g of gs) {
+      byId.set(g.id, g)
+      addGroups(g.children)
+    }
+  }
+  addGroups(groups)
   for (const marker of nodes) {
     if (marker.shape !== 'state-start' && marker.shape !== 'state-end') continue
     const joined = edges.filter(
