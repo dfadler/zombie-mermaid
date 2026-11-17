@@ -83,4 +83,29 @@ describe('buildHints', () => {
     )
     expect(straight.edges[0]).not.toHaveProperty('bend')
   })
+
+  it('takes the real-size route’s bend only when it is the gap’s middle', () => {
+    const boxes = [
+      { id: 'a', cx: 30, cy: 20, w: 60, h: 40 },
+      { id: 'b', cx: 230, cy: 120, w: 60, h: 40 },
+    ]
+    const legacy = [pt(60, 20), pt(80, 20), pt(80, 120), pt(200, 120)] // 0.14
+    const bendFor = (bendPoints?: { x: number; y: number }[]) =>
+      buildHints(
+        boxes,
+        [{ from: 'a', to: 'b', points: legacy, bendPoints }],
+        'LR',
+      ).edges[0]!.bend
+    // Middle: taken.
+    expect(
+      bendFor([pt(60, 20), pt(130, 20), pt(130, 120), pt(200, 120)]),
+    ).toBeCloseTo(0.5)
+    // Elsewhere (a jog at a cluster border, say): the legacy bend stays.
+    expect(
+      bendFor([pt(60, 20), pt(160, 20), pt(160, 120), pt(200, 120)]),
+    ).toBeCloseTo(20 / 140)
+    // No real-size route, or one with no bend: the legacy bend stays.
+    expect(bendFor(undefined)).toBeCloseTo(20 / 140)
+    expect(bendFor([pt(60, 20), pt(200, 20)])).toBeCloseTo(20 / 140)
+  })
 })

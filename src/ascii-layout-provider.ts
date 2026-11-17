@@ -34,6 +34,12 @@ interface Path {
   from: string
   to: string
   points: { x: number; y: number }[]
+  /**
+   * The same edge routed with mermaid's real node sizes. The legacy sizes the
+   * hints are laid out with move a lone Z's bend from the gap's middle (where
+   * mermaid@12.3.0 puts it) to a quarter of the way; the bend is read from here.
+   */
+  bendPoints?: { x: number; y: number }[]
 }
 
 /** Centres closer than this on the flow axis share a layer (the topology check uses the same 20 px). */
@@ -41,6 +47,8 @@ export const LAYER_TOLERANCE = 20
 
 /** Ends within this many px along a face are one position. */
 const PORT_TOLERANCE = 0.5
+/** A bend within this of 0.5 is "the gap's middle". */
+const MIDDLE = 0.05
 
 const faceOf = (
   b: Box,
@@ -189,7 +197,13 @@ export function buildHints(
   const edges: AsciiLayoutHints['edges'] = []
   raw.forEach((r, index) => {
     if (!r) return
-    const bend = bendOf(r.p.points, horizontal)
+    const own = bendOf(r.p.points, horizontal)
+    const real = r.p.bendPoints && bendOf(r.p.bendPoints, horizontal)
+    // Only the gap's middle is taken from the real-size route: elsewhere (a jog
+    // at a cluster border, say) it differs from mermaid@12.3.0 as often as the
+    // legacy one does, and `System Architecture` F->I got further from it.
+    const bend =
+      real !== undefined && Math.abs(real - 0.5) < MIDDLE ? real : own
     edges.push({
       index,
       from: r.p.from,
@@ -216,6 +230,7 @@ export const asciiLayoutProvider: AsciiLayoutProvider = {
   graph: (graph) =>
     attempt(() => {
       const pos = layoutFlowchartSync(graph, { legacyNodeSizes: true })
+      const real = layoutFlowchartSync(graph, { legacyNodeSizes: false })
       return buildHints(
         pos.nodes.map((n) => ({
           id: n.id,
@@ -225,10 +240,12 @@ export const asciiLayoutProvider: AsciiLayoutProvider = {
           h: n.height,
           diamond: n.shape === 'diamond',
         })),
-        pos.edges.map((e) => ({
+        pos.edges.map((e, i) => ({
           from: e.source,
           to: e.target,
           points: e.points,
+          // Same graph, same edge order in both layouts.
+          bendPoints: real.edges[i]?.points,
         })),
         graph.direction,
         pos.groups.map((g) => ({
