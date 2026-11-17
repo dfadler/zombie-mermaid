@@ -9,7 +9,10 @@ const composite = (dir: string, target: string): string =>
 
 const startEdgeAndDot = (src: string): { edge: number[]; dot: number[] } => {
   const svg = renderMermaidSVG(src)
-  const d = /data-from="_start"[^>]* d="M ([\d.]+) ([\d.]+) L ([\d.]+) ([\d.]+)"/.exec(svg)!
+  const d =
+    /data-from="_start"[^>]* d="M ([\d.]+) ([\d.]+) L ([\d.]+) ([\d.]+)"/.exec(
+      svg,
+    )!
   const c = /<circle cx="([\d.]+)" cy="([\d.]+)"/.exec(svg)!
   return { edge: d.slice(1).map(Number), dot: c.slice(1).map(Number) }
 }

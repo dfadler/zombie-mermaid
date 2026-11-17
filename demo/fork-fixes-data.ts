@@ -1174,7 +1174,7 @@ export const allForkFixes: ForkFix[] = [
       'The `[*]` dot joined to a composite state sat about 3px to one side of the arrow leaving it. mermaid@12.3.0 and GitHub draw it centred on the composite.',
     source:
       'stateDiagram-v2\n  [*] --> W\n  W --> Q\n  state W {\n    B\n    --\n    C\n  }',
-    fixCommit: 'PENDING',
+    fixCommit: '7c473afe9',
     pr: 0,
     render: 'svg',
     lookFor:
