@@ -5,6 +5,7 @@
 // Provenance (#2679): expected sizes are measured from mermaid@12.3.0 (headless, scripts/lib/real-mermaid.ts), not this renderer's own output.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { setTrebuchetMetrics } from '@zombie-mermaid/core'
+import { renderMermaidSVG } from '../index.ts'
 import { estimateNodeSize } from '../../packages/svg-renderer/src/layout-engine/to-elk.ts'
 
 const size = (label: string, shape = 'rounded') =>
@@ -30,5 +31,13 @@ describe('state node size (#2962)', () => {
     expect(one.width).toBe(136)
     expect(one.height % 24).toBe(16)
     expect(one.height).toBeGreaterThan(40)
+  })
+
+  it('draws the wrapped label on separate lines inside the node', () => {
+    const svg = renderMermaidSVG(
+      'stateDiagram-v2\n  Y: Wait Idle Ready Running Active Failed Paused Done\n  [*] --> Y',
+    )
+    expect(svg).toContain('>Wait Idle Ready</tspan>')
+    expect(svg).toContain('>Running Active</tspan>')
   })
 })

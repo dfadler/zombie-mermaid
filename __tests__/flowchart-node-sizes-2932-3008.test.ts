@@ -77,10 +77,11 @@ describe('flowchart label wrapping (#2932)', () => {
     expect(size('[', ']', 'Process data now')).toEqual({ w: 152, h: 72 })
   })
 
-  it('does not wrap a state diagram label', () => {
+  it('wraps a state diagram label at 120px too (#2962; mermaid@12.3.0: 136 x 64)', () => {
     const svg = renderMermaidSVG(
       'stateDiagram-v2\n  state "Process data now" as A\n  [*] --> A',
     )
-    expect(svg).toContain('>Process data now</text>')
+    expect(svg).toContain('>Process data</tspan>')
+    expect(svg).toContain('>now</tspan>')
   })
 })

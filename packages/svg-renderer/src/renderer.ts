@@ -2105,13 +2105,16 @@ function renderNodeLabel(
   // sizes (`estimateNodeSize`) were computed from the same wrapped text.
   const text = usecase
     ? usecaseLabelText(node.shape, node.label)
-    : stateDiagram || node.icon !== undefined
-      ? node.label
-      : wrapFlowchartLabel(
-          node.label,
-          fontSizes.nodeLabel,
-          FONT_WEIGHTS.nodeLabel,
-        ).text
+    : stateDiagram && (node.shape === 'rounded' || node.shape === 'rectangle')
+      ? // A state box wraps like its size does (`estimateNodeSize`, #2962).
+        wrapFlowchartLabel(node.label, 16, FONT_WEIGHTS.nodeLabel).text
+      : stateDiagram || node.icon !== undefined
+        ? node.label
+        : wrapFlowchartLabel(
+            node.label,
+            fontSizes.nodeLabel,
+            FONT_WEIGHTS.nodeLabel,
+          ).text
   return renderMultilineText(text, cx, cy, fontSize, attrs)
 }
 
