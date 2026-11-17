@@ -886,7 +886,9 @@ export function mermaidToElk(
         opts.fontSizes.nodeLabel,
         node.icon,
         graph.direction,
-        isStateGraph(graph),
+        // The renderer draws a state label by the parser's flag, so size by it
+        // too (a state diagram with no `[*]` is not `isStateGraph`).
+        isStateGraph(graph) || graph.stateDiagram === true,
         opts.legacyNodeSizes,
       )
       const leaf = buildElkLeafNode(id, size, node.label)
@@ -1165,7 +1167,9 @@ function subgraphToElk(
         opts.fontSizes.nodeLabel,
         node.icon,
         graph.direction,
-        isStateGraph(graph),
+        // The renderer draws a state label by the parser's flag, so size by it
+        // too (a state diagram with no `[*]` is not `isStateGraph`).
+        isStateGraph(graph) || graph.stateDiagram === true,
         opts.legacyNodeSizes,
       )
       const leaf = buildElkLeafNode(nodeId, size, node.label)

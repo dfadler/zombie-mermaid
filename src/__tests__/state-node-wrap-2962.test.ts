@@ -40,4 +40,12 @@ describe('state node size (#2962)', () => {
     expect(svg).toContain('>Wait Idle Ready</tspan>')
     expect(svg).toContain('>Running Active</tspan>')
   })
+
+  it('sizes the box by the same rule when the diagram has no [*]', () => {
+    const svg = renderMermaidSVG(
+      'stateDiagram-v2\n  Y: Wait Idle Ready Running Active Failed Paused Done\n  Y --> Z',
+    )
+    expect(svg).toContain('>Running Active</tspan>')
+    expect(svg).toMatch(/width="136"[^>]*height="112"/)
+  })
 })
