@@ -26,6 +26,7 @@ import {
   Middle,
   gridCoordDirection,
   dirEquals,
+  gridKey,
   requireCardinalDirection,
 } from './types.ts'
 import type { AsciiFace } from './layout-hints.ts'
@@ -52,6 +53,7 @@ import {
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
 import {
+  isFree,
   isOccupied,
   pathCells,
   runsAlong,
@@ -2267,6 +2269,74 @@ function crowdedDecision(graph: AsciiGraph, edge: AsciiEdge): boolean {
 }
 
 /**
+ * A back edge in a horizontal flow as ELK draws it (`AsciiEdgeHint.bend` at or
+ * past the middle): a short jog off the source, the long run on a row of its
+ * own, and the riser in the gutter beside the target's face. The search takes
+ * the shortest route, which puts the riser beside the source and the run on the
+ * target's row. `from` leaves a left face and `to` is a right face; the least
+ * detour whose three legs are free and whose riser is the longer of the two
+ * vertical legs, or `null` when there is none.
+ */
+function riserBesideTarget(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  from: GridCoord,
+  to: GridCoord,
+): GridCoord[] | null {
+  // Cells other edges already run along: the route keeps off them, as a stroke
+  // laid over another reads as one connector. Its two port cells, one off
+  // each face, are shared with the edges on the same port (port-offsets.ts
+  // draws them apart).
+  const taken = new Set(
+    graph.edges.flatMap((o) =>
+      o === edge || o.from !== edge.from
+        ? []
+        : pathCells(o.path).slice(1, -1).map(gridKey),
+    ),
+  )
+  const jog = from.x - 1
+  const riser = to.x + 1
+  if (jog <= riser) return null
+  const ports = new Set([
+    gridKey({ x: jog, y: from.y }),
+    gridKey({ x: riser, y: to.y }),
+  ])
+  const rows = graph.nodes.map((n) => requireGridCoord(n).y)
+  const top = Math.min(...rows)
+  const bottom = Math.max(...rows) + 4
+  let best: GridCoord[] | null = null
+  let bestCost = Infinity
+  for (let row = top; row <= bottom; row++) {
+    const rise = Math.abs(row - to.y)
+    const drop = Math.abs(row - from.y)
+    if (rise <= drop || drop === 0) continue
+    const cost = rise + drop + drop / 100
+    if (cost >= bestCost) continue
+    const path = mergePath([
+      from,
+      { x: jog, y: from.y },
+      { x: jog, y: row },
+      { x: riser, y: row },
+      { x: riser, y: to.y },
+      to,
+    ])
+    if (
+      pathCells(path)
+        .slice(1, -1)
+        .every(
+          (c) =>
+            ports.has(gridKey(c)) ||
+            (isFree(graph.grid, c) && !taken.has(gridKey(c))),
+        )
+    ) {
+      best = path
+      bestCost = cost
+    }
+  }
+  return best
+}
+
+/**
  * A lane of a far same-pair group whose ends sit on different rows (columns in
  * a vertical flow). Offset lanes measure from the source's row, so they cannot
  * run beside the first route; such a lane takes the same hinted Z and
@@ -2941,6 +3011,35 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
           .every((c) => !graph.nodes.some((n) => isCellInNodeBlock(n, c))))
         ? plain
         : null)
+  }
+  // A back edge ELK bends beside the target takes its riser there, not beside
+  // the source where the shortest route puts it.
+  if (hinted && hintedPath && lrFlow && !edge.parallelLane) {
+    const hint = graph.edgeHints!.get(edge)!
+    const bend = hint.bend
+    if (
+      bend !== undefined &&
+      bend >= 0.5 &&
+      dirEquals(hinted[0], Left) &&
+      dirEquals(hinted[1], Right) &&
+      edge.from !== edge.to &&
+      // Another end on the target's face would share the riser's column with
+      // this one: the search keeps each its own.
+      !graph.edges.some(
+        (o) =>
+          o !== edge &&
+          o.to === edge.to &&
+          graph.edgeHints!.get(o)?.end.face === hint.end.face,
+      )
+    ) {
+      hintedPath =
+        riserBesideTarget(
+          graph,
+          edge,
+          gridCoordDirection(requireGridCoord(edge.from), hinted[0]),
+          gridCoordDirection(requireGridCoord(edge.to), hinted[1]),
+        ) ?? hintedPath
+    }
   }
   // A reciprocal pair between the same two faces runs one route, each edge on
   // its own ports (`planJogRows` gives each its own bend row): the second takes
