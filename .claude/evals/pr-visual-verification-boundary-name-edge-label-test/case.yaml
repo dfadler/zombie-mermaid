@@ -1,0 +1,28 @@
+# near-miss: names a rendering path or PR step but wants something else; the skill should stay quiet.
+schema_version: '1.1'
+name: pr-visual-verification-boundary-name-edge-label-test
+description: >
+  Trigger-boundary negative paired with pr-visual-verification-fires-mixed-test-and-source. expected_outcome: PASS when the reply does not
+  invoke the pr-visual-verification skill; FAIL if it fires. Guards the description phrase "any
+  change that could alter a rendered result" from broadening. Plugin arm only, no delta expected.
+tags:
+  - pr-visual-verification
+  - trigger-boundary
+  - quick
+  - 'pair:pr-visual-verification-fires-mixed-test-and-source'
+runs: 1
+
+execution:
+  prompt: |
+    Suggest three descriptive vitest test names for a test that checks an edge label sits at the midpoint of a bent edge. Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_stays_quiet
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+    min: 0
+    max: 0

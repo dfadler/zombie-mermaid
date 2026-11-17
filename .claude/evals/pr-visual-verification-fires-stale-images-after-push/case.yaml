@@ -1,0 +1,41 @@
+# target sentence: "After any later push that changes output, regenerate the images; stale images are a wrong claim."
+# Reply-only: the Skill check is an unscored indicator in a two-arm run. A bare model may also say to retake the images, so the delta is likely small.
+# not_cleared_as_ready is a pure negation (lint EVAL024 echo warning is intended); it sits beside the positive says_regenerate.
+# good-reply: Not yet. Your screenshots predate the commit that moved the edge-label offset, so the After images no longer show this PR. Regenerate both before and after, check before.svg and after.svg still differ, re-upload, then update the body from a file.
+# bad-reply: CI is green and the section is already in the body, so you're good to ping for review.
+schema_version: '1.1'
+name: pr-visual-verification-fires-stale-images-after-push
+description: >
+  After a later push changed output, the old before/after images are stale and must be
+  regenerated before review. expected_outcome: PASS when the skill fires and the reply says the
+  existing images no longer match and must be regenerated; FAIL when it clears the PR as ready.
+tags: [pr-visual-verification, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    My PR already has a Visual verification section with before/after screenshots I took on
+    Tuesday. Since then I pushed one more commit that changes how edge labels are offset in the
+    SVG renderer (packages/svg-renderer/src/edge-label.ts). CI is green and I'm about to ping for
+    review. Anything I should do first? Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+  - name: says_regenerate
+    type: regex
+    pattern: '(?:regenerat|re-?(?:take|capture|render|shoot|generate)|retake)\w*[^.\n]{0,60}(?:image|screenshot|before|after)'
+    flags: i
+  - name: not_cleared_as_ready
+    type: regex
+    pattern: '^(?![\s\S]*(?:you(?:[''’]re| are) good|ready for review as is|no need to (?:update|redo|re-?\w+)|(?:images?|screenshots?|they)(?:[''’]re| are| is)? still (?:valid|fine|accurate|good)))[\s\S]+'
+    flags: i
+  - name: says_images_stale
+    type: regex
+    pattern: '\b(?:stale|outdated|out of date|predate\w*|no longer (?:show|match|reflect))'
+    flags: i
