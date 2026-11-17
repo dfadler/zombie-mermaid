@@ -326,6 +326,11 @@ export function compareLoops(grid: GridRender['edges']): Counts {
   return c
 }
 
+/** A bend this close to the gap's middle has no side. */
+const BEND_TIE = 0.05
+/** The drawing must sit at the middle too: mermaid draws it exactly there. */
+const BEND_TIE_DRAWN = 0.05
+
 /**
  * Edge ends that share one arrowhead cell. `compareFaces` scores a face per
  * end, so several edges landing on one cell of a face pass it while mermaid
@@ -370,7 +375,15 @@ export function compareEnds(
     const drawn = grid[i]!.bend
     if (h.bend === undefined || drawn === undefined) continue
     c.bends++
-    if (h.bend < 0.5 === drawn < 0.5) c.bendOk++
+    // A hint at the gap's middle (where mermaid@12.3.0 bends a lone Z) has no
+    // side: the drawing is right when it stays near the middle.
+    const middle = Math.abs(h.bend - 0.5) < BEND_TIE
+    if (
+      middle
+        ? Math.abs(drawn - 0.5) <= BEND_TIE_DRAWN
+        : h.bend < 0.5 === drawn < 0.5
+    )
+      c.bendOk++
     else
       bendMisses.push(
         `${h.from}->${h.to} #${i}: ELK bend ${h.bend.toFixed(2)}, grid ${drawn.toFixed(2)}`,
