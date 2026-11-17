@@ -1,0 +1,27 @@
+# near-miss: shares vocabulary with the section-building prompt but wants something else; the skill should stay quiet.
+schema_version: '1.1'
+name: pr-visual-verification-boundary-mermaid-fan-out-syntax
+description: >
+  Trigger-boundary negative paired with pr-visual-verification-fires-section-shape. expected_outcome: PASS when the reply does not
+  invoke the pr-visual-verification skill; FAIL if it fires. Plugin arm only, no delta expected.
+tags:
+  - pr-visual-verification
+  - trigger-boundary
+  - quick
+  - 'pair:pr-visual-verification-fires-section-shape'
+runs: 1
+
+execution:
+  prompt: |
+    How do I write a Mermaid flowchart where A fans out to B and C and both feed D, left to right? Just show the syntax. Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_stays_quiet
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+    min: 0
+    max: 0

@@ -1,0 +1,51 @@
+# target sentence: "No such warning, and the diff touches only docs, CI, tooling or tests" (a diff with a render-affecting source file beside a test is not tests-only, so the section is required)
+# Reply-only: the Skill check is an unscored indicator in a two-arm run; the graders check the section shape and that the reply does not wave it off as N/A.
+# not_waved_off is a pure negation (lint EVAL024 echo warning is intended); it sits beside the positive has_before_after_table.
+# good-reply: ## Visual verification **Source** (verified against: n/a, no parity claim) ```mermaid flowchart LR A -->|yes| B ``` ### SVG | Before (main @ abc1234) | After (this PR) | | --- | --- | | ![before](URL) | ![after](URL) |
+# bad-reply: Visual verification: N/A: the diff is mostly a test file, so no render can change, delete the section.
+schema_version: '1.1'
+name: pr-visual-verification-fires-mixed-test-and-source
+description: >
+  A diff that adds a test file and also edits a render-affecting source file still needs the full
+  section. expected_outcome: PASS when the skill fires and the reply has the mermaid fence before
+  any image, a Before/After table and no N/A line; FAIL when it calls the section a formality or
+  writes N/A.
+tags: [pr-visual-verification, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    I'm about to open a PR for this change and need the screenshots part of the body.
+    The diff stat is:
+
+      packages/svg-renderer/__tests__/edge-label-offset.test.ts | 41 +++++++++
+      packages/svg-renderer/src/edge-label.ts                   | 12 ++-
+
+    The src change shifts where an edge label sits on a bent edge in the SVG output. Most of the
+    diff is the new test, so I assume the screenshots section is a formality. The images aren't
+    taken yet, so use placeholders. Give me the text to paste into the PR. Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+  - name: has_before_after_table
+    type: regex
+    pattern: '\|\s*Before[^|\n]*\|\s*After[\s\S]*?!\[[^\]]*\]'
+    flags: i
+  - name: not_waved_off
+    type: regex
+    pattern: '^(?![\s\S]*(?:\bN/A:|Visual verification[^\n]{0,25}\bN/A\b(?!,)))[\s\S]+'
+    flags: i
+  - name: source_before_images
+    type: regex
+    pattern: '^(?:(?!!\[)[\s\S])*```mermaid'
+    flags: i
+  - name: edge_label_source
+    type: regex
+    pattern: '```mermaid[\s\S]*?(?:-->\s*\||--\s+[^\n>]+-->|-\.->\s*\|)[\s\S]*?```'
+    flags: i

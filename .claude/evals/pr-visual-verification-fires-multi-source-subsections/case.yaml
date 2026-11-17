@@ -1,0 +1,55 @@
+# target sentence: "Several constructs changed: several sources, each its own sub-section."
+# Reply-only: the Skill check is an unscored indicator in a two-arm run. The prompt gives the three sources inline.
+# good-reply: ## Visual verification ### Subgraph direction ```mermaid flowchart TB subgraph s direction LR a --> b end ``` | Before (main @ abc1234) | After (this PR) | | --- | --- | ### Dashed classDef ```mermaid flowchart LR A:::d --> B classDef d stroke-dasharray:4 2 ``` | Before (main @ abc1234) | After (this PR) | | --- | --- | ### Note over two participants ```mermaid sequenceDiagram Note over A,B: hi ``` | Before (main @ abc1234) | After (this PR) | | --- | --- |
+# bad-reply: ## Visual verification ```mermaid flowchart TB subgraph s direction LR a --> b end ``` | Before (main @ abc1234) | After (this PR) | | --- | --- | (one table, one source, the other two changes not shown)
+schema_version: '1.1'
+name: pr-visual-verification-fires-multi-source-subsections
+description: >
+  A PR touching three unrelated Mermaid constructs needs one source block and one Before/After
+  table per construct. expected_outcome: PASS when the skill fires and the reply has at least
+  three mermaid fences and at least three Before/After tables; FAIL when it gives one combined
+  or single sample.
+tags: [pr-visual-verification, trigger, quick]
+runs: 3
+
+execution:
+  prompt: |
+    My PR changes three things in the renderer and I need the before/after screenshots section
+    for the PR body (placeholders for the images are fine):
+
+    1. A flowchart subgraph can now override its parent's direction. Sample:
+         flowchart TB
+           subgraph s
+             direction LR
+             a --> b
+           end
+    2. classDef now honours stroke-dasharray on flowchart nodes. Sample:
+         flowchart LR
+           A:::d --> B
+           classDef d stroke-dasharray:4 2
+    3. A sequence-diagram note spanning two participants is now centred between them. Sample:
+         sequenceDiagram
+           Note over A,B: hi
+
+    Changed files: packages/core/src/subgraph.ts, packages/svg-renderer/src/styles.ts,
+    packages/svg-renderer/src/sequence/note.ts. Don't run anything.
+  max_turns: 6
+  allowed_tools:
+    - Skill
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?pr-visual-verification"'
+  - name: three_source_blocks
+    type: regex
+    pattern: '(?:```mermaid[\s\S]+?```[\s\S]*?){3}'
+    flags: i
+  - name: three_before_after_tables
+    type: regex
+    pattern: '(?:\|\s*Before[^|\n]*\|\s*After[\s\S]*?){3}'
+    flags: i
+  - name: subsection_per_source
+    type: regex
+    pattern: '(?:#{3,4}[ \t]+\S[^\n]*?[\s\S]*?```mermaid[\s\S]+?```[\s\S]*?){3}'
