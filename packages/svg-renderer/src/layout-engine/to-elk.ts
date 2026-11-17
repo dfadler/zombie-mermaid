@@ -534,6 +534,16 @@ export function estimateNodeSize(
     }
   }
 
+  // mermaid@12.3.0 state box: the label wraps at 120px (24px a line), the
+  // box is the label plus 8px a side and 16px top and bottom (#2962). It
+  // measures the label at 16px though a state draws it at 13px.
+  if (stateDiagram && (shape === 'rounded' || shape === 'rectangle')) {
+    const text = wrapFlowchartLabel(label, 16, FONT_WEIGHTS.nodeLabel).text
+    const m = measureMultilineText(text, 16, FONT_WEIGHTS.nodeLabel)
+    width = Math.max(m.width, FLOWCHART_MIN_LABEL_WIDTH) + 16
+    height = m.lines.length * 24 + 16
+  }
+
   // mermaid@12.3.0's state boxes are never narrower than 136px nor shorter
   // than 40px.
   width = Math.max(width, stateDiagram ? STATE_MIN_WIDTH : 60)
