@@ -244,11 +244,8 @@ export const asciiLayoutProvider: AsciiLayoutProvider = {
           from: e.source,
           to: e.target,
           points: e.points,
-          bendPoints:
-            real.edges[i]?.source === e.source &&
-            real.edges[i]?.target === e.target
-              ? real.edges[i]!.points
-              : undefined,
+          // Same graph, same edge order in both layouts.
+          bendPoints: real.edges[i]?.points,
         })),
         graph.direction,
         pos.groups.map((g) => ({
