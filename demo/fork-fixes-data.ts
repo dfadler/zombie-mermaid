@@ -1175,7 +1175,7 @@ export const allForkFixes: ForkFix[] = [
     source:
       'stateDiagram-v2\n  [*] --> W\n  W --> Q\n  state W {\n    B\n    --\n    C\n  }',
     fixCommit: '7c473afe9',
-    pr: 0,
+    pr: 3225,
     render: 'svg',
     lookFor:
       'Before: the dot is left of the arrow. After: the dot sits directly above the arrow, on the composite’s centre line.',
