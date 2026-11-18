@@ -25,7 +25,9 @@ describe('far same-pair group on ELK faces (#2902)', () => {
   it('draws it without a crossing, with both labels whole on horizontal runs', () => {
     const text = draw(ENTRY.source)
     expect(text).not.toContain('┼')
-    expect(text).toMatch(/◄─+e0─+┘/)
+    // The e0 stroke (S1->S4) drops beside S4 as mermaid@12.3.0 bends it
+    // (0.91 of the way), so its label sits on the long run out of S1.
+    expect(text).toMatch(/┌─+e0─+┤/)
     expect(text).toMatch(/├─+e1─+┘/)
   })
 
