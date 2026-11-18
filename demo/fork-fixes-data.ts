@@ -1194,6 +1194,19 @@ export const allForkFixes: ForkFix[] = [
     lookFor:
       'Before: the dot is left of the arrow. After: the dot sits directly above the arrow, on the composite’s centre line.',
   },
+  {
+    id: 'state-regions-entry-centre-ascii',
+    title: 'State (ASCII): the start dot centres on a composite with regions',
+    symptom:
+      'With concurrent regions of unequal width, the `[*]` dot, the arrow into the frame and the target of an edge out of it sat over the gap between two region columns, not the frame centre. mermaid@12.3.0 centres them.',
+    source:
+      'stateDiagram-v2\n  [*] --> W\n  W --> Q\n  state W {\n    A: Wait Idle Ready Running Active Failed Paused Done\n    --\n    B\n    --\n    C\n    --\n    D\n  }',
+    fixCommit: '3f7a566f0',
+    pr: 3228,
+    render: 'ascii',
+    lookFor:
+      'Before (upstream): no regions are drawn, so the dot and the frame are not related. After: the dot and the arrow into the frame stand on its centre column, under the title `W`, and `Q` sits on the same column below. Before this fix the dot stood over the gap between the narrow and the wide region column.',
+  },
 ]
 
 /** Entries shown on the page: everything not parked. */
