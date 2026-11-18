@@ -22,16 +22,43 @@ export function wrapFlowchartLabel(
   let wrapped = false
   const out: string[] = []
   for (const para of label.split('\n')) {
+    const lines: string[] = []
     let cur = ''
     for (const word of para.split(' ').filter(Boolean)) {
       const next = cur ? `${cur} ${word}` : word
       if (cur && width(next) > FLOWCHART_WRAP_WIDTH) {
-        out.push(cur)
+        lines.push(cur)
         cur = word
         wrapped = true
       } else cur = next
     }
-    out.push(cur)
+    lines.push(cur)
+    out.push(...keepFormatting(lines))
   }
   return { text: out.join('\n'), wrapped }
+}
+
+/**
+ * The renderers parse inline formatting one line at a time, so a tag that
+ * stays open across a wrap break is closed at the end of its line and opened
+ * again at the start of the next.
+ */
+function keepFormatting(lines: string[]): string[] {
+  if (lines.length < 2) return lines
+  const open: string[] = []
+  return lines.map((line) => {
+    const prefix = open.map((t) => `<${t}>`).join('')
+    for (const m of line.matchAll(TAGS)) {
+      const tag = /<\/?(\w+)/.exec(m[0])![1]!.toLowerCase()
+      if (m[0][1] === '/') {
+        const at = open.lastIndexOf(tag)
+        if (at >= 0) open.splice(at, 1)
+      } else open.push(tag)
+    }
+    const suffix = [...open]
+      .reverse()
+      .map((t) => `</${t}>`)
+      .join('')
+    return prefix + line + suffix
+  })
 }

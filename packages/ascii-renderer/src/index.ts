@@ -43,7 +43,7 @@ import {
   parseHexColor,
 } from '@zombie-mermaid/core'
 import type { Direction, DiagramType, RenderLimits } from '@zombie-mermaid/core'
-import { setTrebuchetMetrics } from '@zombie-mermaid/core'
+import { setMonospaceMetrics, setTrebuchetMetrics } from '@zombie-mermaid/core'
 import { asciiRegistry } from './registry.ts'
 import { addCoordsOverlay } from './coords.ts'
 import { colorizeText } from './ansi.ts'
@@ -215,6 +215,7 @@ export function renderMermaidASCII(
 ): string {
   // The ASCII layout keeps the Inter estimate; an earlier SVG render must not switch it.
   setTrebuchetMetrics(false)
+  setMonospaceMetrics(false)
   // `profile` only fills in defaults; explicit options still win.
   const md = options.profile === 'markdown'
   const config: AsciiConfig = {

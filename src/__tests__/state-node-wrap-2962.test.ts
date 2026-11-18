@@ -3,7 +3,7 @@
  * (24px a line, 8px a side and 16px top and bottom), measured at 16px.
  */
 // Provenance (#2679): expected sizes are measured from mermaid@12.3.0 (headless, scripts/lib/real-mermaid.ts), not this renderer's own output.
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { setTrebuchetMetrics } from '@zombie-mermaid/core'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 import { estimateNodeSize } from '../../packages/svg-renderer/src/layout-engine/to-elk.ts'
@@ -13,7 +13,7 @@ const size = (label: string, shape = 'rounded') =>
 
 describe('state node size (#2962)', () => {
   // The default font is mermaid's Trebuchet stack at render time; set it here.
-  beforeAll(() => setTrebuchetMetrics(true))
+  beforeEach(() => setTrebuchetMetrics(true))
   afterAll(() => setTrebuchetMetrics(false))
 
   it('keeps the 136 x 40 minimum for a short label', () => {
@@ -66,5 +66,36 @@ describe('state node size (#2962)', () => {
       { colorMode: 'none' },
     )
     expect(f).toContain('Wait Idle Ready Running Active')
+  })
+
+  it('keeps bold on every line of a wrapped label', () => {
+    const svg = renderMermaidSVG(
+      'stateDiagram-v2\n  Y: <b>Wait Idle Ready Running Active Failed Paused Done</b>\n  [*] --> Y',
+    )
+    expect(svg).not.toMatch(/<\/b>/)
+    expect(
+      (svg.match(/font-weight="bold"/g) ?? []).length,
+    ).toBeGreaterThanOrEqual(4)
+  })
+
+  it('places the four regions in two rows and two columns in ASCII', () => {
+    const rows = renderMermaidASCII(
+      'stateDiagram-v2\n  state W {\n    A: Wait Idle Ready Running Active Failed Paused Done\n    --\n    B\n    --\n    C\n    --\n    D\n  }',
+      { colorMode: 'none' },
+    ).split('\n')
+    const at = (t: string): [number, number] => {
+      const y = rows.findIndex((r) => r.includes(t))
+      return [y, rows[y]!.indexOf(t)]
+    }
+    const [by, bx] = at(' B ')
+    const [cy, cx] = at(' C ')
+    const [dy, dx] = at(' D ')
+    const [ay, ax] = at('Wait Idle Ready')
+    expect(cy).toBe(by)
+    expect(cx).toBeGreaterThan(bx)
+    expect(dx).toBe(bx)
+    expect(dy).toBeGreaterThan(by)
+    expect(ay).toBeLessThan(dy + 6)
+    expect(ax).toBeGreaterThan(dx)
   })
 })
