@@ -228,8 +228,8 @@ exports[`cluster-boundary cycle ranks as mermaid@12.3.0 (#2802) > snapshots SVG 
 │ └─┬─┘ │       │   └─┬─┘
 │   │   │       │     │  
 └───┼───┘       │     │  
-    └─────────┐ │ ┌───┘  
-              │ │ │      
+    └─────────┐ │     │  
+              │ │ ┌───┘  
               ▼ │ ▼      
             ┌───┴───┐    
             │       │    

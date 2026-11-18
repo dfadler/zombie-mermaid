@@ -88,8 +88,8 @@ exports[`self-loop detour through unseeded rows renders (BT crash) > snapshots S
                  └────┬───┬──┘  
                     ▲ │ ▲ │     
              ┌──0───┘ │ ┆ └────┐
+             │        │ ┆      │
              │ ┌─ccc──┘ ┆      │
-             │ │        ┆      │
              │ │        ┆      │
            ┌─┴─┴──┐     ┆      │
            │      │     ┆      │
@@ -97,10 +97,10 @@ exports[`self-loop detour through unseeded rows renders (BT crash) > snapshots S
            │      │     ┆      │
            └──────┘     ┆      │
              ▲ ▲        ┆      │
-             ┆ └┄0┄┄┐   ┆      │
-             ┆      ┆   ┆      │
-             0      ┆   0      │
-             ┆      ┆   ┆      │
+             ┆ ┆        ┆      │
+             ┆ 0        ┆      │
+             0 ┆        0      │
+             ┆ └┄┄┄┄┐   ┆      │
              ┆      ┆   ┆      │
            ┌─┴────┐ ┆   ┆      │
            │      │ ┆   ┆      │

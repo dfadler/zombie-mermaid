@@ -25,8 +25,8 @@ exports[`fan-in landing cells (#2678) > A & B --> C > BT: snapshots SVG and ASCI
     │   │    
     └───┘    
      ▲ ▲     
+     │ │     
   ┌──┘ └──┐  
-  │       │  
   │       │  
   │       │  
 ┌─┴─┐   ┌─┴─┐
@@ -113,8 +113,8 @@ exports[`fan-in landing cells (#2678) > A & B --> C > TD: snapshots SVG and ASCI
 └─┬─┘   └─┬─┘
   │       │  
   │       │  
-  │       │  
   └──┐ ┌──┘  
+     │ │     
      ▼ ▼     
     ┌───┐    
     │   │    
@@ -220,8 +220,8 @@ exports[`fan-in landing cells (#2678) > colour-coded edges > BT: snapshots SVG a
          │          │         
          └──────────┘         
               ▲ ▲             
+              │ │             
      ┌────────┘ └────────┐    
-     │                   │    
      │                   │    
      │                   │    
 ┌────┴───┐          ┌────┴───┐
@@ -396,8 +396,8 @@ exports[`fan-in landing cells (#2678) > colour-coded edges > TD: snapshots SVG a
 └────┬───┘          └────┬───┘
      │                   │    
      │                   │    
-     │                   │    
      └────────┐ ┌────────┘    
+              │ │             
               ▼ ▼             
          ┌──────────┐         
          │          │         
@@ -530,8 +530,8 @@ exports[`fan-in landing cells (#2678) > diamond fan-in > BT: snapshots SVG and A
                  │              │               
                  └──────────────┘               
                         ▲ ▲                     
+                        │ │                     
          ┌──────────────┘ └─────────────┐       
-         │                              │       
          │                              │       
          │                              │       
 ┌────────┴───────┐              ┌───────┴──────┐
@@ -706,8 +706,8 @@ exports[`fan-in landing cells (#2678) > diamond fan-in > TD: snapshots SVG and A
 └────────┬───────┘              └───────┬──────┘
          │                              │       
          │                              │       
-         │                              │       
          └──────────────┐ ┌─────────────┘       
+                        │ │                     
                         ▼ ▼                     
                  ┌──────────────┐               
                  │              │               
@@ -831,8 +831,8 @@ exports[`fan-in landing cells (#2678) > parallel links > BT: snapshots SVG and A
          │           │         
          └───────────┘         
               ▲ ▲              
+              │ │              
      ┌────────┘ └─────────┐    
-     │                    │    
      │                    │    
      │                    │    
 ┌────┴───┐           ┌────┴───┐
@@ -939,8 +939,8 @@ exports[`fan-in landing cells (#2678) > parallel links > TD: snapshots SVG and A
 └────┬───┘           └────┬───┘
      │                    │    
      │                    │    
-     │                    │    
      └────────┐ ┌─────────┘    
+              │ │              
               ▼ ▼              
          ┌───────────┐         
          │           │         
@@ -1242,8 +1242,8 @@ exports[`fan-in landing cells (#2678) > state join > BT: snapshots SVG and ASCII
           │        
       █████████    
          ▲ ▲       
-   ┌─────┘ └────┐  
-   │            │  
+   ┌─────┘ │       
+   │       └────┐  
    │            │  
    │            │  
               ╭─┴─╮
@@ -1406,8 +1406,8 @@ exports[`fan-in landing cells (#2678) > state join > TD: snapshots SVG and ASCII
               ╰─┬─╯
    │            │  
    │            │  
-   │            │  
-   └─────┐ ┌────┘  
+   │       ┌────┘  
+   └─────┐ │       
          ▼ ▼       
       █████████    
           │        
