@@ -2717,7 +2717,9 @@ function centreFlowOnRegionFrames(
       const hi = Math.max(...hm.map((x) => x.cross + x.size / 2))
       if (!(Math.abs(h.cross - (lo + hi) / 2) <= 1)) continue
       const delta = Math.floor((sg.minX + sg.maxX) / 2) - mid(out)
-      if (delta === 0) continue
+      // Slots lean toward the lower columns, so the shift is rightward; a
+      // leftward one could take a self-loop leg off the canvas, so it is skipped.
+      if (delta <= 0) continue
       const rails = members.map((m) => flow(requireGridCoord(m)))
       const first = Math.min(...rails)
       const last = Math.max(...rails) + 2
@@ -2733,7 +2735,7 @@ function centreFlowOnRegionFrames(
       })
       if (
         column.some((n) => mid(n) !== at) ||
-        bounds.some(([a, b]) => a! + delta < 0 || b! + delta >= limit)
+        bounds.some(([, b]) => b! + delta >= limit)
       )
         continue
       const crossing = graph.edges.some((e) => {
@@ -2742,15 +2744,6 @@ function centreFlowOnRegionFrames(
         return inside > 0 && inside < e.path.length
       })
       if (crossing) continue
-      // A self-loop's outer leg is not in the node's box: a shift that takes it
-      // left of the canvas would drop it, so a loop in the band keeps the rank.
-      if (
-        delta < 0 &&
-        graph.edges.some(
-          (e) => e.from === e.to && inBand(flow(requireGridCoord(e.from))),
-        )
-      )
-        continue
       let farthest = 0
       if (!entry) {
         for (const n of graph.nodes)

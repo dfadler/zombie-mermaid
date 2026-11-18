@@ -102,4 +102,16 @@ describe('state node size (#2962)', () => {
     ).not.toMatch(/<\/b$/m)
     expect(w('a </u> b').split('\n')).toHaveLength(1)
   })
+
+  it('reopens a tag on each line and ignores a stray closing tag', () => {
+    const w = (l: string): string => wrapFlowchartLabel(l, 16, 500).text
+    expect(
+      w('<i>Wait Idle Ready Running Active</i> Failed Paused Done').split(
+        '\n',
+      )[1],
+    ).toMatch(/^<i>/)
+    expect(
+      w('Wait Idle Ready </u> Running Active Failed Paused Done'),
+    ).toContain('</u>')
+  })
 })
