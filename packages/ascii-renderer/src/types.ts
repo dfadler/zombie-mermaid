@@ -563,6 +563,12 @@ export interface AsciiGraph {
   preferStraightRoutes?: boolean
   /** Engaged cluster-exit plans, keyed by subgraph. Set by createMapping. */
   clusterExitPlans?: Map<AsciiSubgraph, ClusterExitPlan>
+  /**
+   * Cells to slide a whole rank sideways (TD: x of grid row `y`; LR: y of grid
+   * column `x`), read by `gridToDrawingCoord`. Set once the frames are sized,
+   * to centre a lone column of nodes on the region frame it feeds.
+   */
+  rankShift?: Map<number, number>
 }
 
 // ============================================================================

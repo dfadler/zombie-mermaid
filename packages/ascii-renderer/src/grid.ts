@@ -123,9 +123,11 @@ export function gridToDrawingCoord(
 
   const colW = graph.columnWidth.get(target.x) ?? 0
   const rowH = graph.rowHeight.get(target.y) ?? 0
+  const lr = graph.config.graphDirection === 'LR'
+  const slide = graph.rankShift?.get(lr ? target.x : target.y) ?? 0
   return {
-    x: x + Math.floor(colW / 2) + graph.offsetX,
-    y: y + Math.floor(rowH / 2) + graph.offsetY,
+    x: x + Math.floor(colW / 2) + graph.offsetX + (lr ? 0 : slide),
+    y: y + Math.floor(rowH / 2) + graph.offsetY + (lr ? slide : 0),
   }
 }
 
@@ -2675,6 +2677,91 @@ function retargetRegionClusterEdges(
   }
 }
 
+/**
+ * ELK centres the node that feeds a composite of concurrent regions (`[*] --> W`)
+ * or takes its exit on the frame, and mermaid draws it there. The grid slots
+ * come from ELK's centres at a fixed scale, so with regions of unequal drawn
+ * width the slot is the line between two region tracks, which is not the
+ * frame's middle. Once the frames are sized, slide the lone column of nodes on
+ * that side of the frame (every node on it in one column, no other edge
+ * crossing it) so it stands on the frame's middle cell (#2962).
+ */
+function centreFlowOnRegionFrames(
+  graph: AsciiGraph,
+  hints: AsciiLayoutHints,
+  refresh: () => void,
+): void {
+  const lr = graph.config.graphDirection === 'LR'
+  const flow = (c: GridCoord): number => (lr ? c.x : c.y)
+  const mid = (n: AsciiNode): number => {
+    const gc = requireGridCoord(n)
+    const d = gridToDrawingCoord(
+      graph,
+      lr ? { x: gc.x, y: gc.y + 1 } : { x: gc.x + 1, y: gc.y },
+    )
+    return lr ? d.y : d.x
+  }
+  const extent = [...graph.columnWidth.values()].reduce((s, w) => s + w, 0)
+  const extentY = [...graph.rowHeight.values()].reduce((s, w) => s + w, 0)
+  const limit = lr ? extentY : extent
+  const shifts = new Map<number, number>()
+  for (const edge of graph.edges) {
+    for (const entry of [true, false]) {
+      const sg = entry ? edge.clusterTarget : edge.clusterSource
+      if (!sg?.children.some((c) => c.region)) continue
+      const out = entry ? edge.from : edge.to
+      const members = nodesOf(sg)
+      const h = hints.nodes.get(out.name)
+      const hm = members.map((m) => hints.nodes.get(m.name))
+      if (!h || hm.some((x) => !x)) continue
+      const lo = Math.min(...hm.map((x) => x!.cross - x!.size / 2))
+      const hi = Math.max(...hm.map((x) => x!.cross + x!.size / 2))
+      if (Math.abs(h.cross - (lo + hi) / 2) > 1) continue
+      const delta =
+        Math.floor(lr ? (sg.minY + sg.maxY) / 2 : (sg.minX + sg.maxX) / 2) -
+        mid(out)
+      if (delta === 0) continue
+      const rails = members.map((m) => flow(requireGridCoord(m)))
+      const first = Math.min(...rails)
+      const last = Math.max(...rails) + 2
+      const inBand = (f: number): boolean => (entry ? f < first : f > last)
+      const column = graph.nodes.filter((n) =>
+        inBand(flow(requireGridCoord(n))),
+      )
+      const at = mid(out)
+      const bounds = column.map((n) => {
+        const d = n.drawingCoord!
+        const w = lr ? n.drawing![0]!.length : n.drawing!.length
+        return lr ? [d.y, d.y + w - 1] : [d.x, d.x + w - 1]
+      })
+      if (
+        column.some((n) => mid(n) !== at) ||
+        bounds.some(([a, b]) => a! + delta < 0 || b! + delta >= limit)
+      )
+        continue
+      const crossing = graph.edges.some((e) => {
+        if (e === edge) return false
+        const inside = e.path.filter((c) => inBand(flow(c))).length
+        return inside > 0 && inside < e.path.length
+      })
+      if (crossing) continue
+      const all = [
+        ...graph.nodes.map((n) => flow(requireGridCoord(n)) + 2),
+        ...graph.edges.flatMap((e) => e.path.map(flow)),
+      ]
+      const from = entry ? 0 : last + 1
+      const to = entry ? first - 1 : Math.max(...all)
+      let free = true
+      for (let f = from; f <= to; f++) if (shifts.has(f)) free = false
+      if (!free) continue
+      for (let f = from; f <= to; f++) shifts.set(f, delta)
+    }
+  }
+  if (shifts.size === 0) return
+  graph.rankShift = shifts
+  refresh()
+}
+
 const MIRROR: Record<string, Record<AsciiFace, AsciiFace>> = {
   RL: { T: 'T', B: 'B', L: 'R', R: 'L' },
   BT: { T: 'B', B: 'T', L: 'L', R: 'R' },
@@ -3357,6 +3444,7 @@ export function createMapping(graph: AsciiGraph): void {
   if (widenGapsForFrameTitles(graph)) widenForTitles()
   widenGapsForFrameTitles(graph)
   widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
+  if (hints && slots) centreFlowOnRegionFrames(graph, hints, refreshBoxes)
   offsetDrawingForSubgraphs(graph)
 
   // Set canvas size, now covering the offset computed above.
