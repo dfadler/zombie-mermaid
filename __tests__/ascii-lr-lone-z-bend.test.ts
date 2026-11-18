@@ -45,8 +45,15 @@ describe('lone Z bend column (LR/RL)', () => {
     expect(bend).toBeCloseTo(0.5, 1)
   })
 
-  // The strokes out of the hub still bend at 0.33 where mermaid@12.3.0 bends at 0.50 (open, #2886).
-  it('LR: the two Z strokes into the hub bend on the gap’s middle column', () => {
+  it.each(['LR', 'RL'])(
+    '%s: the two Z strokes out of the hub bend mid-gap as well',
+    (d) => {
+      expect(drawnBend(fanIn(d), 'C', 'D')).toBeCloseTo(0.5, 1)
+      expect(drawnBend(fanIn(d), 'C', 'E')).toBeCloseTo(0.5, 1)
+    },
+  )
+
+  it('LR: the strokes into and out of the hub all bend on the gap’s middle column', () => {
     registerAsciiLayout(asciiLayoutProvider)
     const text = renderMermaidASCII(fanIn('LR'), {
       colorMode: 'none',
@@ -55,15 +62,15 @@ describe('lone Z bend column (LR/RL)', () => {
     expect(text.split('\n').map((l) => l.trimEnd())).toEqual([
       '┌────────┐                       ┌────────┐',
       '│        │                       │        │',
-      '│ Input  ├──┐                ┌──►│ Output │',
-      '│        │  │                │   │        │',
-      '└────────┘  │  ┌───────────┐ │   └────────┘',
-      '            └─►│           ├─┘',
+      '│ Input  ├──┐                 ┌─►│ Output │',
+      '│        │  │                 │  │        │',
+      '└────────┘  │  ┌───────────┐  │  └────────┘',
+      '            └─►│           ├──┘',
       '               │ Processor │',
-      '            ┌─►│           ├─┐',
-      '┌────────┐  │  └───────────┘ │   ┌────────┐',
-      '│        │  │                │   │        │',
-      '│ Config ├──┘                └──►│  Log   │',
+      '            ┌─►│           ├──┐',
+      '┌────────┐  │  └───────────┘  │  ┌────────┐',
+      '│        │  │                 │  │        │',
+      '│ Config ├──┘                 └─►│  Log   │',
       '│        │                       │        │',
       '└────────┘                       └────────┘',
     ])

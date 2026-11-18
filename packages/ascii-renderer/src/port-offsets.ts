@@ -1244,16 +1244,24 @@ function planJogRows(
     const d = drawnPath(graph, edge, shift).slice(at)
     // Near leg: the one on the side of the gap its grid row lies after.
     const forward = p[0]![main] < p[3]![main]
-    // A flow-face fan-out edge keeps its label on the drop (`determineLabelLine`).
-    const bend =
-      lr &&
+    // A flow-face fan-out edge keeps its label on the drop
+    // (`determineLabelLine`) and room for the arrowhead past the bend: it
+    // follows ELK only where ELK bends it mid-gap (mermaid@12.3.0 does for a
+    // hub's strokes), not beside its target.
+    const hint =
       edge.from.shape !== 'diamond' &&
       edge.to.shape !== 'diamond' &&
       !edge.clusterSource &&
-      !edge.clusterTarget &&
-      !leavesRightFace(graph, edge, 'LR')
+      !edge.clusterTarget
         ? graph.edgeHints?.get(edge)?.bend
         : undefined
+    const bend =
+      hint !== undefined &&
+      lr &&
+      leavesRightFace(graph, edge, 'LR') &&
+      Math.abs(hint - 0.5) > 0.05
+        ? undefined
+        : hint
     const [n, f] = forward ? [d[0]!, d[3]!] : [d[3]!, d[0]!]
     const jog: Jog = {
       edge,
