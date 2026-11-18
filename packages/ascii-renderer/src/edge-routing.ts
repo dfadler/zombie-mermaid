@@ -2283,10 +2283,88 @@ function riserBesideTarget(
   from: GridCoord,
   to: GridCoord,
 ): GridCoord[] | null {
-  // Cells other edges already run along: the route keeps off them, as a stroke
-  // laid over another reads as one connector. Its two port cells, one off
-  // each face, are shared with the edges on the same port (port-offsets.ts
-  // draws them apart).
+  // Cells other edges already run along, with the axes they run on there (both
+  // at a corner): the route keeps off them, except to cross a straight stroke
+  // square on, as a connector crossing another reads as two. Its two port
+  // cells, one off each face, are shared with the edges on the same port
+  // (port-offsets.ts draws them apart).
+  const taken = new Map<string, Set<'x' | 'y'>>()
+  for (const o of graph.edges) {
+    if (o === edge || o.from !== edge.from) continue
+    const cells = pathCells(o.path)
+    for (let i = 1; i < cells.length - 1; i++) {
+      const p = cells[i - 1]!
+      const n = cells[i + 1]!
+      const axes = taken.get(gridKey(cells[i]!)) ?? new Set<'x' | 'y'>()
+      if (p.x !== n.x) axes.add('x')
+      if (p.y !== n.y) axes.add('y')
+      taken.set(gridKey(cells[i]!), axes)
+    }
+  }
+  const riser = to.x + 1
+  const rows = graph.nodes.map((n) => requireGridCoord(n).y)
+  const top = Math.min(...rows)
+  const bottom = Math.max(...rows) + 8
+  let best: GridCoord[] | null = null
+  let bestCost = Infinity
+  for (let jog = from.x - 1; jog > riser; jog--) {
+    const ports = new Set([
+      gridKey({ x: from.x - 1, y: from.y }),
+      gridKey({ x: jog, y: from.y }),
+      gridKey({ x: riser, y: to.y }),
+    ])
+    for (let row = top; row <= bottom; row++) {
+      const rise = Math.abs(row - to.y)
+      const drop = Math.abs(row - from.y)
+      if (rise <= drop || drop === 0) continue
+      const cost = rise + drop + drop / 100 + (from.x - 1 - jog) / 10
+      if (cost >= bestCost) continue
+      const path = mergePath([
+        from,
+        { x: jog, y: from.y },
+        { x: jog, y: row },
+        { x: riser, y: row },
+        { x: riser, y: to.y },
+        to,
+      ])
+      const cells = pathCells(path)
+      const corners = new Set(path.map(gridKey))
+      if (
+        cells.slice(1, -1).every((c, i) => {
+          const k = gridKey(c)
+          if (ports.has(k)) return true
+          if (!isFree(graph.grid, c)) return false
+          const axes = taken.get(k)
+          if (!axes) return true
+          const p = cells[i]!
+          const n = cells[i + 2]!
+          // Straight through, on the one axis the other edges do not use.
+          return !corners.has(k) && !axes.has(p.x !== n.x ? 'x' : 'y')
+        })
+      ) {
+        best = path
+        bestCost = cost
+      }
+    }
+  }
+  return best
+}
+
+/**
+ * A forward edge across more than one layer as ELK draws it (`AsciiEdgeHint.bend`
+ * past the middle): its run along the source's row and the drop in the last
+ * gutter column, beside the target, where the search puts it in the first,
+ * beside the source. The column nearest the target whose two legs are free, or
+ * `null` when there is none.
+ */
+function dropBesideTarget(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  from: GridCoord,
+  to: GridCoord,
+): GridCoord[] | null {
+  // Cells other edges of this source already run along: a stroke laid over one
+  // reads as one connector (the source's own port cell is shared).
   const taken = new Set(
     graph.edges.flatMap((o) =>
       o === edge || o.from !== edge.from
@@ -2294,46 +2372,27 @@ function riserBesideTarget(
         : pathCells(o.path).slice(1, -1).map(gridKey),
     ),
   )
-  const jog = from.x - 1
-  const riser = to.x + 1
-  if (jog <= riser) return null
-  const ports = new Set([
-    gridKey({ x: jog, y: from.y }),
-    gridKey({ x: riser, y: to.y }),
-  ])
-  const rows = graph.nodes.map((n) => requireGridCoord(n).y)
-  const top = Math.min(...rows)
-  const bottom = Math.max(...rows) + 4
-  let best: GridCoord[] | null = null
-  let bestCost = Infinity
-  for (let row = top; row <= bottom; row++) {
-    const rise = Math.abs(row - to.y)
-    const drop = Math.abs(row - from.y)
-    if (rise <= drop || drop === 0) continue
-    const cost = rise + drop + drop / 100
-    if (cost >= bestCost) continue
+  // One cell short of the face: the last leg carries the arrowhead.
+  for (let col = to.x - 2; col > from.x + 1; col--) {
     const path = mergePath([
       from,
-      { x: jog, y: from.y },
-      { x: jog, y: row },
-      { x: riser, y: row },
-      { x: riser, y: to.y },
+      { x: col, y: from.y },
+      { x: col, y: to.y },
       to,
     ])
+    const cells = pathCells(path)
     if (
-      pathCells(path)
+      cells
         .slice(1, -1)
         .every(
           (c) =>
-            ports.has(gridKey(c)) ||
+            (c.x === from.x + 1 && c.y === from.y) ||
             (isFree(graph.grid, c) && !taken.has(gridKey(c))),
         )
-    ) {
-      best = path
-      bestCost = cost
-    }
+    )
+      return path
   }
-  return best
+  return null
 }
 
 /**
@@ -3038,6 +3097,28 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
           edge,
           gridCoordDirection(requireGridCoord(edge.from), hinted[0]),
           gridCoordDirection(requireGridCoord(edge.to), hinted[1]),
+        ) ?? hintedPath
+    }
+  }
+  // A forward edge across layers that ELK bends beside the target takes its
+  // drop there, not beside the source where the shortest route puts it.
+  if (hinted && hintedPath && lrFlow && !edge.parallelLane) {
+    const bend = graph.edgeHints!.get(edge)!.bend
+    const [a, b] = [requireGridCoord(edge.from), requireGridCoord(edge.to)]
+    if (
+      bend !== undefined &&
+      bend >= 0.55 &&
+      dirEquals(hinted[0], Right) &&
+      dirEquals(hinted[1], Left) &&
+      edge.from !== edge.to &&
+      b.x - a.x >= 4
+    ) {
+      hintedPath =
+        dropBesideTarget(
+          graph,
+          edge,
+          gridCoordDirection(a, hinted[0]),
+          gridCoordDirection(b, hinted[1]),
         ) ?? hintedPath
     }
   }
