@@ -97,4 +97,25 @@ describe('entry and exit over concurrent regions (#2962)', () => {
     ).join('\n')
     expect(out).toContain('┌')
   })
+
+  it('keeps the rank when a self-loop sits in the shifted band', () => {
+    const out = draw(
+      `stateDiagram-v2\n  [*] --> W\n  W --> Q\n  Q --> Q\n  state W {\n${REGIONS()}  }`,
+    ).join('\n')
+    expect(out).toContain('Q')
+  })
+
+  it('keeps the rank when a longer edge leaves the frame past the exit', () => {
+    const out = draw(
+      `stateDiagram-v2\n  [*] --> W\n  W --> Q\n  Q --> Z\n  W --> Z\n  state W {\n${REGIONS()}  }`,
+    ).join('\n')
+    expect(out).toContain('Z')
+  })
+
+  it('shares a rank between a composite exit and the next composite entry', () => {
+    const out = draw(
+      `stateDiagram-v2\n  [*] --> W\n  W --> V\n  V --> Q\n  state W {\n${REGIONS()}  }\n  state V {\n${REGIONS()}  }`,
+    ).join('\n')
+    expect(out).toContain('Q')
+  })
 })

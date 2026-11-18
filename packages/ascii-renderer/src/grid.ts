@@ -123,11 +123,13 @@ export function gridToDrawingCoord(
 
   const colW = graph.columnWidth.get(target.x) ?? 0
   const rowH = graph.rowHeight.get(target.y) ?? 0
-  const lr = graph.config.graphDirection === 'LR'
-  const slide = graph.rankShift?.get(lr ? target.x : target.y) ?? 0
   return {
-    x: x + Math.floor(colW / 2) + graph.offsetX + (lr ? 0 : slide),
-    y: y + Math.floor(rowH / 2) + graph.offsetY + (lr ? slide : 0),
+    x:
+      x +
+      Math.floor(colW / 2) +
+      graph.offsetX +
+      (graph.rankShift?.get(target.y) ?? 0),
+    y: y + Math.floor(rowH / 2) + graph.offsetY,
   }
 }
 
@@ -2691,19 +2693,15 @@ function centreFlowOnRegionFrames(
   hints: AsciiLayoutHints,
   refresh: () => void,
 ): void {
-  const lr = graph.config.graphDirection === 'LR'
-  const flow = (c: GridCoord): number => (lr ? c.x : c.y)
+  // ELK's own centre for the feeding node is off by more than a cell in LR and
+  // RL, so nothing is slid there; the vertical flows are the ones that shift.
+  if (graph.config.graphDirection === 'LR') return
+  const flow = (c: GridCoord): number => c.y
   const mid = (n: AsciiNode): number => {
     const gc = requireGridCoord(n)
-    const d = gridToDrawingCoord(
-      graph,
-      lr ? { x: gc.x, y: gc.y + 1 } : { x: gc.x + 1, y: gc.y },
-    )
-    return lr ? d.y : d.x
+    return gridToDrawingCoord(graph, { x: gc.x + 1, y: gc.y }).x
   }
-  const extent = [...graph.columnWidth.values()].reduce((s, w) => s + w, 0)
-  const extentY = [...graph.rowHeight.values()].reduce((s, w) => s + w, 0)
-  const limit = lr ? extentY : extent
+  const limit = [...graph.columnWidth.values()].reduce((s, w) => s + w, 0)
   const shifts = new Map<number, number>()
   for (const edge of graph.edges) {
     for (const entry of [true, false]) {
@@ -2711,15 +2709,14 @@ function centreFlowOnRegionFrames(
       if (!sg?.children.some((c) => c.region)) continue
       const out = entry ? edge.from : edge.to
       const members = nodesOf(sg)
-      const h = hints.nodes.get(out.name)
-      const hm = members.map((m) => hints.nodes.get(m.name))
-      if (!h || hm.some((x) => !x)) continue
-      const lo = Math.min(...hm.map((x) => x!.cross - x!.size / 2))
-      const hi = Math.max(...hm.map((x) => x!.cross + x!.size / 2))
-      if (Math.abs(h.cross - (lo + hi) / 2) > 1) continue
-      const delta =
-        Math.floor(lr ? (sg.minY + sg.maxY) / 2 : (sg.minX + sg.maxX) / 2) -
-        mid(out)
+      // Every node has a hint here (`trackSlots` gives up otherwise). A member
+      // ELK gave no size to leaves the centre NaN, which the test below skips.
+      const h = hints.nodes.get(out.name)!
+      const hm = members.map((m) => hints.nodes.get(m.name)!)
+      const lo = Math.min(...hm.map((x) => x.cross - x.size / 2))
+      const hi = Math.max(...hm.map((x) => x.cross + x.size / 2))
+      if (!(Math.abs(h.cross - (lo + hi) / 2) <= 1)) continue
+      const delta = Math.floor((sg.minX + sg.maxX) / 2) - mid(out)
       if (delta === 0) continue
       const rails = members.map((m) => flow(requireGridCoord(m)))
       const first = Math.min(...rails)
@@ -2731,8 +2728,8 @@ function centreFlowOnRegionFrames(
       const at = mid(out)
       const bounds = column.map((n) => {
         const d = n.drawingCoord!
-        const w = lr ? n.drawing![0]!.length : n.drawing!.length
-        return lr ? [d.y, d.y + w - 1] : [d.x, d.x + w - 1]
+        const w = n.drawing!.length
+        return [d.x, d.x + w - 1]
       })
       if (
         column.some((n) => mid(n) !== at) ||
