@@ -2745,12 +2745,24 @@ function centreFlowOnRegionFrames(
         return inside > 0 && inside < e.path.length
       })
       if (crossing) continue
-      const all = [
-        ...graph.nodes.map((n) => flow(requireGridCoord(n)) + 2),
-        ...graph.edges.flatMap((e) => e.path.map(flow)),
-      ]
+      // A self-loop's outer leg is not in the node's box: a shift that takes it
+      // left of the canvas would drop it, so a loop in the band keeps the rank.
+      if (
+        delta < 0 &&
+        graph.edges.some(
+          (e) => e.from === e.to && inBand(flow(requireGridCoord(e.from))),
+        )
+      )
+        continue
+      let farthest = 0
+      if (!entry) {
+        for (const n of graph.nodes)
+          farthest = Math.max(farthest, flow(requireGridCoord(n)) + 2)
+        for (const e of graph.edges)
+          for (const c of e.path) farthest = Math.max(farthest, flow(c))
+      }
       const from = entry ? 0 : last + 1
-      const to = entry ? first - 1 : Math.max(...all)
+      const to = entry ? first - 1 : farthest
       let free = true
       for (let f = from; f <= to; f++) if (shifts.has(f)) free = false
       if (!free) continue

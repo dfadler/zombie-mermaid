@@ -24,16 +24,23 @@ export function wrapFlowchartLabel(
   for (const para of label.split('\n')) {
     const lines: string[] = []
     let cur = ''
-    for (const word of para.split(' ').filter(Boolean)) {
+    // A tag written with inner spaces (`</b >`) is one token, not two words.
+    const text = para.replace(TAGS, (t) => t.replace(/\s+/g, ''))
+    for (const word of text.split(' ').filter(Boolean)) {
       const next = cur ? `${cur} ${word}` : word
-      if (cur && width(next) > FLOWCHART_WRAP_WIDTH) {
+      // Break only between visible text: markup alone is not a line.
+      if (
+        cur.replace(TAGS, '') &&
+        word.replace(TAGS, '') &&
+        width(next) > FLOWCHART_WRAP_WIDTH
+      ) {
         lines.push(cur)
         cur = word
         wrapped = true
       } else cur = next
     }
     lines.push(cur)
-    out.push(...keepFormatting(lines))
+    for (const line of keepFormatting(lines)) out.push(line)
   }
   return { text: out.join('\n'), wrapped }
 }

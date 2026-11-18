@@ -4,7 +4,7 @@
  */
 // Provenance (#2679): expected sizes are measured from mermaid@12.3.0 (headless, scripts/lib/real-mermaid.ts), not this renderer's own output.
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
-import { setTrebuchetMetrics } from '@zombie-mermaid/core'
+import { setTrebuchetMetrics, wrapFlowchartLabel } from '@zombie-mermaid/core'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 import { estimateNodeSize } from '../../packages/svg-renderer/src/layout-engine/to-elk.ts'
 
@@ -83,19 +83,23 @@ describe('state node size (#2962)', () => {
       'stateDiagram-v2\n  state W {\n    A: Wait Idle Ready Running Active Failed Paused Done\n    --\n    B\n    --\n    C\n    --\n    D\n  }',
       { colorMode: 'none' },
     ).split('\n')
-    const at = (t: string): [number, number] => {
-      const y = rows.findIndex((r) => r.includes(t))
-      return [y, rows[y]!.indexOf(t)]
-    }
-    const [by, bx] = at(' B ')
-    const [cy, cx] = at(' C ')
-    const [dy, dx] = at(' D ')
-    const [ay, ax] = at('Wait Idle Ready')
-    expect(cy).toBe(by)
-    expect(cx).toBeGreaterThan(bx)
-    expect(dx).toBe(bx)
-    expect(dy).toBeGreaterThan(by)
-    expect(ay).toBeLessThan(dy + 6)
-    expect(ax).toBeGreaterThan(dx)
+    // Region frames are drawn dotted: four tops, two rows, two columns.
+    const tops = rows.flatMap((r, y) =>
+      [...r.matchAll(/[┌├]┄/g)].map((m) => [y, m.index!] as const),
+    )
+    expect(tops).toHaveLength(4)
+    expect(new Set(tops.map(([y]) => y)).size).toBe(2)
+    expect(new Set(tops.map(([, x]) => x)).size).toBe(2)
+  })
+
+  it('wraps around markup without an empty line or a split tag', () => {
+    const w = (l: string): string => wrapFlowchartLabel(l, 16, 500).text
+    expect(w('<b> Supercalifragilisticexpialidocious </b>')).not.toContain(
+      '<b></b>',
+    )
+    expect(
+      w('<b >Wait Idle Ready Running Active Failed Paused Done</b >'),
+    ).not.toMatch(/<\/b$/m)
+    expect(w('a </u> b').split('\n')).toHaveLength(1)
   })
 })
