@@ -8,7 +8,7 @@
 // read the layer, order and cross-axis centre (grid.ts).
 // ============================================================================
 
-import type { Direction } from '@zombie-mermaid/core'
+import type { Direction, MermaidGraph } from '@zombie-mermaid/core'
 import { registerAsciiLayout } from '@zombie-mermaid/ascii-renderer'
 import type {
   AsciiFace,
@@ -226,11 +226,43 @@ const attempt = (f: () => AsciiLayoutHints): AsciiLayoutHints | undefined => {
   }
 }
 
+/**
+ * A left-to-right flow with a cluster whose edges leave it for one target, three or
+ * more of them: mermaid@12.3.0 draws those round the target, and where the target sits
+ * against the cluster decides which way each goes. Its own layout (not the legacy
+ * node sizes the other hints keep) puts the target there (#2886).
+ */
+function hasClusterFan(graph: MermaidGraph): boolean {
+  if (
+    graph.stateDiagram ||
+    (graph.direction !== 'LR' && graph.direction !== 'RL')
+  ) {
+    return false
+  }
+  const clusters = new Set(graph.subgraphs.map((sg) => sg.id))
+  const counts = new Map<string, number>()
+  for (const e of graph.edges) {
+    if (!clusters.has(e.source)) continue
+    const key = `${e.source}\0${e.target}`
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return [...counts.values()].some((n) => n >= 3)
+}
+
 export const asciiLayoutProvider: AsciiLayoutProvider = {
   graph: (graph) =>
     attempt(() => {
-      const pos = layoutFlowchartSync(graph, { legacyNodeSizes: true })
-      const real = layoutFlowchartSync(graph, { legacyNodeSizes: false })
+      // mermaid@12.3.0 draws flowchart node labels at 16px and boxes edge labels at 16px.
+      const mermaidSizes = graph.stateDiagram
+        ? {}
+        : { fontSizes: { nodeLabel: 16 }, layoutEdgeLabelFontSize: 16 }
+      const real = layoutFlowchartSync(graph, {
+        legacyNodeSizes: false,
+        ...mermaidSizes,
+      })
+      const pos = hasClusterFan(graph)
+        ? real
+        : layoutFlowchartSync(graph, { legacyNodeSizes: true })
       return buildHints(
         pos.nodes.map((n) => ({
           id: n.id,

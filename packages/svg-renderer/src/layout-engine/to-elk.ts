@@ -311,11 +311,13 @@ function containerLayoutOptions(spec: {
  * edge-label font size, inline and centered on the edge.
  */
 function edgeLabelStyle(
-  opts: { fontSizes: FontSizes },
+  opts: { fontSizes: FontSizes; layoutEdgeLabelFontSize?: number },
   graph: MermaidGraph,
 ): ElkEdgeLabelStyle {
   return {
-    fontSize: opts.fontSizes.edgeLabel,
+    // `layoutEdgeLabelFontSize` sizes the label boxes ELK reserves without
+    // changing the text that is drawn: mermaid@12.3.0 boxes them at 16px.
+    fontSize: opts.layoutEdgeLabelFontSize ?? opts.fontSizes.edgeLabel,
     // mermaid@12.3.0 gives a state edge label a 24px line (#3005).
     ...(usesMermaidElkPipeline(graph) && isStateGraph(graph)
       ? { lineHeight: 24 }
@@ -649,7 +651,11 @@ export function mermaidToElk(
   graph: MermaidGraph,
   givenOpts: Required<
     Pick<RenderOptions, 'font' | 'padding' | 'nodeSpacing' | 'layerSpacing'>
-  > & { fontSizes: FontSizes; legacyNodeSizes?: boolean },
+  > & {
+    fontSizes: FontSizes
+    legacyNodeSizes?: boolean
+    layoutEdgeLabelFontSize?: number
+  },
 ): ElkGraphNode {
   const opts = givenOpts
   // Collect all node IDs that belong to subgraphs
@@ -774,10 +780,15 @@ export function mermaidToElk(
     // wider edge-label boxes need more room than 12.2.0's (Five, Six and Nine Cluster
     // Exit Siblings match at 70; 60 fails Five and Six). Without it Nine drops to 67%
     // horizontal on the layout oracle (#2934).
+    // With mermaid's own label boxes (`layoutEdgeLabelFontSize`) the 70 is not needed: the
+    // fork's 12 puts Five, Six and Nine Cluster Exit Siblings within a few px of mermaid.
     ...(hasLabelledParallelRun(graph) &&
     usesMermaidElkPipeline(graph) &&
     graph.subgraphs.length > 0
-      ? { 'elk.spacing.edgeEdge': '70' }
+      ? {
+          'elk.spacing.edgeEdge':
+            opts.layoutEdgeLabelFontSize === undefined ? '70' : '12',
+        }
       : {}),
     'elk.layered.wrapping.strategy': 'OFF',
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
@@ -1059,7 +1070,11 @@ function subgraphToElk(
   graph: MermaidGraph,
   opts: Required<
     Pick<RenderOptions, 'font' | 'padding' | 'nodeSpacing' | 'layerSpacing'>
-  > & { fontSizes: FontSizes; legacyNodeSizes?: boolean },
+  > & {
+    fontSizes: FontSizes
+    legacyNodeSizes?: boolean
+    layoutEdgeLabelFontSize?: number
+  },
   edgesBySubgraph: Map<
     string | null,
     Array<{ index: number; edge: MermaidEdge }>

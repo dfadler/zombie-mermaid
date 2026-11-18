@@ -310,7 +310,7 @@ const STAIR_TRACK = 2
  * placement and before any edge is routed, so nothing else holds grid
  * coordinates yet.
  */
-function insertGridTrack(
+export function insertGridTrack(
   graph: AsciiGraph,
   axis: 'x' | 'y',
   at: number,

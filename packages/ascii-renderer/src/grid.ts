@@ -46,6 +46,7 @@ import {
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
 import { planClusterExits, widenClusterGutters } from './cluster-boundary.ts'
+import { fanExitRows, planClusterFans } from './cluster-fans.ts'
 import {
   blockUnrelatedFrames,
   unblock,
@@ -289,7 +290,7 @@ function hintedFaceCells(graph: AsciiGraph, node: AsciiNode): number {
       if (n === node && (f === 'L' || f === 'R')) count[f]++
   }
   const most = Math.max(count.L, count.R)
-  return most > 3 ? most : 0
+  return Math.max(most > 3 ? most : 0, fanExitRows(graph, node))
 }
 
 /**
@@ -3274,6 +3275,7 @@ export function createMapping(graph: AsciiGraph): void {
   // above (parallel-lane edges keep lane routing) and the final node
   // placement, and runs before any edge is routed.
   planClusterExits(graph)
+  planClusterFans(graph)
 
   // Analyze edges for bundling (parallel links like A & B --> C)
   // This groups edges that share sources or targets for cleaner visualization

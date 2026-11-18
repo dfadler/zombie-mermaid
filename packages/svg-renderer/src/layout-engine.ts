@@ -55,6 +55,8 @@ import { layoutSimple } from './layout-engine/simple-layout.ts'
  */
 export type FlowchartLayoutOptions = FlowchartRenderOptions & {
   legacyNodeSizes?: boolean
+  /** Size ELK's edge-label boxes at this font size, leaving the drawn text at `fontSizes.edgeLabel`. */
+  layoutEdgeLabelFontSize?: number
 }
 
 /**
