@@ -1168,6 +1168,20 @@ export const allForkFixes: ForkFix[] = [
       'Before (upstream): the frame floats apart from `Start`, a separate `S` box takes the edges, and only the `1` edge reaches `T`. After: `Start` feeds the frame, and both edges leave its bottom wall as parallel strokes into `T`’s top face, labels `1` and `2` side by side, as in mermaid 12.3.0.',
   },
   {
+    id: 'state-wrapped-label-regions',
+    title:
+      'State: a long label wraps and sizes the node, so regions pack as in mermaid',
+    symptom:
+      'A state with a long spaced label stayed one line and grew wide, so concurrent regions around it packed in different columns from mermaid@12.3.0, which wraps the label at 120px and grows the node taller.',
+    source:
+      'stateDiagram-v2\n  [*] --> W\n  W --> Q\n  state W {\n    A: Wait Idle Ready Running Active Failed Paused Done\n    --\n    B\n    --\n    C\n    --\n    D\n  }',
+    fixCommit: '76cd9315d',
+    pr: 3224,
+    render: 'svg',
+    lookFor:
+      'Before: the long label sits on one line in a wide box. After: it wraps onto four lines in a 136px box and the four regions form a 2 x 2 grid, as in mermaid 12.3.0.',
+  },
+  {
     id: 'state-start-dot-composite-centre',
     title: 'State diagram: start dot off-centre from a composite',
     symptom:
@@ -1179,6 +1193,19 @@ export const allForkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: the dot is left of the arrow. After: the dot sits directly above the arrow, on the composite’s centre line.',
+  },
+  {
+    id: 'state-regions-entry-centre-ascii',
+    title: 'State (ASCII): the start dot centres on a composite with regions',
+    symptom:
+      'With concurrent regions of unequal width, the `[*]` dot, the arrow into the frame and the target of an edge out of it sat over the gap between two region columns, not the frame centre. mermaid@12.3.0 centres them.',
+    source:
+      'stateDiagram-v2\n  [*] --> W\n  W --> Q\n  state W {\n    A: Wait Idle Ready Running Active Failed Paused Done\n    --\n    B\n    --\n    C\n    --\n    D\n  }',
+    fixCommit: '3f7a566f0',
+    pr: 3228,
+    render: 'ascii',
+    lookFor:
+      'Before (upstream): no regions are drawn, so the dot and the frame are not related. After: the dot and the arrow into the frame stand on its centre column, under the title `W`, and `Q` sits on the same column below. Before this fix the dot stood over the gap between the narrow and the wide region column.',
   },
 ]
 

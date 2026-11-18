@@ -24,7 +24,9 @@ import { mkCanvas, mkRoleCanvas } from './canvas.ts'
 import { createGrid } from './grid-occupancy.ts'
 import {
   isEdgeWithinOwnCluster,
+  setTrebuchetMetrics,
   stripFormattingTags,
+  wrapFlowchartLabel,
   subgraphDirectionIsHonored,
   subgraphFeedbackEdges,
 } from '@zombie-mermaid/core'
@@ -102,6 +104,27 @@ function lowerEmptySubgraphs(parsed: MermaidGraph): {
   return { graph: { ...parsed, subgraphs, nodes }, bare }
 }
 
+/**
+ * A state box's label wraps at the words mermaid@12.3.0 wraps it at (120px,
+ * measured at 16px in its Trebuchet stack), so a long label is a few short
+ * lines, not one wide box that stretches its region's column (#2962). The
+ * metrics are Trebuchet's whatever the render's font: the wrap is mermaid's.
+ */
+function stateBoxLabel(
+  parsed: MermaidGraph,
+  shape: string,
+  label: string,
+): string {
+  if (!parsed.stateDiagram || (shape !== 'rounded' && shape !== 'rectangle'))
+    return label
+  setTrebuchetMetrics(true)
+  try {
+    return wrapFlowchartLabel(label, 16, 500).text
+  } finally {
+    setTrebuchetMetrics(false)
+  }
+}
+
 export function convertToAsciiGraph(
   original: MermaidGraph,
   config: AsciiConfig,
@@ -151,7 +174,11 @@ export function convertToAsciiGraph(
       displayLabel:
         bare.has(id) && onEdge.has(id) && horizontal
           ? ` ${stripFormattingTags(mNode.label)} `
-          : stripFormattingTags(mNode.label),
+          : stateBoxLabel(
+              parsed,
+              mNode.shape,
+              stripFormattingTags(mNode.label),
+            ),
       // Preserve shape from parser for shape-aware rendering
       shape: bare.has(id)
         ? 'class-name'

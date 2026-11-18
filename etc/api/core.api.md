@@ -385,6 +385,9 @@ export function findBackEdges(edges: ReadonlyArray<{
     target: string;
 }>, walkOrder: Iterable<string>): Set<number>;
 
+// @public (undocumented)
+export const FLOWCHART_WRAP_WIDTH = 120;
+
 // @public
 export type FlowchartRenderOptions = CommonRenderOptions & Pick<RenderOptions, 'padding' | 'nodeSpacing' | 'layerSpacing' | 'mergeEdges' | 'direction' | 'curve' | 'honorThemeVariables' | 'fontSizes' | 'interactivity' | 'layoutCache' | 'layout'>;
 
@@ -1178,6 +1181,12 @@ export function withoutOwnClusterEdges(graph: MermaidGraph): MermaidGraph;
 
 // @public
 export function withRootClass(openTag: string, cls: string): string;
+
+// @public
+export function wrapFlowchartLabel(label: string, fontSize: number, fontWeight: number): {
+    text: string;
+    wrapped: boolean;
+};
 
 // @public
 export function wrapToWidth(text: string, maxWidth: number, fontSize: number): string[];
