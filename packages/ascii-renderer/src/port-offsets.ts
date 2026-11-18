@@ -28,6 +28,7 @@
 // geometry and count as fixed occupants of the position they use.
 // ============================================================================
 
+import { FAN_PITCH } from './cluster-fans.ts'
 import type { AsciiEdge, AsciiGraph, AsciiNode, GridCoord } from './types.ts'
 import {
   gridToDrawingCoord,
@@ -975,6 +976,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     }
   }
   spreadFaceLaneRuns(graph, result)
+  spreadClusterFanRuns(graph, result)
   nestDecisionDuplicates(graph, diamond, result)
   if (graph.edgeHints) planJogRows(graph, result)
   return result
@@ -1290,7 +1292,9 @@ function planJogRows(
     const wall = Math.max(
       first,
       ...jogs.map((j) =>
-        j.edge.clusterSource ? j.edge.clusterSource.maxY : first,
+        j.edge.clusterSource
+          ? j.edge.clusterSource[lr ? 'maxX' : 'maxY']
+          : first,
       ),
     )
     const lo = wall + 1
@@ -1385,6 +1389,61 @@ function spreadFaceLaneRuns(
       at(plan.arr),
       at(plan.arr),
       zero,
+    ]
+    result.set(e, shift)
+  }
+}
+
+/**
+ * Draw the rise, run and drop of the cluster-exit fans (cluster-fans.ts) each
+ * on a row and column of its own, the outermost of a side farthest out, so the
+ * nested routes never cross. Path points 1-2 are the rise, 2-3 the run, 3-4 the
+ * drop.
+ */
+function spreadClusterFanRuns(
+  graph: AsciiGraph,
+  result: Map<AsciiEdge, PortShift>,
+): void {
+  // The leftmost rise column: an exit that drops beside the cluster takes it.
+  const left = Math.min(
+    0,
+    ...graph.edges.flatMap((e) =>
+      e.clusterFan && e.clusterFan.side !== 'beside'
+        ? [
+            FAN_PITCH * (e.clusterFan.slot - (e.clusterFan.count - 1) / 2) +
+              e.clusterFan.bias,
+          ]
+        : [],
+    ),
+  )
+  for (const e of graph.edges) {
+    const fan = e.clusterFan
+    if (!fan) continue
+    const shift = result.get(e) ?? { start: 0, end: 0 }
+    if (fan.side === 'beside') {
+      if (e.path.length !== 4) continue
+      const x = left - (left === 0 ? 0 : 0)
+      shift.points = [
+        { x: 0, y: 0 },
+        { x, y: 0 },
+        { x, y: 0 },
+        { x: 0, y: 0 },
+      ]
+      result.set(e, shift)
+      continue
+    }
+    if (e.path.length !== 6) continue
+    // Negative for the outermost slot.
+    const o = FAN_PITCH * (fan.slot - (fan.count - 1) / 2) + fan.bias
+    const run = fan.side === 'over' ? o - fan.bias : -(o - fan.bias)
+    const drop = -(o - fan.bias)
+    shift.points = [
+      { x: 0, y: 0 },
+      { x: o, y: 0 },
+      { x: o, y: run },
+      { x: drop, y: run },
+      { x: drop, y: 0 },
+      { x: 0, y: 0 },
     ]
     result.set(e, shift)
   }
@@ -1946,7 +2005,12 @@ function placeFace(
     )
       cells.push(p)
   }
-  for (const gap of share ? [0] : [STROKE_SPACING, 1]) {
+  // A fan's entries are one row apart (mermaid's are 5px apart where its exits are 15px), so
+  // each leg into the target is longer than the one out of the cluster.
+  const fanEntry = list.some(
+    (f) => f.role === 'E' && f.edge.clusterFan !== undefined,
+  )
+  for (const gap of share ? [0] : fanEntry ? [1] : [STROKE_SPACING, 1]) {
     // A cell `r` may take: off other edges' cells (one of its role, if
     // sharing), how far from the centre, and the stems it would run across.
     const cost = (r: Route, p: number): number => {

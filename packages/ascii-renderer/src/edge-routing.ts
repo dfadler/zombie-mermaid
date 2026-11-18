@@ -6,6 +6,7 @@
 // and dual-path comparison for optimal edge routing.
 // ============================================================================
 
+import { buildClusterFanRoute } from './cluster-fans.ts'
 import type {
   GridCoord,
   Direction,
@@ -2701,6 +2702,22 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     preferredOppositeDir = alternativeOppositeDir = Down
   }
 
+  // A sibling exit that mermaid draws round its target (cluster-fans.ts).
+  if (edge.clusterFan) {
+    const fan = buildClusterFanRoute(graph, edge)
+    if (fan) {
+      edge.startDir = fan.startDir
+      edge.endDir = fan.endDir
+      edge.path = fan.path
+      edge.hintedFaces = true
+      if (edge.text.length > 0) {
+        applyLabelLine(graph, edge, fan.labelSegment, displayWidth(edge.text))
+      }
+      return
+    }
+    delete edge.clusterFan
+  }
+
   // An edge leaving a cluster that engaged cluster-boundary routing (see
   // cluster-boundary.ts) takes the cluster's shared exit instead of the
   // ordinary search below. Dispatching here, in determinePath, rather than
@@ -3423,7 +3440,7 @@ export function determineLabelLine(
   edge: AsciiEdge,
   ctx?: LabelContext,
 ): void {
-  if (edge.text.length === 0 || flowLanes.has(edge)) return
+  if (edge.text.length === 0 || flowLanes.has(edge) || edge.clusterFan) return
   if (
     edge.parallelLane &&
     edge.parallelLane.index > 0 &&

@@ -1,0 +1,1009 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`cluster exit siblings go round the target (#2886) > Five Cluster Exit LR: snapshots SVG and ASCII > ascii-hints 1`] = `
+"                                               
+            ┌───────┐ ┌───────1────────┐       
+            │Cluster│ │                │       
+            │       │ │ ┌─────2──────┐ │       
+            │       │ │ │            │ │       
+┌───────┐   │ ┌───┐ │ │ │            │ │  ┌───┐
+│       │   │ │   ├─┼─┘ │            │ │  │   │
+│       │   │ │   │ │   │            │ │  │   │
+│       │   │ │   ├─┼───┘            │ └─►│   │
+│       │   │ │   │ │                └───►│   │
+│       │   │ │   ├─┼───────3────────────►│   │
+│ Start ├──►│ │ a │ │                ┌───►│ T │
+│       │   │ │   ├─┼─────┐          │ ┌─►│   │
+│       │   │ │   │ │     │          │ │  │   │
+│       │   │ │   ├─┼───┐ │          │ │  │   │
+│       │   │ │   │ │   │ │          │ │  │   │
+│       │   │ │   ├─┼─┐ │ │          │ │  │   │
+└───────┘   │ └───┘ │ │ │ │          │ │  └───┘
+            │       │ │ │ │          │ │       
+            └───────┘ │ │ └────4─────┘ │       
+                      │ │              │       
+                      │ └──────5───────┘       
+                      │                        
+                      │                        
+                      │                        
+                      │                        
+                      │                        
+                      │                   ┌───┐
+                      │                   │   │
+                      └───────other──────►│ U │
+                                          │   │
+                                          └───┘"
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > Five Cluster Exit LR: snapshots SVG and ASCII > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 818.55 571.5" width="818.55" height="571.5" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm17nd9od-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm17nd9od-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="S" data-label="Cluster">
+  <rect x="232" y="217.75" width="200" height="123" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="332" y="231.75" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">Cluster</text>
+</g>
+<path class="edge" data-from="Start" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 279.25 L 232 279.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17nd9od-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1" d="M 432 235.32 L 444.93 235.32 Q 452 235.32, 452 228.25 L 452 58.07 Q 452 51, 459.07 51 L 599.48 51 Q 606.55 51, 606.55 58.07 L 606.55 213.81 Q 606.55 220.89, 613.62 220.89 L 626.55 220.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17nd9od-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="2" d="M 432 252.89 L 464.93 252.89 Q 472 252.89, 472 245.82 L 472 149.37 Q 472 142.3, 479.07 142.3 L 579.48 142.3 Q 586.55 142.3, 586.55 149.37 L 586.55 221.81 Q 586.55 228.89, 593.62 228.89 L 626.55 228.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17nd9od-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="3" d="M 432 270.46 L 484.93 270.46 Q 492 270.46, 492 263.39 L 492 240.67 Q 492 233.6, 499.07 233.6 L 564.91 233.6 Q 566.55 233.6, 566.55 235.24 L 566.55 235.24 Q 566.55 236.89, 568.19 236.89 L 626.55 236.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17nd9od-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="4" d="M 432 288.04 L 484.93 288.04 Q 492 288.04, 492 295.11 L 492 317.83 Q 492 324.9, 499.07 324.9 L 559.48 324.9 Q 566.55 324.9, 566.55 317.83 L 566.55 251.96 Q 566.55 244.89, 573.62 244.89 L 626.55 244.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17nd9od-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="5" d="M 432 305.61 L 464.93 305.61 Q 472 305.61, 472 312.68 L 472 409.13 Q 472 416.2, 479.07 416.2 L 579.48 416.2 Q 586.55 416.2, 586.55 409.13 L 586.55 259.96 Q 586.55 252.89, 593.62 252.89 L 626.55 252.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17nd9od-arrowhead)" />
+<path class="edge" data-from="S" data-to="U" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="other" d="M 432 323.18 L 444.93 323.18 Q 452 323.18, 452 330.25 L 452 500.43 Q 452 507.5, 459.07 507.5 L 626.55 507.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm17nd9od-arrowhead)" />
+<g class="edge-label" data-from="S" data-to="T" data-label="1">
+  <rect x="526.39" y="43" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">1</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="2">
+  <rect x="526.39" y="134.3" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="141.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">2</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="3">
+  <rect x="526.39" y="225.6" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="232.75" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">3</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="4">
+  <rect x="526.39" y="316.9" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="324.05" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">4</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="5">
+  <rect x="526.39" y="408.2" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="415.35" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">5</text>
+</g>
+<g class="edge-label" data-from="S" data-to="U" data-label="other">
+  <rect x="516" y="499.5" width="26.55" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="506.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">other</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="256" y="268.75" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="332" y="292.75" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="Start" data-label="Start" data-shape="rectangle">
+  <rect x="40" y="255.25" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="279.25" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="T" data-label="T" data-shape="rectangle">
+  <rect x="626.55" y="212.89" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="702.55" y="236.89" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">T</text>
+</g>
+<g class="node" data-id="U" data-label="U" data-shape="rectangle">
+  <rect x="626.55" y="483.5" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="702.55" y="507.5" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">U</text>
+</g>
+</svg>"
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > Five Cluster Exit RL: snapshots SVG and ASCII > ascii-hints 1`] = `
+"                                               
+       ┌────────1───────┐ ┌───────┐            
+       │                │ │Cluster│            
+       │ ┌──────2─────┐ │ │       │            
+       │ │            │ │ │       │            
+┌───┐  │ │            │ │ │ ┌───┐ │   ┌───────┐
+│   │  │ │            │ └─┼─┤   │ │   │       │
+│   │  │ │            │   │ │   │ │   │       │
+│   │◄─┘ │            └───┼─┤   │ │   │       │
+│   │◄───┘                │ │   │ │   │       │
+│   │◄────────────3───────┼─┤   │ │   │       │
+│ T │◄───┐                │ │ a │ │◄──┤ Start │
+│   │◄─┐ │          ┌─────┼─┤   │ │   │       │
+│   │  │ │          │     │ │   │ │   │       │
+│   │  │ │          │ ┌───┼─┤   │ │   │       │
+│   │  │ │          │ │   │ │   │ │   │       │
+│   │  │ │          │ │ ┌─┼─┤   │ │   │       │
+└───┘  │ │          │ │ │ │ └───┘ │   └───────┘
+       │ │          │ │ │ │       │            
+       │ └─────4────┘ │ │ └───────┘            
+       │              │ │                      
+       └───────5──────┘ │                      
+                        │                      
+                        │                      
+                        │                      
+                        │                      
+                        │                      
+┌───┐                   │                      
+│   │                   │                      
+│ U │◄──────other───────┘                      
+│   │                                          
+└───┘                                          "
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > Five Cluster Exit RL: snapshots SVG and ASCII > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 818.55 571.5" width="818.55" height="571.5" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmk38ayn-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmk38ayn-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="S" data-label="Cluster">
+  <rect x="386.55" y="217.75" width="200" height="123" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="486.55" y="231.75" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">Cluster</text>
+</g>
+<path class="edge" data-from="Start" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 626.55 279.25 L 586.55 279.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmk38ayn-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1" d="M 386.55 235.32 L 373.62 235.32 Q 366.55 235.32, 366.55 228.25 L 366.55 58.07 Q 366.55 51, 359.48 51 L 219.07 51 Q 212 51, 212 58.07 L 212 213.81 Q 212 220.89, 204.93 220.89 L 192 220.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmk38ayn-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="2" d="M 386.55 252.89 L 353.62 252.89 Q 346.55 252.89, 346.55 245.82 L 346.55 149.37 Q 346.55 142.3, 339.48 142.3 L 239.07 142.3 Q 232 142.3, 232 149.37 L 232 221.81 Q 232 228.89, 224.93 228.89 L 192 228.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmk38ayn-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="3" d="M 386.55 270.46 L 333.62 270.46 Q 326.55 270.46, 326.55 263.39 L 326.55 240.67 Q 326.55 233.6, 319.48 233.6 L 253.64 233.6 Q 252 233.6, 252 235.24 L 252 235.24 Q 252 236.89, 250.36 236.89 L 192 236.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmk38ayn-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="4" d="M 386.55 288.04 L 333.62 288.04 Q 326.55 288.04, 326.55 295.11 L 326.55 317.83 Q 326.55 324.9, 319.48 324.9 L 259.07 324.9 Q 252 324.9, 252 317.83 L 252 251.96 Q 252 244.89, 244.93 244.89 L 192 244.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmk38ayn-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="5" d="M 386.55 305.61 L 353.62 305.61 Q 346.55 305.61, 346.55 312.68 L 346.55 409.13 Q 346.55 416.2, 339.48 416.2 L 239.07 416.2 Q 232 416.2, 232 409.13 L 232 259.96 Q 232 252.89, 224.93 252.89 L 192 252.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmk38ayn-arrowhead)" />
+<path class="edge" data-from="S" data-to="U" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="other" d="M 386.55 323.18 L 373.62 323.18 Q 366.55 323.18, 366.55 330.25 L 366.55 500.43 Q 366.55 507.5, 359.48 507.5 L 192 507.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmk38ayn-arrowhead)" />
+<g class="edge-label" data-from="S" data-to="T" data-label="1">
+  <rect x="286.39" y="43" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">1</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="2">
+  <rect x="286.39" y="134.3" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="141.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">2</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="3">
+  <rect x="286.39" y="225.6" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="232.75" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">3</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="4">
+  <rect x="286.39" y="316.9" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="324.05" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">4</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="5">
+  <rect x="286.39" y="408.2" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="415.35" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">5</text>
+</g>
+<g class="edge-label" data-from="S" data-to="U" data-label="other">
+  <rect x="276" y="499.5" width="26.55" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="506.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">other</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="410.55" y="268.75" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="486.55" y="292.75" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="Start" data-label="Start" data-shape="rectangle">
+  <rect x="626.55" y="255.25" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="702.55" y="279.25" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="T" data-label="T" data-shape="rectangle">
+  <rect x="40" y="212.89" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="236.89" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">T</text>
+</g>
+<g class="node" data-id="U" data-label="U" data-shape="rectangle">
+  <rect x="40" y="483.5" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="507.5" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">U</text>
+</g>
+</svg>"
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > Nine Cluster Exit LR: snapshots SVG and ASCII > ascii-hints 1`] = `
+"                                                        
+                      ┌───────────1────────────┐        
+                      │                        │        
+                      │ ┌─────────2──────────┐ │        
+                      │ │                    │ │        
+            ┌───────┐ │ │ ┌───────3────────┐ │ │        
+            │Cluster│ │ │ │                │ │ │        
+            │       │ │ │ │ ┌─────4──────┐ │ │ │        
+            │       │ │ │ │ │            │ │ │ │        
+┌───────┐   │ ┌───┐ │ │ │ │ │            │ │ │ │  ┌────┐
+│       │   │ │   ├─┼─┘ │ │ │            │ │ │ │  │    │
+│       │   │ │   │ │   │ │ │            │ │ │ │  │    │
+│       │   │ │   ├─┼───┘ │ │            │ │ │ │  │    │
+│       │   │ │   │ │     │ │            │ │ │ │  │    │
+│       │   │ │   ├─┼─────┘ │            │ │ │ └─►│    │
+│       │   │ │   │ │       │            │ │ └───►│    │
+│       │   │ │   ├─┼───────┘            │ └─────►│    │
+│       │   │ │   │ │                    └───────►│    │
+│       │   │ │   ├─┼──────────5─────────────────►│    │
+│ Start ├──►│ │ a │ │                    ┌───────►│ T  │
+│       │   │ │   ├─┼─────────┐          │ ┌─────►│    │
+│       │   │ │   │ │         │          │ │ ┌───►│    │
+│       │   │ │   ├─┼───────┐ │          │ │ │ ┌─►│    │
+│       │   │ │   │ │       │ │          │ │ │ │  │    │
+│       │   │ │   ├─┼─────┐ │ │          │ │ │ │  │    │
+│       │   │ │   │ │     │ │ │          │ │ │ │  │    │
+│       │   │ │   ├─┼───┐ │ │ │          │ │ │ │  │    │
+│       │   │ │   │ │   │ │ │ │          │ │ │ │  │    │
+│       │   │ │   ├─┼─┐ │ │ │ │          │ │ │ │  │    │
+└───────┘   │ └───┘ │ │ │ │ │ │          │ │ │ │  └────┘
+            │       │ │ │ │ │ │          │ │ │ │        
+            └───────┘ │ │ │ │ └────6─────┘ │ │ │        
+                      │ │ │ │              │ │ │        
+                      │ │ │ └──────7───────┘ │ │        
+                      │ │ │                  │ │        
+                      │ │ └────────8─────────┘ │        
+                      │ │                      │        
+                      │ └──────────9───────────┘        
+                      │                                 
+                      │                                 
+                      │                                 
+                      │                                 
+                      │                                 
+                      │                           ┌────┐
+                      │                           │    │
+                      └───────────other──────────►│ U  │
+                                                  │    │
+                                                  └────┘"
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > Nine Cluster Exit LR: snapshots SVG and ASCII > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 898.55 936.7" width="898.55" height="936.7" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm14n914x-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm14n914x-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="S" data-label="Cluster">
+  <rect x="232" y="400.35" width="200" height="123" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="332" y="414.35" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">Cluster</text>
+</g>
+<path class="edge" data-from="Start" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 461.85 L 232 461.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14n914x-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1" d="M 432 411.53 L 444.93 411.53 Q 452 411.53, 452 404.46 L 452 58.07 Q 452 51, 459.07 51 L 679.48 51 Q 686.55 51, 686.55 58.07 L 686.55 390.02 Q 686.55 397.09, 693.62 397.09 L 706.55 397.09" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14n914x-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="2" d="M 432 422.71 L 464.93 422.71 Q 472 422.71, 472 415.64 L 472 149.37 Q 472 142.3, 479.07 142.3 L 659.48 142.3 Q 666.55 142.3, 666.55 149.37 L 666.55 394.82 Q 666.55 401.89, 673.62 401.89 L 706.55 401.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14n914x-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="3" d="M 432 433.9 L 484.93 433.9 Q 492 433.9, 492 426.82 L 492 240.67 Q 492 233.6, 499.07 233.6 L 639.48 233.6 Q 646.55 233.6, 646.55 240.67 L 646.55 399.62 Q 646.55 406.69, 653.62 406.69 L 706.55 406.69" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14n914x-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="4" d="M 432 445.08 L 504.93 445.08 Q 512 445.08, 512 438.01 L 512 331.97 Q 512 324.9, 519.07 324.9 L 619.48 324.9 Q 626.55 324.9, 626.55 331.97 L 626.55 404.42 Q 626.55 411.49, 633.62 411.49 L 706.55 411.49" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14n914x-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="5" d="M 432 456.26 L 524.93 456.26 Q 532 456.26, 532 449.19 L 532 423.32 Q 532 416.25, 539.07 416.25 L 706.55 416.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14n914x-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="6" d="M 432 467.44 L 524.93 467.44 Q 532 467.44, 532 474.51 L 532 500.43 Q 532 507.5, 539.07 507.5 L 619.48 507.5 Q 626.55 507.5, 626.55 500.43 L 626.55 428.16 Q 626.55 421.09, 633.62 421.09 L 706.55 421.09" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14n914x-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="7" d="M 432 478.62 L 504.93 478.62 Q 512 478.62, 512 485.69 L 512 591.73 Q 512 598.8, 519.07 598.8 L 639.48 598.8 Q 646.55 598.8, 646.55 591.73 L 646.55 432.96 Q 646.55 425.89, 653.62 425.89 L 706.55 425.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14n914x-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="8" d="M 432 489.8 L 484.93 489.8 Q 492 489.8, 492 496.88 L 492 683.03 Q 492 690.1, 499.07 690.1 L 659.48 690.1 Q 666.55 690.1, 666.55 683.03 L 666.55 437.76 Q 666.55 430.69, 673.62 430.69 L 706.55 430.69" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14n914x-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="9" d="M 432 500.99 L 464.93 500.99 Q 472 500.99, 472 508.06 L 472 774.33 Q 472 781.4, 479.07 781.4 L 679.48 781.4 Q 686.55 781.4, 686.55 774.33 L 686.55 442.56 Q 686.55 435.49, 693.62 435.49 L 706.55 435.49" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14n914x-arrowhead)" />
+<path class="edge" data-from="S" data-to="U" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="other" d="M 432 512.17 L 444.93 512.17 Q 452 512.17, 452 519.24 L 452 865.63 Q 452 872.7, 459.07 872.7 L 706.55 872.7" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm14n914x-arrowhead)" />
+<g class="edge-label" data-from="S" data-to="T" data-label="1">
+  <rect x="566.39" y="43" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="569.27" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">1</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="2">
+  <rect x="566.39" y="134.3" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="569.27" y="141.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">2</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="3">
+  <rect x="566.39" y="225.6" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="569.27" y="232.75" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">3</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="4">
+  <rect x="566.39" y="316.9" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="569.27" y="324.05" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">4</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="5">
+  <rect x="566.39" y="408.2" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="569.27" y="415.35" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">5</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="6">
+  <rect x="566.39" y="499.5" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="569.27" y="506.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">6</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="7">
+  <rect x="566.39" y="590.8" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="569.27" y="597.95" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">7</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="8">
+  <rect x="566.39" y="682.1" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="569.27" y="689.25" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">8</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="9">
+  <rect x="566.39" y="773.4" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="569.27" y="780.55" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">9</text>
+</g>
+<g class="edge-label" data-from="S" data-to="U" data-label="other">
+  <rect x="556" y="864.7" width="26.55" height="14.3" fill="var(--bg)" />
+  <text x="569.27" y="871.85" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">other</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="256" y="451.35" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="332" y="475.35" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="Start" data-label="Start" data-shape="rectangle">
+  <rect x="40" y="437.85" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="461.85" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="T" data-label="T" data-shape="rectangle">
+  <rect x="706.55" y="392.29" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="782.55" y="416.29" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">T</text>
+</g>
+<g class="node" data-id="U" data-label="U" data-shape="rectangle">
+  <rect x="706.55" y="848.7" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="782.55" y="872.7" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">U</text>
+</g>
+</svg>"
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > Nine Cluster Exit RL: snapshots SVG and ASCII > ascii-hints 1`] = `
+"                                                        
+        ┌────────────1───────────┐                      
+        │                        │                      
+        │ ┌──────────2─────────┐ │                      
+        │ │                    │ │                      
+        │ │ ┌────────3───────┐ │ │ ┌───────┐            
+        │ │ │                │ │ │ │Cluster│            
+        │ │ │ ┌──────4─────┐ │ │ │ │       │            
+        │ │ │ │            │ │ │ │ │       │            
+┌────┐  │ │ │ │            │ │ │ │ │ ┌───┐ │   ┌───────┐
+│    │  │ │ │ │            │ │ │ └─┼─┤   │ │   │       │
+│    │  │ │ │ │            │ │ │   │ │   │ │   │       │
+│    │  │ │ │ │            │ │ └───┼─┤   │ │   │       │
+│    │  │ │ │ │            │ │     │ │   │ │   │       │
+│    │◄─┘ │ │ │            │ └─────┼─┤   │ │   │       │
+│    │◄───┘ │ │            │       │ │   │ │   │       │
+│    │◄─────┘ │            └───────┼─┤   │ │   │       │
+│    │◄───────┘                    │ │   │ │   │       │
+│    │◄─────────────────5──────────┼─┤   │ │   │       │
+│ T  │◄───────┐                    │ │ a │ │◄──┤ Start │
+│    │◄─────┐ │          ┌─────────┼─┤   │ │   │       │
+│    │◄───┐ │ │          │         │ │   │ │   │       │
+│    │◄─┐ │ │ │          │ ┌───────┼─┤   │ │   │       │
+│    │  │ │ │ │          │ │       │ │   │ │   │       │
+│    │  │ │ │ │          │ │ ┌─────┼─┤   │ │   │       │
+│    │  │ │ │ │          │ │ │     │ │   │ │   │       │
+│    │  │ │ │ │          │ │ │ ┌───┼─┤   │ │   │       │
+│    │  │ │ │ │          │ │ │ │   │ │   │ │   │       │
+│    │  │ │ │ │          │ │ │ │ ┌─┼─┤   │ │   │       │
+└────┘  │ │ │ │          │ │ │ │ │ │ └───┘ │   └───────┘
+        │ │ │ │          │ │ │ │ │ │       │            
+        │ │ │ └─────6────┘ │ │ │ │ └───────┘            
+        │ │ │              │ │ │ │                      
+        │ │ └───────7──────┘ │ │ │                      
+        │ │                  │ │ │                      
+        │ └─────────8────────┘ │ │                      
+        │                      │ │                      
+        └───────────9──────────┘ │                      
+                                 │                      
+                                 │                      
+                                 │                      
+                                 │                      
+                                 │                      
+┌────┐                           │                      
+│    │                           │                      
+│ U  │◄──────────other───────────┘                      
+│    │                                                  
+└────┘                                                  "
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > Nine Cluster Exit RL: snapshots SVG and ASCII > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 898.55 936.7" width="898.55" height="936.7" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmnnwani-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmnnwani-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="S" data-label="Cluster">
+  <rect x="466.55" y="400.35" width="200" height="123" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="566.55" y="414.35" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">Cluster</text>
+</g>
+<path class="edge" data-from="Start" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 706.55 461.85 L 666.55 461.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnnwani-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1" d="M 466.55 411.53 L 453.62 411.53 Q 446.55 411.53, 446.55 404.46 L 446.55 58.07 Q 446.55 51, 439.48 51 L 219.07 51 Q 212 51, 212 58.07 L 212 390.02 Q 212 397.09, 204.93 397.09 L 192 397.09" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnnwani-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="2" d="M 466.55 422.71 L 433.62 422.71 Q 426.55 422.71, 426.55 415.64 L 426.55 149.37 Q 426.55 142.3, 419.48 142.3 L 239.07 142.3 Q 232 142.3, 232 149.37 L 232 394.82 Q 232 401.89, 224.93 401.89 L 192 401.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnnwani-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="3" d="M 466.55 433.9 L 413.62 433.9 Q 406.55 433.9, 406.55 426.82 L 406.55 240.67 Q 406.55 233.6, 399.48 233.6 L 259.07 233.6 Q 252 233.6, 252 240.67 L 252 399.62 Q 252 406.69, 244.93 406.69 L 192 406.69" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnnwani-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="4" d="M 466.55 445.08 L 393.62 445.08 Q 386.55 445.08, 386.55 438.01 L 386.55 331.97 Q 386.55 324.9, 379.48 324.9 L 279.07 324.9 Q 272 324.9, 272 331.97 L 272 404.42 Q 272 411.49, 264.93 411.49 L 192 411.49" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnnwani-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="5" d="M 466.55 456.26 L 373.62 456.26 Q 366.55 456.26, 366.55 449.19 L 366.55 423.32 Q 366.55 416.25, 359.48 416.25 L 192 416.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnnwani-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="6" d="M 466.55 467.44 L 373.62 467.44 Q 366.55 467.44, 366.55 474.51 L 366.55 500.43 Q 366.55 507.5, 359.48 507.5 L 279.07 507.5 Q 272 507.5, 272 500.43 L 272 428.16 Q 272 421.09, 264.93 421.09 L 192 421.09" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnnwani-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="7" d="M 466.55 478.62 L 393.62 478.62 Q 386.55 478.62, 386.55 485.69 L 386.55 591.73 Q 386.55 598.8, 379.48 598.8 L 259.07 598.8 Q 252 598.8, 252 591.73 L 252 432.96 Q 252 425.89, 244.93 425.89 L 192 425.89" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnnwani-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="8" d="M 466.55 489.8 L 413.62 489.8 Q 406.55 489.8, 406.55 496.88 L 406.55 683.03 Q 406.55 690.1, 399.48 690.1 L 239.07 690.1 Q 232 690.1, 232 683.03 L 232 437.76 Q 232 430.69, 224.93 430.69 L 192 430.69" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnnwani-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="9" d="M 466.55 500.99 L 433.62 500.99 Q 426.55 500.99, 426.55 508.06 L 426.55 774.33 Q 426.55 781.4, 419.48 781.4 L 219.07 781.4 Q 212 781.4, 212 774.33 L 212 442.56 Q 212 435.49, 204.93 435.49 L 192 435.49" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnnwani-arrowhead)" />
+<path class="edge" data-from="S" data-to="U" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="other" d="M 466.55 512.17 L 453.62 512.17 Q 446.55 512.17, 446.55 519.24 L 446.55 865.63 Q 446.55 872.7, 439.48 872.7 L 192 872.7" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmnnwani-arrowhead)" />
+<g class="edge-label" data-from="S" data-to="T" data-label="1">
+  <rect x="326.39" y="43" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="329.27" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">1</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="2">
+  <rect x="326.39" y="134.3" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="329.27" y="141.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">2</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="3">
+  <rect x="326.39" y="225.6" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="329.27" y="232.75" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">3</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="4">
+  <rect x="326.39" y="316.9" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="329.27" y="324.05" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">4</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="5">
+  <rect x="326.39" y="408.2" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="329.27" y="415.35" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">5</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="6">
+  <rect x="326.39" y="499.5" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="329.27" y="506.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">6</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="7">
+  <rect x="326.39" y="590.8" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="329.27" y="597.95" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">7</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="8">
+  <rect x="326.39" y="682.1" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="329.27" y="689.25" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">8</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="9">
+  <rect x="326.39" y="773.4" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="329.27" y="780.55" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">9</text>
+</g>
+<g class="edge-label" data-from="S" data-to="U" data-label="other">
+  <rect x="316" y="864.7" width="26.55" height="14.3" fill="var(--bg)" />
+  <text x="329.27" y="871.85" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">other</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="490.55" y="451.35" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="566.55" y="475.35" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="Start" data-label="Start" data-shape="rectangle">
+  <rect x="706.55" y="437.85" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="782.55" y="461.85" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="T" data-label="T" data-shape="rectangle">
+  <rect x="40" y="392.29" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="416.29" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">T</text>
+</g>
+<g class="node" data-id="U" data-label="U" data-shape="rectangle">
+  <rect x="40" y="848.7" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="872.7" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">U</text>
+</g>
+</svg>"
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > No Other Exit LR: snapshots SVG and ASCII > ascii-hints 1`] = `
+"            ┌───────┐              
+            │Cluster│              
+            │       │┌──1───┐      
+            │       ││      │      
+┌───────┐   │ ┌───┐ ││      │ ┌───┐
+│       │   │ │   ├─┼┘      │ │   │
+│       │   │ │   │ │       └►│   │
+│ Start ├──►│ │ a ├─┼──2─────►│ T │
+│       │   │ │   │ │       ┌►│   │
+│       │   │ │   ├─┼┐      │ │   │
+└───────┘   │ └───┘ ││      │ └───┘
+            │       ││      │      
+            └───────┘└──3───┘      
+                                   "
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > No Other Exit LR: snapshots SVG and ASCII > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 717.77 292.75" width="717.77" height="292.75" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm5azvk1-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm5azvk1-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="S" data-label="Cluster">
+  <rect x="232" y="80.8" width="200" height="123" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="332" y="94.8" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">Cluster</text>
+</g>
+<path class="edge" data-from="Start" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 142.3 L 232 142.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5azvk1-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1" d="M 432 111.55 L 444.93 111.55 Q 452 111.55, 452 104.48 L 452 58.07 Q 452 51, 459.07 51 L 498.7 51 Q 505.77 51, 505.77 58.07 L 505.77 123.23 Q 505.77 130.3, 512.84 130.3 L 525.77 130.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5azvk1-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="2" d="M 432 142.3 L 525.77 142.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5azvk1-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="3" d="M 432 173.05 L 444.93 173.05 Q 452 173.05, 452 180.12 L 452 226.53 Q 452 233.6, 459.07 233.6 L 498.7 233.6 Q 505.77 233.6, 505.77 226.53 L 505.77 161.37 Q 505.77 154.3, 512.84 154.3 L 525.77 154.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm5azvk1-arrowhead)" />
+<g class="edge-label" data-from="S" data-to="T" data-label="1">
+  <rect x="476" y="43" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="478.88" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">1</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="2">
+  <rect x="476" y="134.3" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="478.88" y="141.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">2</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="3">
+  <rect x="476" y="225.6" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="478.88" y="232.75" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">3</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="256" y="131.8" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="332" y="155.8" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="Start" data-label="Start" data-shape="rectangle">
+  <rect x="40" y="118.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="142.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="T" data-label="T" data-shape="rectangle">
+  <rect x="525.77" y="118.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="601.77" y="142.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">T</text>
+</g>
+</svg>"
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > No Other Exit RL: snapshots SVG and ASCII > ascii-hints 1`] = `
+"              ┌───────┐            
+              │Cluster│            
+      ┌───1──┐│       │            
+      │      ││       │            
+┌───┐ │      ││ ┌───┐ │   ┌───────┐
+│   │ │      └┼─┤   │ │   │       │
+│   │◄┘       │ │   │ │   │       │
+│ T │◄─────2──┼─┤ a │ │◄──┤ Start │
+│   │◄┐       │ │   │ │   │       │
+│   │ │      ┌┼─┤   │ │   │       │
+└───┘ │      ││ └───┘ │   └───────┘
+      │      ││       │            
+      └───3──┘└───────┘            
+                                   "
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > No Other Exit RL: snapshots SVG and ASCII > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 717.77 292.75" width="717.77" height="292.75" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmgw948u-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmgw948u-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="S" data-label="Cluster">
+  <rect x="285.77" y="80.8" width="200" height="123" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="385.77" y="94.8" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">Cluster</text>
+</g>
+<path class="edge" data-from="Start" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 525.77 142.3 L 485.77 142.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmgw948u-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1" d="M 285.77 111.55 L 272.84 111.55 Q 265.77 111.55, 265.77 104.48 L 265.77 58.07 Q 265.77 51, 258.7 51 L 219.07 51 Q 212 51, 212 58.07 L 212 123.23 Q 212 130.3, 204.93 130.3 L 192 130.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmgw948u-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="2" d="M 285.77 142.3 L 192 142.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmgw948u-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="3" d="M 285.77 173.05 L 272.84 173.05 Q 265.77 173.05, 265.77 180.12 L 265.77 226.53 Q 265.77 233.6, 258.7 233.6 L 219.07 233.6 Q 212 233.6, 212 226.53 L 212 161.37 Q 212 154.3, 204.93 154.3 L 192 154.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmgw948u-arrowhead)" />
+<g class="edge-label" data-from="S" data-to="T" data-label="1">
+  <rect x="236" y="43" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="238.88" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">1</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="2">
+  <rect x="236" y="134.3" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="238.88" y="141.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">2</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="3">
+  <rect x="236" y="225.6" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="238.88" y="232.75" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">3</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="309.77" y="131.8" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="385.77" y="155.8" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="Start" data-label="Start" data-shape="rectangle">
+  <rect x="525.77" y="118.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="601.77" y="142.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="T" data-label="T" data-shape="rectangle">
+  <rect x="40" y="118.3" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="142.3" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">T</text>
+</g>
+</svg>"
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > Six Cluster Exit LR: snapshots SVG and ASCII > ascii-hints 1`] = `
+"                                                   
+                      ┌─────────1──────────┐       
+                      │                    │       
+            ┌───────┐ │ ┌───────2────────┐ │       
+            │Cluster│ │ │                │ │       
+            │       │ │ │ ┌─────3──────┐ │ │       
+            │       │ │ │ │            │ │ │       
+┌───────┐   │ ┌───┐ │ │ │ │            │ │ │  ┌───┐
+│       │   │ │   │ │ │ │ │            │ │ │  │   │
+│       │   │ │   ├─┼─┘ │ │            │ │ │  │   │
+│       │   │ │   │ │   │ │            │ │ │  │   │
+│       │   │ │   ├─┼───┘ │            │ │ │  │   │
+│       │   │ │   │ │     │            │ │ └─►│   │
+│       │   │ │   ├─┼─────┘            │ └───►│   │
+│       │   │ │   │ │                  └─────►│   │
+│ Start ├──►│ │ a ├─┼───────┐          ┌─────►│ T │
+│       │   │ │   │ │       │          │ ┌───►│   │
+│       │   │ │   ├─┼─────┐ │          │ │ ┌─►│   │
+│       │   │ │   │ │     │ │          │ │ │  │   │
+│       │   │ │   ├─┼───┐ │ │          │ │ │  │   │
+│       │   │ │   │ │   │ │ │          │ │ │  │   │
+│       │   │ │   ├─┼─┐ │ │ │          │ │ │  │   │
+│       │   │ │   │ │ │ │ │ │          │ │ │  │   │
+└───────┘   │ └───┘ │ │ │ │ │          │ │ │  └───┘
+            │       │ │ │ │ │          │ │ │       
+            └───────┘ │ │ │ └────4─────┘ │ │       
+                      │ │ │              │ │       
+                      │ │ └──────5───────┘ │       
+                      │ │                  │       
+                      │ └────────6─────────┘       
+                      │                            
+                      │                            
+                      │                            
+                      │                            
+                      │                            
+                      │                       ┌───┐
+                      │                       │   │
+                      └─────────other────────►│ U │
+                                              │   │
+                                              └───┘"
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > Six Cluster Exit LR: snapshots SVG and ASCII > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 818.55 662.8" width="818.55" height="662.8" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zm1z4qb-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zm1z4qb-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="S" data-label="Cluster">
+  <rect x="232" y="263.4" width="200" height="123" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="332" y="277.4" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">Cluster</text>
+</g>
+<path class="edge" data-from="Start" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 192 324.9 L 232 324.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1z4qb-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1" d="M 432 278.77 L 444.93 278.77 Q 452 278.77, 452 271.7 L 452 58.07 Q 452 51, 459.07 51 L 599.48 51 Q 606.55 51, 606.55 58.07 L 606.55 257.22 Q 606.55 264.29, 613.62 264.29 L 626.55 264.29" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1z4qb-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="2" d="M 432 294.15 L 464.93 294.15 Q 472 294.15, 472 287.08 L 472 149.37 Q 472 142.3, 479.07 142.3 L 579.48 142.3 Q 586.55 142.3, 586.55 149.37 L 586.55 264.08 Q 586.55 271.15, 593.62 271.15 L 626.55 271.15" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1z4qb-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="3" d="M 432 309.52 L 484.93 309.52 Q 492 309.52, 492 302.45 L 492 240.67 Q 492 233.6, 499.07 233.6 L 559.48 233.6 Q 566.55 233.6, 566.55 240.67 L 566.55 270.94 Q 566.55 278.01, 573.62 278.01 L 626.55 278.01" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1z4qb-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="4" d="M 432 324.9 L 559.48 324.9 Q 566.55 324.9, 566.55 317.83 L 566.55 291.94 Q 566.55 284.87, 573.62 284.87 L 626.55 284.87" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1z4qb-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="5" d="M 432 340.27 L 484.93 340.27 Q 492 340.27, 492 347.35 L 492 409.13 Q 492 416.2, 499.07 416.2 L 579.48 416.2 Q 586.55 416.2, 586.55 409.13 L 586.55 298.79 Q 586.55 291.72, 593.62 291.72 L 626.55 291.72" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1z4qb-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="6" d="M 432 355.65 L 464.93 355.65 Q 472 355.65, 472 362.72 L 472 500.43 Q 472 507.5, 479.07 507.5 L 599.48 507.5 Q 606.55 507.5, 606.55 500.43 L 606.55 305.65 Q 606.55 298.58, 613.62 298.58 L 626.55 298.58" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1z4qb-arrowhead)" />
+<path class="edge" data-from="S" data-to="U" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="other" d="M 432 371.02 L 444.93 371.02 Q 452 371.02, 452 378.1 L 452 591.73 Q 452 598.8, 459.07 598.8 L 626.55 598.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zm1z4qb-arrowhead)" />
+<g class="edge-label" data-from="S" data-to="T" data-label="1">
+  <rect x="526.39" y="43" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">1</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="2">
+  <rect x="526.39" y="134.3" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="141.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">2</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="3">
+  <rect x="526.39" y="225.6" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="232.75" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">3</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="4">
+  <rect x="526.39" y="316.9" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="324.05" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">4</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="5">
+  <rect x="526.39" y="408.2" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="415.35" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">5</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="6">
+  <rect x="526.39" y="499.5" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="506.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">6</text>
+</g>
+<g class="edge-label" data-from="S" data-to="U" data-label="other">
+  <rect x="516" y="590.8" width="26.55" height="14.3" fill="var(--bg)" />
+  <text x="529.27" y="597.95" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">other</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="256" y="314.4" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="332" y="338.4" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="Start" data-label="Start" data-shape="rectangle">
+  <rect x="40" y="300.9" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="324.9" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="T" data-label="T" data-shape="rectangle">
+  <rect x="626.55" y="257.44" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="702.55" y="281.44" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">T</text>
+</g>
+<g class="node" data-id="U" data-label="U" data-shape="rectangle">
+  <rect x="626.55" y="574.8" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="702.55" y="598.8" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">U</text>
+</g>
+</svg>"
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > Six Cluster Exit RL: snapshots SVG and ASCII > ascii-hints 1`] = `
+"                                                   
+       ┌──────────1─────────┐                      
+       │                    │                      
+       │ ┌────────2───────┐ │ ┌───────┐            
+       │ │                │ │ │Cluster│            
+       │ │ ┌──────3─────┐ │ │ │       │            
+       │ │ │            │ │ │ │       │            
+┌───┐  │ │ │            │ │ │ │ ┌───┐ │   ┌───────┐
+│   │  │ │ │            │ │ │ │ │   │ │   │       │
+│   │  │ │ │            │ │ └─┼─┤   │ │   │       │
+│   │  │ │ │            │ │   │ │   │ │   │       │
+│   │  │ │ │            │ └───┼─┤   │ │   │       │
+│   │◄─┘ │ │            │     │ │   │ │   │       │
+│   │◄───┘ │            └─────┼─┤   │ │   │       │
+│   │◄─────┘                  │ │   │ │   │       │
+│ T │◄─────┐          ┌───────┼─┤ a │ │◄──┤ Start │
+│   │◄───┐ │          │       │ │   │ │   │       │
+│   │◄─┐ │ │          │ ┌─────┼─┤   │ │   │       │
+│   │  │ │ │          │ │     │ │   │ │   │       │
+│   │  │ │ │          │ │ ┌───┼─┤   │ │   │       │
+│   │  │ │ │          │ │ │   │ │   │ │   │       │
+│   │  │ │ │          │ │ │ ┌─┼─┤   │ │   │       │
+│   │  │ │ │          │ │ │ │ │ │   │ │   │       │
+└───┘  │ │ │          │ │ │ │ │ └───┘ │   └───────┘
+       │ │ │          │ │ │ │ │       │            
+       │ │ └─────4────┘ │ │ │ └───────┘            
+       │ │              │ │ │                      
+       │ └───────5──────┘ │ │                      
+       │                  │ │                      
+       └─────────6────────┘ │                      
+                            │                      
+                            │                      
+                            │                      
+                            │                      
+                            │                      
+┌───┐                       │                      
+│   │                       │                      
+│ U │◄────────other─────────┘                      
+│   │                                              
+└───┘                                              "
+`;
+
+exports[`cluster exit siblings go round the target (#2886) > Six Cluster Exit RL: snapshots SVG and ASCII > svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 818.55 662.8" width="818.55" height="662.8" role="img" style="--bg:#FFFFFF;--fg:#27272A;--muted:#71717A;background:var(--bg)">
+<style>
+  text { font-family: 'trebuchet ms', 'verdana', 'arial', sans-serif, system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+  @media (prefers-contrast: more) {
+    svg { --_node-stroke: var(--fg); --_inner-stroke: var(--fg); --_line: var(--fg); --_arrow: var(--fg); --_text-sec: var(--fg); --_text-muted: var(--fg); --_text-faint: var(--fg); }
+  }
+  @media (forced-colors: active) {
+    svg { --_node-stroke: CanvasText; --_inner-stroke: CanvasText; --_line: CanvasText; --_arrow: CanvasText; --_text-sec: CanvasText; --_text-muted: CanvasText; --_text-faint: CanvasText; }
+  }
+</style>
+<defs>
+  <marker id="zmb88uok-arrowhead" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="zmb88uok-arrowhead-start" markerWidth="10.5" markerHeight="12.8" refX="9.5" refY="6.4" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <polygon points="0 0, 10.5 6.4, 0 12.8" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="S" data-label="Cluster">
+  <rect x="386.55" y="263.4" width="200" height="123" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="486.55" y="277.4" text-anchor="middle" font-size="12" font-weight="400" fill="var(--_text-sec)" dy="4.2">Cluster</text>
+</g>
+<path class="edge" data-from="Start" data-to="S" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M 626.55 324.9 L 586.55 324.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmb88uok-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1" d="M 386.55 278.77 L 373.62 278.77 Q 366.55 278.77, 366.55 271.7 L 366.55 58.07 Q 366.55 51, 359.48 51 L 219.07 51 Q 212 51, 212 58.07 L 212 257.22 Q 212 264.29, 204.93 264.29 L 192 264.29" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmb88uok-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="2" d="M 386.55 294.15 L 353.62 294.15 Q 346.55 294.15, 346.55 287.08 L 346.55 149.37 Q 346.55 142.3, 339.48 142.3 L 239.07 142.3 Q 232 142.3, 232 149.37 L 232 264.08 Q 232 271.15, 224.93 271.15 L 192 271.15" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmb88uok-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="3" d="M 386.55 309.52 L 333.62 309.52 Q 326.55 309.52, 326.55 302.45 L 326.55 240.67 Q 326.55 233.6, 319.48 233.6 L 259.07 233.6 Q 252 233.6, 252 240.67 L 252 270.94 Q 252 278.01, 244.93 278.01 L 192 278.01" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmb88uok-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="4" d="M 386.55 324.9 L 259.07 324.9 Q 252 324.9, 252 317.83 L 252 291.94 Q 252 284.87, 244.93 284.87 L 192 284.87" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmb88uok-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="5" d="M 386.55 340.27 L 333.62 340.27 Q 326.55 340.27, 326.55 347.35 L 326.55 409.13 Q 326.55 416.2, 319.48 416.2 L 239.07 416.2 Q 232 416.2, 232 409.13 L 232 298.79 Q 232 291.72, 224.93 291.72 L 192 291.72" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmb88uok-arrowhead)" />
+<path class="edge" data-from="S" data-to="T" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="6" d="M 386.55 355.65 L 353.62 355.65 Q 346.55 355.65, 346.55 362.72 L 346.55 500.43 Q 346.55 507.5, 339.48 507.5 L 219.07 507.5 Q 212 507.5, 212 500.43 L 212 305.65 Q 212 298.58, 204.93 298.58 L 192 298.58" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmb88uok-arrowhead)" />
+<path class="edge" data-from="S" data-to="U" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="other" d="M 386.55 371.02 L 373.62 371.02 Q 366.55 371.02, 366.55 378.1 L 366.55 591.73 Q 366.55 598.8, 359.48 598.8 L 192 598.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#zmb88uok-arrowhead)" />
+<g class="edge-label" data-from="S" data-to="T" data-label="1">
+  <rect x="286.39" y="43" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="50.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">1</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="2">
+  <rect x="286.39" y="134.3" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="141.45" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">2</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="3">
+  <rect x="286.39" y="225.6" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="232.75" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">3</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="4">
+  <rect x="286.39" y="316.9" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="324.05" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">4</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="5">
+  <rect x="286.39" y="408.2" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="415.35" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">5</text>
+</g>
+<g class="edge-label" data-from="S" data-to="T" data-label="6">
+  <rect x="286.39" y="499.5" width="5.77" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="506.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">6</text>
+</g>
+<g class="edge-label" data-from="S" data-to="U" data-label="other">
+  <rect x="276" y="590.8" width="26.55" height="14.3" fill="var(--bg)" />
+  <text x="289.27" y="597.95" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.85">other</text>
+</g>
+<g class="node" data-id="a" data-label="a" data-shape="rectangle">
+  <rect x="410.55" y="314.4" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="486.55" y="338.4" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">a</text>
+</g>
+<g class="node" data-id="Start" data-label="Start" data-shape="rectangle">
+  <rect x="626.55" y="300.9" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="702.55" y="324.9" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">Start</text>
+</g>
+<g class="node" data-id="T" data-label="T" data-shape="rectangle">
+  <rect x="40" y="257.44" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="281.44" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">T</text>
+</g>
+<g class="node" data-id="U" data-label="U" data-shape="rectangle">
+  <rect x="40" y="574.8" width="152" height="48" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116" y="598.8" text-anchor="middle" font-size="16" font-weight="500" fill="var(--_text)" dy="5.6">U</text>
+</g>
+</svg>"
+`;

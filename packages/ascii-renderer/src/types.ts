@@ -305,6 +305,20 @@ export interface AsciiEdge {
    * departure and arrival runs within their gutter rows.
    */
   faceLanePlan?: { slot: number; dep: number; arr: number }
+  /**
+   * One of a cluster's sibling exits into a common target that mermaid@12.3.0
+   * draws round the target (`planClusterFans`): a rise beside the cluster, a run
+   * over (or under) the target and a drop beside it. `slot` counts from the
+   * outermost of the `count` on that side.
+   */
+  clusterFan?: {
+    /** `beside`: another exit of the cluster, which drops straight down in the rise column. */
+    side: 'over' | 'under' | 'beside'
+    slot: number
+    count: number
+    /** Columns the rise moves right, past an exit that drops beside the cluster first. */
+    bias: number
+  }
   /** determinePath wanted this self-loop on its top face but the first row has no room above (#2100). */
   loopTopWanted?: boolean
   /** A TD self-loop ELK hooks out of the left face, on a first column with no room beside it (#2888). */
