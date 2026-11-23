@@ -11,8 +11,8 @@ floor for its lowest figure (default 85%, lower overrides in
 regressions, they do not claim parity. Method: `scripts/layout-oracle.ts`.
 
 Reference: mermaid 12.3.0. Since mermaid 12.0.0 its default layout engine for
-these diagram types is ELK (it was dagre before). Generated 2026-11-16 at
-839c709 with `pnpm run layout:scorecard`, tolerance 20px.
+these diagram types is ELK (it was dagre before). Generated 2026-11-23 at
+0831fb7 with `pnpm run layout:scorecard`, tolerance 20px.
 
 ## Latest run (means over samples)
 
@@ -31,10 +31,6 @@ across that change.
 
 | Date       | Commit  | Mermaid | Type      | Samples | Vertical | Horizontal | Containment |
 | ---------- | ------- | ------- | --------- | ------- | -------- | ---------- | ----------- |
-| 2026-10-31 | 67dd7ff | 12.2.0  | Flowchart | 53      | 100%     | 98%        | 100%        |
-| 2026-10-31 | 67dd7ff | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
-| 2026-10-31 | 67dd7ff | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
-| 2026-10-31 | 67dd7ff | 12.2.0  | ER        | 20      | 100%     | 100%       | -           |
 | 2026-11-02 | ae439b3 | 12.2.0  | Flowchart | 56      | 100%     | 98%        | 100%        |
 | 2026-11-02 | ae439b3 | 12.2.0  | State     | 7       | 100%     | 98%        | 100%        |
 | 2026-11-02 | ae439b3 | 12.2.0  | Class     | 29      | 100%     | 100%       | 100%        |
@@ -51,6 +47,10 @@ across that change.
 | 2026-11-16 | 839c709 | 12.3.0  | State     | 7       | 100%     | 100%       | 100%        |
 | 2026-11-16 | 839c709 | 12.3.0  | Class     | 30      | 100%     | 100%       | 100%        |
 | 2026-11-16 | 839c709 | 12.3.0  | ER        | 20      | 100%     | 100%       | -           |
+| 2026-11-23 | 0831fb7 | 12.3.0  | Flowchart | 57      | 100%     | 100%       | 100%        |
+| 2026-11-23 | 0831fb7 | 12.3.0  | State     | 7       | 100%     | 100%       | 100%        |
+| 2026-11-23 | 0831fb7 | 12.3.0  | Class     | 30      | 100%     | 100%       | 100%        |
+| 2026-11-23 | 0831fb7 | 12.3.0  | ER        | 20      | 100%     | 100%       | -           |
 
 ## Edge labels (ASCII)
 
@@ -73,6 +73,7 @@ between the two renderers. Descriptive only, no floor.
 | 2026-11-09 | cf76b06 | 12.2.0  | 4     | 0.50     | 0.53  | 0.06  |
 | 2026-11-10 | 8736bef | 12.3.0  | 4     | 0.50     | 0.53  | 0.06  |
 | 2026-11-16 | 839c709 | 12.3.0  | 4     | 0.50     | 0.53  | 0.06  |
+| 2026-11-23 | 0831fb7 | 12.3.0  | 4     | 0.50     | 0.53  | 0.06  |
 
 ## Sequence diagrams (order)
 
@@ -96,6 +97,7 @@ says nothing about pixel positions or spacing.
 | 2026-11-09 | cf76b06 | 12.2.0  | 24      | 100%         | 100%     | 100%      |
 | 2026-11-10 | 8736bef | 12.3.0  | 24      | 100%         | 100%     | 100%      |
 | 2026-11-16 | 839c709 | 12.3.0  | 26      | 100%         | 100%     | 100%      |
+| 2026-11-23 | 0831fb7 | 12.3.0  | 26      | 100%         | 100%     | 100%      |
 
 ## Pie charts (angles)
 
@@ -118,6 +120,7 @@ exits 1 otherwise). It says nothing about radius, centre or fonts.
 | 2026-11-09 | cf76b06 | 12.2.0  | 19      | 100%   | 100%   | 100%   |
 | 2026-11-10 | 8736bef | 12.3.0  | 19      | 100%   | 100%   | 100%   |
 | 2026-11-16 | 839c709 | 12.3.0  | 19      | 100%   | 100%   | 100%   |
+| 2026-11-23 | 0831fb7 | 12.3.0  | 19      | 100%   | 100%   | 100%   |
 
 ## C4 diagrams (placement)
 
@@ -139,6 +142,7 @@ otherwise). It says nothing about box sizes or fonts.
 | 2026-11-09 | cf76b06 | 12.2.0  | 3       | 100%       | 100%     | 100%        | 100%          | 100%      |
 | 2026-11-10 | 8736bef | 12.3.0  | 3       | 100%       | 100%     | 100%        | 100%          | 100%      |
 | 2026-11-16 | 839c709 | 12.3.0  | 3       | 100%       | 100%     | 100%        | 100%          | 100%      |
+| 2026-11-23 | 0831fb7 | 12.3.0  | 3       | 100%       | 100%     | 100%        | 100%          | 100%      |
 
 ## XY charts (axes and data)
 
@@ -164,6 +168,7 @@ says nothing about colors or fonts.
 | 2026-11-09 | cf76b06 | 12.2.0  | 120     | 100%   | 100%  | 100% | 100%  | 100%   |
 | 2026-11-10 | 8736bef | 12.3.0  | 120     | 100%   | 100%  | 100% | 100%  | 100%   |
 | 2026-11-16 | 839c709 | 12.3.0  | 122     | 100%   | 100%  | 100% | 100%  | 100%   |
+| 2026-11-23 | 0831fb7 | 12.3.0  | 122     | 100%   | 100%  | 100% | 100%  | 100%   |
 
 ## Architecture diagrams (placement)
 
@@ -188,6 +193,7 @@ parity claim. It says nothing about distances or edge routes.
 | 2026-11-09 | cf76b06 | 12.2.0  | 3       | 100%     | 100%       | 100%        |
 | 2026-11-10 | 8736bef | 12.3.0  | 3       | 100%     | 100%       | 100%        |
 | 2026-11-16 | 839c709 | 12.3.0  | 3       | 100%     | 100%       | 100%        |
+| 2026-11-23 | 0831fb7 | 12.3.0  | 3       | 100%     | 100%       | 100%        |
 
 ## Per sample
 
