@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-11-16T14:09:16.871Z",
+  "generatedAt": "2026-11-23T14:02:04.816Z",
   "fork": {
     "owner": "dfadler",
     "name": "zombie-mermaid",
     "url": "https://github.com/dfadler/zombie-mermaid",
-    "lastPushedAt": "2026-11-16T07:05:09Z",
-    "openIssues": 106,
-    "openPRs": 15,
-    "mergedPRs": 1703,
+    "lastPushedAt": "2026-11-23T07:00:39Z",
+    "openIssues": 115,
+    "openPRs": 11,
+    "mergedPRs": 1722,
     "releaseCount": 30,
     "latestRelease": {
-      "tag": "zombie-mermaid@5.17.0",
-      "publishedAt": "2026-11-13T23:02:16Z"
+      "tag": "zombie-mermaid@5.18.0",
+      "publishedAt": "2026-11-18T17:19:24Z"
     }
   },
   "upstream": {
@@ -19,7 +19,7 @@
     "name": "beautiful-mermaid",
     "url": "https://github.com/lukilabs/beautiful-mermaid",
     "lastPushedAt": "2026-05-06T10:53:19Z",
-    "openIssues": 53,
+    "openIssues": 54,
     "openPRs": 46,
     "mergedPRs": 13,
     "releaseCount": 6,
@@ -29,7 +29,7 @@
     }
   },
   "rescued": {
-    "totalFixes": 81,
+    "totalFixes": 84,
     "upstreamIssuesReferenced": 30,
     "upstreamIssuesStillOpen": 24,
     "upstreamIssuesClosedIndependently": 6,
